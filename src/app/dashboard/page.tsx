@@ -99,12 +99,22 @@ export default function DashboardPage() {
     <main className="min-h-screen" style={{ background: "#fafafa" }}>
       {/* Header */}
       <div className="px-6 pt-10 pb-6 flex flex-col items-center relative" style={{ background: "#fff8f2", borderBottom: "1.5px solid #f8d7e6" }}>
+        {/* Profil oben links */}
+        <Link href="/profile" className="absolute top-10 left-6 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70" style={{ background: "#cdb4db", color: "#fff" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </Link>
+
+        {/* Einstellungen oben rechts */}
         <Link href="/settings" className="absolute top-10 right-6 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70" style={{ background: "#f8d7e6", color: "#b79bcf" }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l-.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
         </Link>
+
         <LumaLogo size={0.65} />
       </div>
 
@@ -134,20 +144,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Profil */}
-        <Link href="/profile"
-          className="flex flex-col items-center gap-2 rounded-3xl py-5 transition-opacity hover:opacity-80"
-          style={{ background: "#fff8f2", border: "1.5px solid #cdb4db" }}>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "#cdb4db22", color: "#b79bcf" }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-            </svg>
-          </div>
-          <p className="text-xs font-medium" style={{ color: "#3a2d3f" }}>Profil</p>
-        </Link>
-
-        <p className="text-center text-xs pt-5 pb-4" style={{ color: "#cdb4db" }}>glow with care 🌸</p>
+<p className="text-center text-xs pt-5 pb-4" style={{ color: "#cdb4db" }}>glow with care 🌸</p>
       </div>
     </main>
   );
