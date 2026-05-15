@@ -98,14 +98,17 @@ export function AvatarSVG({ bg, skin, hair, hairStyle, top }: {
       <ellipse cx="37" cy="52" rx="6" ry="3.5" fill="#ffb3c6" opacity="0.4" />
       <ellipse cx="63" cy="52" rx="6" ry="3.5" fill="#ffb3c6" opacity="0.4" />
 
-      {/* Eyes — big cute */}
-      <ellipse cx="42" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
-      <ellipse cx="58" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
-      {/* Eye shine */}
-      <circle cx="43.5" cy="43" r="1.5" fill="white" />
-      <circle cx="59.5" cy="43" r="1.5" fill="white" />
-      <circle cx="44.8" cy="46" r="0.8" fill="white" opacity="0.6" />
-      <circle cx="60.8" cy="46" r="0.8" fill="white" opacity="0.6" />
+      {/* Eyes — big cute with blink */}
+      <g className="avatar-eye avatar-eye-left">
+        <ellipse cx="42" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
+        <circle cx="43.5" cy="43" r="1.5" fill="white" />
+        <circle cx="44.8" cy="46" r="0.8" fill="white" opacity="0.6" />
+      </g>
+      <g className="avatar-eye avatar-eye-right">
+        <ellipse cx="58" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
+        <circle cx="59.5" cy="43" r="1.5" fill="white" />
+        <circle cx="60.8" cy="46" r="0.8" fill="white" opacity="0.6" />
+      </g>
 
       {/* Eyelashes */}
       <line x1="39" y1="41.5" x2="37.5" y2="39.5" stroke="#1a1a2e" strokeWidth="1" strokeLinecap="round" />

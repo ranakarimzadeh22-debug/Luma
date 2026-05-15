@@ -18,3 +18,16 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+@keyframes blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95%            { transform: scaleY(0.08); }
+}
+
+.avatar-eye {
+  transform-origin: center;
+  animation: blink 4s ease-in-out infinite;
+}
+
+.avatar-eye-left  { animation-delay: 0s; }
+.avatar-eye-right { animation-delay: 0.05s; }
+
