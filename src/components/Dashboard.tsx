@@ -6,7 +6,6 @@ import { useLocale } from "@/context/LocaleContext";
 import CycleRing from "./CycleRing";
 import StatCard from "./StatCard";
 import SymptomLog from "./SymptomLog";
-import LanguageSwitcher from "./LanguageSwitcher";
 import PartnerCard from "./PartnerCard";
 import {
   getDaysUntilNextPeriod,
@@ -152,9 +151,6 @@ export default function Dashboard() {
 
         {/* Partner Link */}
         <PartnerCard />
-
-        {/* Language Switcher */}
-        <LanguageSwitcher />
 
         <p className="text-center text-xs text-gray-400 pb-4">{t.tagline}</p>
       </div>
