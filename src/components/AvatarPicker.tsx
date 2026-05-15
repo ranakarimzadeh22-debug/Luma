@@ -5,46 +5,48 @@ interface AvatarPickerProps {
   onSelect: (avatarId: string) => void;
 }
 
+// Anime-style avatars using DiceBear "avataaars" style with cute seeds
 const avatarList = [
-  { id: "Luma1",  seed: "Luma1" },
-  { id: "Luma2",  seed: "Luma2" },
-  { id: "Luma3",  seed: "Luma3" },
-  { id: "Luma4",  seed: "Luma4" },
-  { id: "Luma5",  seed: "Luma5" },
-  { id: "Luma6",  seed: "Luma6" },
-  { id: "Luma7",  seed: "Luma7" },
-  { id: "Luma8",  seed: "Luma8" },
-  { id: "Luma9",  seed: "Luma9" },
-  { id: "Luma10", seed: "Luma10" },
-  { id: "Luma11", seed: "Luma11" },
-  { id: "Luma12", seed: "Luma12" },
+  { id: "sakura",   seed: "sakura",   bg: "fecdd3" },
+  { id: "yuki",     seed: "yuki",     bg: "fbcfe8" },
+  { id: "hana",     seed: "hana",     bg: "f5d0fe" },
+  { id: "momo",     seed: "momo",     bg: "fde68a" },
+  { id: "luna",     seed: "luna",     bg: "bfdbfe" },
+  { id: "nana",     seed: "nana",     bg: "bbf7d0" },
+  { id: "kira",     seed: "kira",     bg: "fecdd3" },
+  { id: "aoi",      seed: "aoi",      bg: "ddd6fe" },
+  { id: "rina",     seed: "rina",     bg: "fbcfe8" },
+  { id: "mika",     seed: "mika",     bg: "fed7aa" },
+  { id: "sora",     seed: "sora",     bg: "bfdbfe" },
+  { id: "yuna",     seed: "yuna",     bg: "f5d0fe" },
 ];
 
-export function avatarUrl(seed: string) {
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=fecdd3,fbcfe8,f5d0fe,ddd6fe,bfdbfe&backgroundType=gradientLinear`;
+export function avatarUrl(id: string) {
+  const a = avatarList.find((x) => x.id === id) ?? avatarList[0];
+  return `https://api.dicebear.com/9.x/avataaars/svg?seed=${a.seed}&backgroundColor=${a.bg}&backgroundType=circle&top=longHair,straightHair,curly,wavyBob,straight02&accessories=prescription01,prescription02,round,sunglasses&facialHair=&clotheType=BlazerShirt,BlazerSweater,CollarSweater,GraphicShirt,Hoodie,Overall,ShirtCrewNeck,ShirtVNeck&eyes=close,cry,default,dizzy,eyeRoll,happy,hearts,side,squint,surprised,wink,winkWacky&eyebrow=default,defaultNatural,flatNatural,raisedExcited,raisedExcitedNatural,upDown&mouth=default,eating,smile,tongue,twinkle`;
 }
 
 export default function AvatarPicker({ selected, onSelect }: AvatarPickerProps) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs font-medium text-gray-500">Charakter wählen</p>
+      <p className="text-xs font-medium text-gray-500">Charakter wählen ✨</p>
       <div className="grid grid-cols-4 gap-3">
         {avatarList.map((a) => (
           <button
             key={a.id}
             type="button"
             onClick={() => onSelect(a.id)}
-            className={`rounded-2xl aspect-square overflow-hidden border-3 transition-all ${
-              selected === a.id
-                ? "border-rose-400 ring-2 ring-rose-300 scale-105 shadow-md"
-                : "border-gray-100 hover:border-rose-200 hover:scale-102"
-            }`}
-            style={{ border: selected === a.id ? "3px solid #fb7185" : "3px solid #f3f4f6" }}
+            className="rounded-2xl aspect-square overflow-hidden transition-all"
+            style={{
+              border: selected === a.id ? "3px solid #fb7185" : "3px solid #f3f4f6",
+              transform: selected === a.id ? "scale(1.08)" : "scale(1)",
+              boxShadow: selected === a.id ? "0 4px 16px #fb718560" : "none",
+            }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={avatarUrl(a.seed)}
-              alt={`Charakter ${a.id}`}
+              src={avatarUrl(a.id)}
+              alt={a.id}
               className="w-full h-full object-cover"
             />
           </button>
