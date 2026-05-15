@@ -32,16 +32,23 @@ export default function SettingsPage() {
   useEffect(() => {
     const raw = localStorage.getItem("luma-user");
     let partnerCode = "";
-    if (raw) {
-      const user = JSON.parse(raw);
-      partnerCode = user.partnerCode;
-    }
+    const user = raw ? JSON.parse(raw) : {};
+    partnerCode = user.partnerCode ?? "";
     if (!partnerCode) {
       partnerCode = generatePartnerCode("Luma");
-      const existing = raw ? JSON.parse(raw) : {};
-      localStorage.setItem("luma-user", JSON.stringify({ ...existing, partnerCode }));
+      user.partnerCode = partnerCode;
+      localStorage.setItem("luma-user", JSON.stringify(user));
     }
-    setPartnerUrl(`${window.location.origin}/partner/${partnerCode}`);
+
+    // Zyklus-Daten in URL encoden damit der Partner echte Daten sieht
+    const cyclePayload = {
+      name: user.name ?? "Luma",
+      lastPeriodStart: user.lastPeriodStart ?? "",
+      cycleLength: user.cycleLength ?? 28,
+      periodLength: user.periodLength ?? 5,
+    };
+    const encoded = btoa(encodeURIComponent(JSON.stringify(cyclePayload)));
+    setPartnerUrl(`${window.location.origin}/partner/${partnerCode}?d=${encoded}`);
   }, []);
 
   function copyLink() {
