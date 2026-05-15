@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { AvatarSVG, avatarList } from "@/components/AvatarPicker";
 
 const moods = [
   {
@@ -93,6 +94,18 @@ export default function GefuhlPage() {
   const [notifEnabled, setNotifEnabled] = useState(
     typeof Notification !== "undefined" && Notification.permission === "granted"
   );
+  const [avatarData, setAvatarData] = useState(avatarList[0]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("luma-user");
+    if (raw) {
+      const user = JSON.parse(raw);
+      const found = avatarList.find((a) => a.id === user.avatar);
+      if (found) setAvatarData(found);
+    }
+  }, []);
+
+  const activeMood = moods.find((m) => m.key === selected);
 
   async function enableNotif() {
     const perm = await Notification.requestPermission();
@@ -122,8 +135,6 @@ export default function GefuhlPage() {
     setTimeout(() => setSaved(false), 3000);
   }
 
-  const activeMood = moods.find((m) => m.key === selected);
-
   return (
     <main className="min-h-screen pb-10" style={{ background: "#fafafa" }}>
       {/* Header */}
@@ -134,6 +145,30 @@ export default function GefuhlPage() {
           </svg>
         </Link>
         <h1 className="text-lg font-medium" style={{ color: "#3a2d3f" }}>Dein Gefühl</h1>
+      </div>
+
+      {/* Avatar mit Stimmungsfarbe */}
+      <div
+        className="flex flex-col items-center py-8 transition-all duration-700"
+        style={{ background: activeMood ? activeMood.color : "#fff8f2" }}
+      >
+        <div className="w-32 h-32 rounded-full overflow-hidden" style={{ border: "3px solid #fff", boxShadow: "0 4px 20px #b799e530" }}>
+          <AvatarSVG
+            bg={activeMood ? activeMood.color : avatarData.bg}
+            skin={avatarData.skin}
+            hair={avatarData.hair}
+            hairStyle={avatarData.hairStyle}
+            top={avatarData.top}
+          />
+        </div>
+        {activeMood && (
+          <p className="mt-3 text-sm font-medium" style={{ color: activeMood.textColor }}>
+            {activeMood.emoji} {activeMood.label}
+          </p>
+        )}
+        {!activeMood && (
+          <p className="mt-3 text-sm" style={{ color: "#a094a8" }}>Wie fühlst du dich heute?</p>
+        )}
       </div>
 
       <div className="px-5 py-6 max-w-md mx-auto flex flex-col gap-5">
