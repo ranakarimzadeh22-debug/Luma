@@ -20,36 +20,31 @@ const cycleData = {
   periodLength: 5,
 };
 
-const phaseColorMap: Record<string, string> = {
-  rose: "bg-rose-100",
-  pink: "bg-pink-100",
-  purple: "bg-purple-100",
-  indigo: "bg-indigo-100",
-};
-
 function getCurrentPhaseKey(lastPeriodStart: Date, cycleLength: number, periodLength: number) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = new Date(lastPeriodStart);
   start.setHours(0, 0, 0, 0);
   const day = (Math.floor((today.getTime() - start.getTime()) / 86400000) % cycleLength) + 1;
-
   if (day <= periodLength) return { key: "menstruation" as const, color: "rose" };
   if (day <= 13) return { key: "follicular" as const, color: "pink" };
   if (day <= 16) return { key: "ovulation" as const, color: "purple" };
   return { key: "luteal" as const, color: "indigo" };
 }
 
+const phaseAccent: Record<string, string> = {
+  rose: "bg-rose-50 border-rose-100",
+  pink: "bg-pink-50 border-pink-100",
+  purple: "bg-purple-50 border-purple-100",
+  indigo: "bg-indigo-50 border-indigo-100",
+};
+
 export default function Dashboard() {
   const { t } = useLocale();
-
   const { key: phaseKey, color: phaseColor } = getCurrentPhaseKey(
-    cycleData.lastPeriodStart,
-    cycleData.cycleLength,
-    cycleData.periodLength
+    cycleData.lastPeriodStart, cycleData.cycleLength, cycleData.periodLength
   );
   const phase = t.phases[phaseKey];
-
   const daysUntil = getDaysUntilNextPeriod(cycleData);
   const nextPeriod = getNextPeriodDate(cycleData);
   const ovulation = getOvulationDate(cycleData);
@@ -58,31 +53,35 @@ export default function Dashboard() {
   start.setHours(0, 0, 0, 0);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const currentDay =
-    (Math.floor((today.getTime() - start.getTime()) / 86400000) % cycleData.cycleLength) + 1;
+  const currentDay = (Math.floor((today.getTime() - start.getTime()) / 86400000) % cycleData.cycleLength) + 1;
 
   return (
-    <main className="min-h-screen bg-rose-50">
+    <main className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-gradient-to-br from-rose-400 to-pink-500 text-white px-6 pt-12 pb-8 rounded-b-3xl shadow-md">
-        <div className="flex justify-between items-start mb-6">
+      <div className="bg-white border-b border-gray-100 px-6 pt-12 pb-6">
+        <div className="flex justify-between items-center max-w-md mx-auto">
           <div>
-            <p className="text-rose-100 text-sm">{t.greeting}</p>
-            <h1 className="text-2xl font-bold">{t.appName} 🌸</h1>
+            <p className="text-gray-400 text-xs tracking-wide">{t.greeting}</p>
+            <h1 className="text-xl font-medium text-gray-900">{t.appName} 🌸</h1>
           </div>
           <div className="flex items-center gap-2">
-            <div className="rounded-full px-3 py-1 text-xs font-medium bg-white/20 backdrop-blur">
-              {t.dayOf} {currentDay} / {cycleData.cycleLength}
-            </div>
-            <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden shadow transition-transform hover:scale-110">
+            <span className="text-xs text-gray-300 border border-gray-100 rounded-full px-3 py-1">
+              {t.dayOf} {currentDay}
+            </span>
+            <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden border border-rose-100">
               <AvatarSVG bg="#ffd6e0" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" />
             </Link>
-            <Link href="/settings" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
+            <Link href="/settings" className="w-9 h-9 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 text-sm hover:bg-rose-50 transition-colors">
               ⚙️
             </Link>
           </div>
         </div>
-        <div className="flex justify-center">
+      </div>
+
+      <div className="px-5 py-6 flex flex-col gap-4 max-w-md mx-auto">
+
+        {/* Cycle Ring */}
+        <div className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col items-center shadow-sm">
           <CycleRing
             daysUntil={daysUntil}
             cycleLength={cycleData.cycleLength}
@@ -93,66 +92,35 @@ export default function Dashboard() {
             labelExpected={t.periodExpected}
           />
         </div>
-      </div>
 
-      <div className="px-5 py-6 flex flex-col gap-5 max-w-md mx-auto">
-        {/* Phase Card */}
-        <div className={`rounded-2xl p-5 ${phaseColorMap[phaseColor] ?? "bg-rose-100"} shadow-sm`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/70 flex items-center justify-center text-lg">🌺</div>
-            <div>
-              <p className="text-xs text-gray-500">{t.currentPhase}</p>
-              <p className="font-bold text-gray-800">{phase.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{phase.description}</p>
-            </div>
-          </div>
+        {/* Phase */}
+        <div className={`rounded-3xl p-5 border ${phaseAccent[phaseColor] ?? "bg-rose-50 border-rose-100"}`}>
+          <p className="text-xs text-gray-400 mb-1">{t.currentPhase}</p>
+          <p className="font-medium text-gray-800">{phase.name}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{phase.description}</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <StatCard
-            label={t.nextPeriod}
-            value={formatDate(nextPeriod)}
-            sub={t.inDays(daysUntil)}
-            emoji="📅"
-            bg="bg-white shadow-sm"
-          />
-          <StatCard
-            label={t.ovulation}
-            value={formatDate(ovulation)}
-            sub={t.estimated}
-            emoji="🥚"
-            bg="bg-white shadow-sm"
-          />
-          <StatCard
-            label={t.cycleLength}
-            value={`${cycleData.cycleLength} ${t.days}`}
-            emoji="🔄"
-            bg="bg-white shadow-sm"
-          />
-          <StatCard
-            label={t.periodLength}
-            value={`${cycleData.periodLength} ${t.days}`}
-            emoji="🩸"
-            bg="bg-white shadow-sm"
-          />
+          <StatCard label={t.nextPeriod} value={formatDate(nextPeriod)} sub={t.inDays(daysUntil)} emoji="📅" bg="bg-white border border-gray-100 shadow-sm" />
+          <StatCard label={t.ovulation} value={formatDate(ovulation)} sub={t.estimated} emoji="🥚" bg="bg-white border border-gray-100 shadow-sm" />
+          <StatCard label={t.cycleLength} value={`${cycleData.cycleLength} ${t.days}`} emoji="🔄" bg="bg-white border border-gray-100 shadow-sm" />
+          <StatCard label={t.periodLength} value={`${cycleData.periodLength} ${t.days}`} emoji="🩸" bg="bg-white border border-gray-100 shadow-sm" />
         </div>
 
         {/* Symptom Log */}
         <SymptomLog />
 
         {/* Tip */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-700 mb-3">{t.tipTitle}</h2>
-          <div className="bg-rose-50 rounded-xl p-3">
-            <p className="text-sm text-gray-600">{t.tip(phase.name, phase.description)}</p>
-          </div>
+        <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+          <p className="text-xs text-gray-400 mb-2">{t.tipTitle}</p>
+          <p className="text-sm text-gray-600 leading-relaxed">{t.tip(phase.name, phase.description)}</p>
         </div>
 
-        {/* Partner Link */}
+        {/* Partner */}
         <PartnerCard />
 
-        <p className="text-center text-xs text-gray-400 pb-4">{t.tagline}</p>
+        <p className="text-center text-xs text-gray-300 pb-4">{t.tagline}</p>
       </div>
     </main>
   );

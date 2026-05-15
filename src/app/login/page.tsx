@@ -10,63 +10,56 @@ export default function LoginPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Platzhalter — hier später echte Auth
     router.push("/dashboard");
   }
 
   return (
-    <main className="min-h-screen bg-rose-50 flex flex-col items-center justify-center px-6">
-      {/* Header */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="w-16 h-16 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center shadow-md mb-3">
-          <span className="text-3xl">🌸</span>
+    <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+      <div className="w-full max-w-xs">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mb-4">
+            <span className="text-2xl">🌸</span>
+          </div>
+          <h1 className="text-2xl font-light text-gray-900">Anmelden</h1>
+          <p className="text-gray-400 text-xs mt-1">Willkommen zurück</p>
         </div>
-        <h1 className="text-2xl font-bold text-gray-800">Willkommen zurück</h1>
-        <p className="text-gray-500 text-sm mt-1">Melde dich bei Luma an</p>
-      </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="w-full max-w-xs flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">E-Mail</label>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
             type="email"
             required
-            placeholder="deine@email.de"
+            placeholder="E-Mail"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
+            className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm outline-none focus:border-rose-300 transition-colors placeholder:text-gray-300"
           />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Passwort</label>
           <input
             type="password"
             required
-            placeholder="••••••••"
+            placeholder="Passwort"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
+            className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm outline-none focus:border-rose-300 transition-colors placeholder:text-gray-300"
           />
+          <button
+            type="submit"
+            className="w-full bg-rose-400 text-white font-medium rounded-2xl py-4 text-sm hover:bg-rose-500 transition-colors mt-2"
+          >
+            Anmelden
+          </button>
+        </form>
+
+        <p className="text-center text-gray-400 text-xs mt-6">
+          Noch kein Konto?{" "}
+          <Link href="/register" className="text-rose-400 font-medium">
+            Registrieren
+          </Link>
+        </p>
+        <div className="flex justify-center mt-4">
+          <Link href="/" className="text-gray-300 text-xs">← Zurück</Link>
         </div>
-
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-2xl py-4 shadow-md hover:opacity-90 transition-opacity mt-2"
-        >
-          Anmelden
-        </button>
-      </form>
-
-      <p className="text-gray-500 text-sm mt-6">
-        Noch kein Konto?{" "}
-        <Link href="/register" className="text-rose-500 font-semibold">
-          Registrieren
-        </Link>
-      </p>
-      <Link href="/" className="text-gray-400 text-xs mt-4">
-        ← Zurück
-      </Link>
+      </div>
     </main>
   );
 }

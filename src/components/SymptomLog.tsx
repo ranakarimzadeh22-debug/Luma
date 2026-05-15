@@ -5,12 +5,7 @@ import { useLocale } from "@/context/LocaleContext";
 
 const symptomKeys = ["cramps", "headache", "mood", "bloating", "fatigue", "happy"] as const;
 const symptomEmojis: Record<string, string> = {
-  cramps: "😣",
-  headache: "🤕",
-  mood: "😤",
-  bloating: "😮‍💨",
-  fatigue: "😴",
-  happy: "😊",
+  cramps: "😣", headache: "🤕", mood: "😤", bloating: "😮‍💨", fatigue: "😴", happy: "😊",
 };
 
 export default function SymptomLog() {
@@ -34,27 +29,27 @@ export default function SymptomLog() {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm">
-      <h2 className="font-semibold text-gray-700 mb-3">{t.howAreYou}</h2>
+    <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+      <p className="text-xs text-gray-400 mb-3">{t.howAreYou}</p>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {symptomKeys.map((key) => (
           <button
             key={key}
             onClick={() => toggle(key)}
-            className={`flex flex-col items-center gap-1 rounded-xl p-3 border-2 text-xs transition-all ${
+            className={`flex flex-col items-center gap-1 rounded-2xl p-3 border text-xs transition-all ${
               selected.has(key)
-                ? "border-rose-400 bg-rose-50 text-rose-600 font-semibold"
-                : "border-gray-100 bg-gray-50 text-gray-500"
+                ? "border-rose-300 bg-rose-50 text-rose-500 font-medium"
+                : "border-gray-100 bg-gray-50 text-gray-400"
             }`}
           >
-            <span className="text-xl">{symptomEmojis[key]}</span>
+            <span className="text-lg">{symptomEmojis[key]}</span>
             {t.symptoms[key]}
           </button>
         ))}
       </div>
       <button
         onClick={save}
-        className="w-full bg-rose-400 hover:bg-rose-500 text-white rounded-xl py-2 text-sm font-medium transition-colors"
+        className="w-full bg-rose-400 text-white font-medium rounded-2xl py-3 text-sm hover:bg-rose-500 transition-colors"
       >
         {saved ? t.saved : t.saveToday}
       </button>

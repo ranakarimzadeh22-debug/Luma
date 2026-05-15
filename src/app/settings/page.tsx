@@ -13,7 +13,6 @@ const languages: { code: Locale; flag: string; native: string }[] = [
 
 export default function SettingsPage() {
   const { locale, setLocale } = useLocale();
-
   const [profile, setProfile] = useState({ name: "Rana", email: "rana@example.com" });
   const [passwords, setPasswords] = useState({ current: "", newPw: "", confirm: "" });
   const [profileSaved, setProfileSaved] = useState(false);
@@ -29,154 +28,100 @@ export default function SettingsPage() {
   function savePassword(e: React.FormEvent) {
     e.preventDefault();
     setPwError("");
-    if (passwords.newPw !== passwords.confirm) {
-      setPwError("Passwörter stimmen nicht überein");
-      return;
-    }
-    if (passwords.newPw.length < 6) {
-      setPwError("Passwort muss mindestens 6 Zeichen haben");
-      return;
-    }
+    if (passwords.newPw !== passwords.confirm) { setPwError("Passwörter stimmen nicht überein"); return; }
+    if (passwords.newPw.length < 6) { setPwError("Mindestens 6 Zeichen"); return; }
     setPwSaved(true);
     setPasswords({ current: "", newPw: "", confirm: "" });
     setTimeout(() => setPwSaved(false), 2000);
   }
 
   return (
-    <main className="min-h-screen bg-rose-50">
+    <main className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-gradient-to-br from-rose-400 to-pink-500 px-6 pt-12 pb-6 rounded-b-3xl shadow-md">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-white/80 hover:text-white text-xl">←</Link>
-          <h1 className="text-xl font-bold text-white">Einstellungen</h1>
+      <div className="bg-white border-b border-gray-100 px-6 pt-12 pb-5">
+        <div className="flex items-center gap-3 max-w-md mx-auto">
+          <Link href="/dashboard" className="text-gray-300 hover:text-gray-500 text-lg">←</Link>
+          <h1 className="text-lg font-medium text-gray-800">Einstellungen</h1>
         </div>
       </div>
 
-      <div className="px-5 py-6 flex flex-col gap-5 max-w-md mx-auto">
+      <div className="px-5 py-6 flex flex-col gap-4 max-w-md mx-auto">
 
         {/* Sprache */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-700 mb-3">🌍 Sprache</h2>
+        <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
+          <p className="text-xs text-gray-400 mb-3">🌍 Sprache</p>
           <div className="flex gap-2">
             {languages.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => setLocale(lang.code)}
-                className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-3 px-2 border-2 transition-all text-sm ${
+                className={`flex-1 flex flex-col items-center gap-1.5 rounded-2xl py-3 border text-xs transition-all ${
                   locale === lang.code
-                    ? "border-rose-400 bg-rose-50 text-rose-600 font-semibold"
-                    : "border-gray-100 bg-gray-50 text-gray-500 hover:border-rose-200"
+                    ? "border-rose-300 bg-rose-50 text-rose-500 font-medium"
+                    : "border-gray-100 bg-gray-50 text-gray-400 hover:border-rose-200"
                 }`}
               >
-                <span className="text-2xl">{lang.flag}</span>
-                <span>{lang.native}</span>
+                <span className="text-xl">{lang.flag}</span>
+                {lang.native}
               </button>
             ))}
           </div>
         </div>
 
         {/* Benutzername & E-Mail */}
-        <form onSubmit={saveProfile} className="bg-white rounded-2xl p-5 shadow-sm flex flex-col gap-4">
-          <h2 className="font-semibold text-gray-700">👤 Benutzername & E-Mail</h2>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Benutzername</label>
-            <input
-              type="text"
-              required
-              value={profile.name}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="bg-rose-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">E-Mail</label>
-            <input
-              type="email"
-              required
-              value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-              className="bg-rose-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-2xl py-3 shadow-sm hover:opacity-90 transition-opacity"
-          >
+        <form onSubmit={saveProfile} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <p className="text-xs text-gray-400">👤 Benutzername & E-Mail</p>
+          <input
+            type="text"
+            required
+            value={profile.name}
+            onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+            placeholder="Benutzername"
+            className="border border-gray-100 rounded-2xl px-4 py-3 text-sm outline-none focus:border-rose-300 transition-colors bg-gray-50 placeholder:text-gray-300"
+          />
+          <input
+            type="email"
+            required
+            value={profile.email}
+            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+            placeholder="E-Mail"
+            className="border border-gray-100 rounded-2xl px-4 py-3 text-sm outline-none focus:border-rose-300 transition-colors bg-gray-50 placeholder:text-gray-300"
+          />
+          <button type="submit" className="w-full bg-rose-400 text-white font-medium rounded-2xl py-3 text-sm hover:bg-rose-500 transition-colors">
             {profileSaved ? "✓ Gespeichert" : "Speichern"}
           </button>
         </form>
 
-        {/* Passwort ändern */}
-        <form onSubmit={savePassword} className="bg-white rounded-2xl p-5 shadow-sm flex flex-col gap-4">
-          <h2 className="font-semibold text-gray-700">🔒 Passwort ändern</h2>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Aktuelles Passwort</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={passwords.current}
-              onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-              className="bg-rose-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Neues Passwort</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={passwords.newPw}
-              onChange={(e) => setPasswords({ ...passwords, newPw: e.target.value })}
-              className="bg-rose-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-500">Passwort bestätigen</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={passwords.confirm}
-              onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-              className="bg-rose-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-rose-400 transition-colors"
-            />
-          </div>
-
-          {pwError && <p className="text-rose-500 text-xs">{pwError}</p>}
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-2xl py-3 shadow-sm hover:opacity-90 transition-opacity"
-          >
-            {pwSaved ? "✓ Passwort geändert" : "Passwort ändern"}
+        {/* Passwort */}
+        <form onSubmit={savePassword} className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <p className="text-xs text-gray-400">🔒 Passwort ändern</p>
+          <input type="password" required placeholder="Aktuelles Passwort" value={passwords.current}
+            onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+            className="border border-gray-100 rounded-2xl px-4 py-3 text-sm outline-none focus:border-rose-300 bg-gray-50 placeholder:text-gray-300 transition-colors" />
+          <input type="password" required placeholder="Neues Passwort" value={passwords.newPw}
+            onChange={(e) => setPasswords({ ...passwords, newPw: e.target.value })}
+            className="border border-gray-100 rounded-2xl px-4 py-3 text-sm outline-none focus:border-rose-300 bg-gray-50 placeholder:text-gray-300 transition-colors" />
+          <input type="password" required placeholder="Passwort bestätigen" value={passwords.confirm}
+            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+            className="border border-gray-100 rounded-2xl px-4 py-3 text-sm outline-none focus:border-rose-300 bg-gray-50 placeholder:text-gray-300 transition-colors" />
+          {pwError && <p className="text-rose-400 text-xs">{pwError}</p>}
+          <button type="submit" className="w-full bg-rose-400 text-white font-medium rounded-2xl py-3 text-sm hover:bg-rose-500 transition-colors">
+            {pwSaved ? "✓ Geändert" : "Passwort ändern"}
           </button>
         </form>
 
-        {/* Login / Logout */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm flex flex-col gap-3">
-          <h2 className="font-semibold text-gray-700">🔑 Konto</h2>
-          <Link
-            href="/login"
-            className="w-full flex items-center justify-center gap-2 bg-rose-50 border-2 border-rose-200 text-rose-500 font-semibold rounded-2xl py-3 text-sm hover:bg-rose-100 transition-colors"
-          >
-            Anmelden / Konto wechseln
+        {/* Konto */}
+        <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm flex flex-col gap-2">
+          <p className="text-xs text-gray-400 mb-1">🔑 Konto</p>
+          <Link href="/login" className="w-full text-center border border-rose-100 text-rose-400 font-medium rounded-2xl py-3 text-sm hover:bg-rose-50 transition-colors">
+            Konto wechseln
           </Link>
-          <Link
-            href="/"
-            className="w-full flex items-center justify-center gap-2 border-2 border-gray-200 text-gray-400 font-semibold rounded-2xl py-3 text-sm hover:bg-gray-50 transition-colors"
-          >
+          <Link href="/" className="w-full text-center border border-gray-100 text-gray-300 font-medium rounded-2xl py-3 text-sm hover:bg-gray-50 transition-colors">
             Abmelden
           </Link>
         </div>
 
-        <p className="text-center text-xs text-gray-400 pb-4">Luma – Dein Zyklus-Begleiter 🌸</p>
+        <p className="text-center text-xs text-gray-300 pb-4">Luma 🌸</p>
       </div>
     </main>
   );
