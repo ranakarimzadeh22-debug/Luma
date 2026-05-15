@@ -1,12 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
+  --bg: #fafafa;
+  --surface: #fff8f2;
+  --rose: #f8d7e6;
+  --purple: #cdb4db;
+  --purple-dark: #b79bcf;
+  --mint: #cfe8d5;
+  --peach: #ffd9c7;
+  --foreground: #3a2d3f;
+  --muted: #a094a8;
 }
 
 body {
-  background: var(--background);
+  background: var(--bg);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

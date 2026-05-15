@@ -14,50 +14,46 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: "#fafafa" }}>
       <div className="w-full max-w-xs">
-        {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-14 h-14 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mb-4">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: "#cdb4db" }}>
             <span className="text-2xl">🌸</span>
           </div>
-          <h1 className="text-2xl font-light text-gray-900">Anmelden</h1>
-          <p className="text-gray-400 text-xs mt-1">Willkommen zurück</p>
+          <h1 className="text-2xl font-light" style={{ color: "#3a2d3f" }}>Anmelden</h1>
+          <p className="text-xs mt-1" style={{ color: "#b79bcf" }}>Willkommen zurück</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <input
-            type="email"
-            required
-            placeholder="E-Mail"
+            type="email" required placeholder="E-Mail"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm outline-none focus:border-rose-300 transition-colors placeholder:text-gray-300"
+            className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors"
+            style={{ background: "#fff8f2", border: "1.5px solid #f8d7e6", color: "#3a2d3f" }}
           />
           <input
-            type="password"
-            required
-            placeholder="Passwort"
+            type="password" required placeholder="Passwort"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full border border-gray-200 rounded-2xl px-4 py-3.5 text-sm outline-none focus:border-rose-300 transition-colors placeholder:text-gray-300"
+            className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors"
+            style={{ background: "#fff8f2", border: "1.5px solid #f8d7e6", color: "#3a2d3f" }}
           />
           <button
             type="submit"
-            className="w-full bg-rose-400 text-white font-medium rounded-2xl py-4 text-sm hover:bg-rose-500 transition-colors mt-2"
+            className="w-full text-white font-medium rounded-2xl py-4 text-sm mt-2 hover:opacity-90 transition-opacity"
+            style={{ background: "#b79bcf" }}
           >
             Anmelden
           </button>
         </form>
 
-        <p className="text-center text-gray-400 text-xs mt-6">
+        <p className="text-center text-xs mt-6" style={{ color: "#a094a8" }}>
           Noch kein Konto?{" "}
-          <Link href="/register" className="text-rose-400 font-medium">
-            Registrieren
-          </Link>
+          <Link href="/register" className="font-medium" style={{ color: "#b79bcf" }}>Registrieren</Link>
         </p>
         <div className="flex justify-center mt-4">
-          <Link href="/" className="text-gray-300 text-xs">← Zurück</Link>
+          <Link href="/" className="text-xs" style={{ color: "#cdb4db" }}>← Zurück</Link>
         </div>
       </div>
     </main>

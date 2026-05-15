@@ -29,18 +29,19 @@ export default function SymptomLog() {
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-      <p className="text-xs text-gray-400 mb-3">{t.howAreYou}</p>
+    <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #f8d7e6" }}>
+      <p className="text-xs mb-3" style={{ color: "#b79bcf" }}>{t.howAreYou}</p>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {symptomKeys.map((key) => (
           <button
             key={key}
             onClick={() => toggle(key)}
-            className={`flex flex-col items-center gap-1 rounded-2xl p-3 border text-xs transition-all ${
+            className="flex flex-col items-center gap-1 rounded-2xl p-3 text-xs transition-all"
+            style={
               selected.has(key)
-                ? "border-rose-300 bg-rose-50 text-rose-500 font-medium"
-                : "border-gray-100 bg-gray-50 text-gray-400"
-            }`}
+                ? { background: "#cdb4db", border: "1.5px solid #b79bcf", color: "#fff" }
+                : { background: "#fafafa", border: "1.5px solid #f8d7e6", color: "#a094a8" }
+            }
           >
             <span className="text-lg">{symptomEmojis[key]}</span>
             {t.symptoms[key]}
@@ -49,7 +50,8 @@ export default function SymptomLog() {
       </div>
       <button
         onClick={save}
-        className="w-full bg-rose-400 text-white font-medium rounded-2xl py-3 text-sm hover:bg-rose-500 transition-colors"
+        className="w-full text-white font-medium rounded-2xl py-3 text-sm hover:opacity-90 transition-opacity"
+        style={{ background: saved ? "#cfe8d5" : "#b79bcf" }}
       >
         {saved ? t.saved : t.saveToday}
       </button>
