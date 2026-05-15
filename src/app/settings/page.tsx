@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "@/context/LocaleContext";
 import { type Locale } from "@/lib/i18n";
+import { generatePartnerCode } from "@/lib/partner";
 
 const languages: { code: Locale; flag: string; native: string }[] = [
   { code: "de", flag: "🇩🇪", native: "Deutsch" },
@@ -24,6 +25,40 @@ export default function SettingsPage() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [pwSaved, setPwSaved] = useState(false);
   const [pwError, setPwError] = useState("");
+  const [partnerUrl, setPartnerUrl] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("luma-user");
+    let partnerCode = "";
+    if (raw) {
+      const user = JSON.parse(raw);
+      partnerCode = user.partnerCode;
+    }
+    if (!partnerCode) {
+      partnerCode = generatePartnerCode("Luma");
+      const existing = raw ? JSON.parse(raw) : {};
+      localStorage.setItem("luma-user", JSON.stringify({ ...existing, partnerCode }));
+    }
+    setPartnerUrl(`${window.location.origin}/partner/${partnerCode}`);
+  }, []);
+
+  function copyLink() {
+    navigator.clipboard.writeText(partnerUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function shareLink() {
+    if (navigator.share) {
+      await navigator.share({ title: "Luma – Mein Zyklus", text: "Ich teile meinen Zyklus mit dir über Luma 🌸", url: partnerUrl });
+    } else {
+      copyLink();
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  }
 
   function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -106,6 +141,32 @@ export default function SettingsPage() {
             {pwSaved ? "✓ Geändert" : "Passwort ändern"}
           </button>
         </form>
+
+        {/* Partner Link */}
+        {partnerUrl && (
+          <div className="rounded-3xl p-5 flex flex-col gap-3" style={{ background: "#fff8f2", border: "1.5px solid #b799e5" }}>
+            <p className="text-xs" style={{ color: "#b799e5" }}>💑 Partner Link</p>
+            <p className="text-xs leading-relaxed" style={{ color: "#a094a8" }}>
+              Teile diesen Link mit deinem Partner. Er sieht deine aktuelle Phase und wird benachrichtigt.
+            </p>
+            <div className="flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: "#fafafa", border: "1.5px solid #f4c7d7" }}>
+              <span className="text-xs font-mono truncate" style={{ color: "#a094a8" }}>{partnerUrl}</span>
+              <button onClick={copyLink} className="text-xs font-medium ml-2 shrink-0" style={{ color: "#b799e5" }}>
+                {copied ? "✓" : "Kopieren"}
+              </button>
+            </div>
+            <button
+              onClick={shareLink}
+              className="w-full text-white font-medium rounded-2xl py-3 text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              style={{ background: shared ? "#cfe8d5" : "#b799e5" }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              {shared ? "✓ Geteilt" : "Link teilen"}
+            </button>
+          </div>
+        )}
 
         {/* Konto */}
         <div className="rounded-3xl p-5 flex flex-col gap-2" style={{ background: "#fff8f2", border: "1.5px solid #ffd9c7" }}>
