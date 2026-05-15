@@ -75,7 +75,7 @@ export default function Dashboard() {
             </div>
             <Link href="/profile" className="w-9 h-9 bg-white rounded-full overflow-hidden shadow transition-transform hover:scale-110">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://api.dicebear.com/9.x/avataaars/svg?seed=sakura&backgroundColor=fecdd3&backgroundType=circle" alt="Profil" className="w-full h-full object-cover" />
+              <img src="https://api.dicebear.com/9.x/lorelei/svg?seed=sakura&backgroundColor=fecdd3&backgroundType=circle" alt="Profil" className="w-full h-full object-cover" />
             </Link>
             <Link href="/settings" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
               ⚙️

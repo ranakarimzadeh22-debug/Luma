@@ -23,7 +23,7 @@ const avatarList = [
 
 export function avatarUrl(id: string) {
   const a = avatarList.find((x) => x.id === id) ?? avatarList[0];
-  return `https://api.dicebear.com/9.x/avataaars/svg?seed=${a.seed}&backgroundColor=${a.bg}&backgroundType=circle&top=longHair,straightHair,curly,wavyBob,straight02&accessories=prescription01,prescription02,round,sunglasses&facialHair=&clotheType=BlazerShirt,BlazerSweater,CollarSweater,GraphicShirt,Hoodie,Overall,ShirtCrewNeck,ShirtVNeck&eyes=close,cry,default,dizzy,eyeRoll,happy,hearts,side,squint,surprised,wink,winkWacky&eyebrow=default,defaultNatural,flatNatural,raisedExcited,raisedExcitedNatural,upDown&mouth=default,eating,smile,tongue,twinkle`;
+  return `https://api.dicebear.com/9.x/lorelei/svg?seed=${a.seed}&backgroundColor=${a.bg}&backgroundType=circle`;
 }
 
 export default function AvatarPicker({ selected, onSelect }: AvatarPickerProps) {
