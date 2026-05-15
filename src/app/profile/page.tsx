@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import AvatarPicker, { avatars } from "@/components/AvatarPicker";
-
-function getEmoji(id: string) {
-  return avatars.find((a) => a.id === id)?.emoji ?? "🌸";
-}
+import AvatarPicker, { avatarUrl } from "@/components/AvatarPicker";
 
 export default function ProfilePage() {
   const [avatar, setAvatar] = useState("flower");
@@ -35,8 +31,9 @@ export default function ProfilePage() {
         </div>
         {/* Avatar */}
         <div className="flex flex-col items-center mt-6">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl shadow-lg ring-4 ring-white/40">
-            {getEmoji(avatar)}
+          <div className="w-24 h-24 bg-white rounded-full overflow-hidden shadow-lg ring-4 ring-white/40">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={avatarUrl(avatar)} alt="Profil" className="w-full h-full object-cover" />
           </div>
           <p className="text-white font-semibold mt-3 text-lg">{profile.name}</p>
           <p className="text-rose-100 text-sm">{profile.email}</p>
