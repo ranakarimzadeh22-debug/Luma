@@ -102,7 +102,7 @@ export default function DashboardPage() {
         {/* Profil oben links */}
         <Link href="/profile" className="absolute top-10 left-6 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70" style={{ background: "#b799e5" }}>
           <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 4 A8 8 0 1 0 12 20 A5 5 0 1 1 12 4 Z" fill="white" />
+            <path d="M13 3 A9 9 0 1 0 13 21 A6 6 0 1 1 13 3 Z" fill="white" />
           </svg>
         </Link>
 
