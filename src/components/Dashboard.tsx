@@ -7,6 +7,7 @@ import CycleRing from "./CycleRing";
 import StatCard from "./StatCard";
 import SymptomLog from "./SymptomLog";
 import LanguageSwitcher from "./LanguageSwitcher";
+import PartnerCard from "./PartnerCard";
 import {
   getDaysUntilNextPeriod,
   getNextPeriodDate,
@@ -148,6 +149,9 @@ export default function Dashboard() {
             <p className="text-sm text-gray-600">{t.tip(phase.name, phase.description)}</p>
           </div>
         </div>
+
+        {/* Partner Link */}
+        <PartnerCard />
 
         {/* Language Switcher */}
         <LanguageSwitcher />
