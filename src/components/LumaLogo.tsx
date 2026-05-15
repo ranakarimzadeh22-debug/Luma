@@ -59,7 +59,7 @@ export default function LumaLogo({ size = 1 }: { size?: number }) {
         fontSize="32"
         fontWeight="300"
         letterSpacing="6"
-        fill="#3a2d3f"
+        fill="#b79bcf"
       >
         LUMA
       </text>
