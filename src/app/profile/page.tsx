@@ -32,7 +32,7 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="flex flex-col items-center mt-6">
           <div className="w-24 h-24 rounded-full overflow-hidden shadow-lg ring-4 ring-white/40">
-            {(() => { const a = avatarList.find(x => x.id === avatar) ?? avatarList[0]; return <AvatarSVG bg={a.bg} skin={a.skin} hair={a.hair} hairStyle={a.hairStyle} />; })()}
+            {(() => { const a = avatarList.find(x => x.id === avatar) ?? avatarList[0]; return <AvatarSVG bg={a.bg} skin={a.skin} hair={a.hair} hairStyle={a.hairStyle} top={a.top} />; })()}
           </div>
           <p className="text-white font-semibold mt-3 text-lg">{profile.name}</p>
           <p className="text-rose-100 text-sm">{profile.email}</p>
