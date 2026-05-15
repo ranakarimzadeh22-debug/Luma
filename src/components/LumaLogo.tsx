@@ -74,7 +74,7 @@ export default function LumaLogo({ size = 1 }: { size?: number }) {
         fontFamily="Georgia, serif"
         fontSize="9"
         letterSpacing="1.5"
-        fill="#b79bcf"
+        fill="#f8d7e6"
       >
         glow with care
       </text>
