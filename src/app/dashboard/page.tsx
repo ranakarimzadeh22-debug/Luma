@@ -100,10 +100,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="px-6 pt-10 pb-6 flex flex-col items-center relative" style={{ background: "#fff8f2", borderBottom: "1.5px solid #f8d7e6" }}>
         {/* Profil oben links */}
-        <Link href="/profile" className="absolute top-10 left-6 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70" style={{ background: "#cdb4db", color: "#fff" }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        <Link href="/profile" className="absolute top-10 left-6 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70" style={{ background: "#cdb4db" }}>
+          <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 4 A8 8 0 1 0 12 20 A5 5 0 1 1 12 4 Z" fill="white" />
           </svg>
         </Link>
 
