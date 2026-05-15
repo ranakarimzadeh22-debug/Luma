@@ -19,15 +19,15 @@ body {
 }
 
 @keyframes blink {
-  0%, 90%, 100% { transform: scaleY(1); }
-  95%            { transform: scaleY(0.08); }
+  0%, 85%, 100% { transform: scaleY(1); }
+  92%           { transform: scaleY(0.06); }
 }
 
 .avatar-eye {
-  transform-origin: center;
-  animation: blink 4s ease-in-out infinite;
+  transform-origin: center 45px;
+  animation: blink 6s ease-in-out infinite;
 }
 
 .avatar-eye-left  { animation-delay: 0s; }
-.avatar-eye-right { animation-delay: 0.05s; }
+.avatar-eye-right { animation-delay: 0.08s; }
 
