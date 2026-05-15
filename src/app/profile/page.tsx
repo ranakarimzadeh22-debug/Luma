@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import AvatarPicker, { avatars } from "@/components/AvatarPicker";
+
+function getEmoji(id: string) {
+  return avatars.find((a) => a.id === id)?.emoji ?? "🌸";
+}
 
 export default function ProfilePage() {
+  const [avatar, setAvatar] = useState("flower");
   const [profile, setProfile] = useState({
     name: "Rana",
     email: "rana@example.com",
@@ -29,16 +35,21 @@ export default function ProfilePage() {
         </div>
         {/* Avatar */}
         <div className="flex flex-col items-center mt-6">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-4xl shadow-md">
-            🌸
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl shadow-lg ring-4 ring-white/40">
+            {getEmoji(avatar)}
           </div>
-          <p className="text-white font-semibold mt-2 text-lg">{profile.name}</p>
+          <p className="text-white font-semibold mt-3 text-lg">{profile.name}</p>
           <p className="text-rose-100 text-sm">{profile.email}</p>
         </div>
       </div>
 
       <div className="px-5 py-6 flex flex-col gap-5 max-w-md mx-auto">
-        <form onSubmit={handleSave} className="flex flex-col gap-4">
+        <form onSubmit={handleSave} className="flex flex-col gap-5">
+
+          {/* Avatar Auswahl */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+            <AvatarPicker selected={avatar} onSelect={setAvatar} />
+          </div>
 
           {/* Persönliche Daten */}
           <div className="bg-white rounded-2xl p-5 shadow-sm flex flex-col gap-4">
@@ -84,16 +95,12 @@ export default function ProfilePage() {
                 Zykluslänge: <span className="text-rose-500 font-bold">{profile.cycleLength} Tage</span>
               </label>
               <input
-                type="range"
-                min={21}
-                max={40}
+                type="range" min={21} max={40}
                 value={profile.cycleLength}
                 onChange={(e) => setProfile({ ...profile, cycleLength: Number(e.target.value) })}
                 className="accent-rose-400"
               />
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>21</span><span>40</span>
-              </div>
+              <div className="flex justify-between text-xs text-gray-400"><span>21</span><span>40</span></div>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -101,20 +108,15 @@ export default function ProfilePage() {
                 Periodendauer: <span className="text-rose-500 font-bold">{profile.periodLength} Tage</span>
               </label>
               <input
-                type="range"
-                min={2}
-                max={10}
+                type="range" min={2} max={10}
                 value={profile.periodLength}
                 onChange={(e) => setProfile({ ...profile, periodLength: Number(e.target.value) })}
                 className="accent-rose-400"
               />
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>2</span><span>10</span>
-              </div>
+              <div className="flex justify-between text-xs text-gray-400"><span>2</span><span>10</span></div>
             </div>
           </div>
 
-          {/* Speichern */}
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold rounded-2xl py-4 shadow-md hover:opacity-90 transition-opacity"

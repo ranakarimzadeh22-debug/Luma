@@ -73,8 +73,8 @@ export default function Dashboard() {
             <div className="rounded-full px-3 py-1 text-xs font-medium bg-white/20 backdrop-blur">
               {t.dayOf} {currentDay} / {cycleData.cycleLength}
             </div>
-            <Link href="/profile" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
-              👤
+            <Link href="/profile" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-xl transition-colors">
+              🌸
             </Link>
             <Link href="/settings" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
               ⚙️
