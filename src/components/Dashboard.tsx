@@ -76,6 +76,9 @@ export default function Dashboard() {
             <Link href="/profile" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
               👤
             </Link>
+            <Link href="/settings" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
+              ⚙️
+            </Link>
           </div>
         </div>
         <div className="flex justify-center">
