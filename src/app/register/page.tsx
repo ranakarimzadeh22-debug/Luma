@@ -16,7 +16,7 @@ export default function RegisterPage() {
     const code = generatePartnerCode(form.name);
     setPartnerCode(code);
     localStorage.setItem("luma-user", JSON.stringify({ name: form.name, email: form.email, partnerCode: code }));
-    setDone(true);
+    router.push("/onboarding");
   }
 
   function copyLink() {
