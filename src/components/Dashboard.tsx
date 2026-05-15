@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AvatarSVG } from "./AvatarPicker";
 import { useLocale } from "@/context/LocaleContext";
 import CycleRing from "./CycleRing";
 import StatCard from "./StatCard";
@@ -73,9 +74,8 @@ export default function Dashboard() {
             <div className="rounded-full px-3 py-1 text-xs font-medium bg-white/20 backdrop-blur">
               {t.dayOf} {currentDay} / {cycleData.cycleLength}
             </div>
-            <Link href="/profile" className="w-9 h-9 bg-white rounded-full overflow-hidden shadow transition-transform hover:scale-110">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://api.dicebear.com/9.x/lorelei/svg?seed=sakura&backgroundColor=fecdd3&backgroundType=circle" alt="Profil" className="w-full h-full object-cover" />
+            <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden shadow transition-transform hover:scale-110">
+              <AvatarSVG bg="#ffd6e0" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" />
             </Link>
             <Link href="/settings" className="w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-lg transition-colors">
               ⚙️
