@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import LumaLogo from "@/components/LumaLogo";
 
 export default function Home() {
@@ -21,7 +21,7 @@ export default function Home() {
         <Link
           href="/register"
           className="w-full font-medium rounded-2xl py-4 text-center text-sm tracking-wide hover:opacity-90 transition-opacity"
-          style={{ background: "#ec6f9e", color: "#b799e5" }}
+          style={{ background: "#f4c7d7", color: "#b799e5" }}
         >
           Konto erstellen
         </Link>

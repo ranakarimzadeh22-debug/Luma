@@ -1,4 +1,4 @@
-﻿export default function LumaLogo({ size = 1 }: { size?: number }) {
+export default function LumaLogo({ size = 1 }: { size?: number }) {
   const w = 160 * size;
   const h = 200 * size;
 
@@ -18,11 +18,11 @@
 
       {/* Rose flower left */}
       <g transform="translate(100 48)">
-        <circle cx="0" cy="0" r="5" fill="#ec6f9e" />
-        <ellipse cx="-6" cy="-4" rx="4" ry="3" fill="#ec6f9e" transform="rotate(-40 -6 -4)" />
-        <ellipse cx="6" cy="-4" rx="4" ry="3" fill="#ec6f9e" transform="rotate(40 6 -4)" />
-        <ellipse cx="-6" cy="4" rx="4" ry="3" fill="#ec6f9e" transform="rotate(40 -6 4)" />
-        <ellipse cx="6" cy="4" rx="4" ry="3" fill="#ec6f9e" transform="rotate(-40 6 4)" />
+        <circle cx="0" cy="0" r="5" fill="#f4c7d7" />
+        <ellipse cx="-6" cy="-4" rx="4" ry="3" fill="#f4c7d7" transform="rotate(-40 -6 -4)" />
+        <ellipse cx="6" cy="-4" rx="4" ry="3" fill="#f4c7d7" transform="rotate(40 6 -4)" />
+        <ellipse cx="-6" cy="4" rx="4" ry="3" fill="#f4c7d7" transform="rotate(40 -6 4)" />
+        <ellipse cx="6" cy="4" rx="4" ry="3" fill="#f4c7d7" transform="rotate(-40 6 4)" />
         <circle cx="0" cy="0" r="3" fill="#b799e5" />
         {/* stem */}
         <line x1="0" y1="5" x2="-4" y2="16" stroke="#cfe8d5" strokeWidth="1.5" strokeLinecap="round" />
@@ -74,13 +74,13 @@
         fontFamily="Georgia, serif"
         fontSize="9"
         letterSpacing="1.5"
-        fill="#ec6f9e"
+        fill="#f4c7d7"
       >
         glow with care
       </text>
 
       {/* Small hearts */}
-      <g fill="#ec6f9e">
+      <g fill="#f4c7d7">
         {/* left heart */}
         <path d="M30 145 C30 142 27 140 25 142 C23 140 20 142 20 145 C20 148 25 153 25 153 C25 153 30 148 30 145 Z"
           transform="scale(0.6) translate(18 90)" />

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { generatePartnerCode } from "@/lib/partner";
@@ -47,7 +47,7 @@ export default function PartnerCard() {
         Dein Partner sieht deine Phase und bekommt Benachrichtigungen wenn deine Periode beginnt.
       </p>
 
-      <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-3" style={{ background: "#fafafa", border: "1.5px solid #ec6f9e" }}>
+      <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-3" style={{ background: "#fafafa", border: "1.5px solid #f4c7d7" }}>
         <span className="text-xs font-mono truncate" style={{ color: "#a094a8" }}>{url}</span>
         <button onClick={copy} className="text-xs font-medium ml-2 shrink-0" style={{ color: "#b799e5" }}>
           {copied ? "✓" : "Kopieren"}

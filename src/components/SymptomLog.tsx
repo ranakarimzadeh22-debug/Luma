@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useLocale } from "@/context/LocaleContext";
@@ -29,7 +29,7 @@ export default function SymptomLog() {
   }
 
   return (
-    <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #ec6f9e" }}>
+    <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7" }}>
       <p className="text-xs mb-3" style={{ color: "#b799e5" }}>{t.howAreYou}</p>
       <div className="grid grid-cols-3 gap-2 mb-4">
         {symptomKeys.map((key) => (
@@ -40,7 +40,7 @@ export default function SymptomLog() {
             style={
               selected.has(key)
                 ? { background: "#b799e5", border: "1.5px solid #b799e5", color: "#fff" }
-                : { background: "#fafafa", border: "1.5px solid #ec6f9e", color: "#a094a8" }
+                : { background: "#fafafa", border: "1.5px solid #f4c7d7", color: "#a094a8" }
             }
           >
             <span className="text-lg">{symptomEmojis[key]}</span>

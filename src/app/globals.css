@@ -1,9 +1,9 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   --bg: #fafafa;
   --surface: #fff8f2;
-  --rose: #ec6f9e;
+  --rose: #f4c7d7;
   --purple: #b799e5;
   --purple-dark: #b799e5;
   --mint: #cfe8d5;

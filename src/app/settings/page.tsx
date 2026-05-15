@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -13,7 +13,7 @@ const languages: { code: Locale; flag: string; native: string }[] = [
 
 const inputStyle = {
   background: "#fff8f2",
-  border: "1.5px solid #ec6f9e",
+  border: "1.5px solid #f4c7d7",
   color: "#3a2d3f",
 };
 
@@ -44,7 +44,7 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen" style={{ background: "#fafafa" }}>
       {/* Header */}
-      <div className="px-6 pt-12 pb-5 border-b" style={{ background: "#fff8f2", borderColor: "#ec6f9e" }}>
+      <div className="px-6 pt-12 pb-5 border-b" style={{ background: "#fff8f2", borderColor: "#f4c7d7" }}>
         <div className="flex items-center gap-3 max-w-md mx-auto">
           <Link href="/dashboard" className="text-lg" style={{ color: "#b799e5" }}>←</Link>
           <h1 className="text-lg font-medium" style={{ color: "#3a2d3f" }}>Einstellungen</h1>
@@ -65,7 +65,7 @@ export default function SettingsPage() {
                 style={
                   locale === lang.code
                     ? { background: "#b799e5", border: "1.5px solid #b799e5", color: "#fff" }
-                    : { background: "#fafafa", border: "1.5px solid #ec6f9e", color: "#a094a8" }
+                    : { background: "#fafafa", border: "1.5px solid #f4c7d7", color: "#a094a8" }
                 }
               >
                 <span className="text-xl">{lang.flag}</span>
@@ -76,7 +76,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Benutzername */}
-        <form onSubmit={saveProfile} className="rounded-3xl p-5 flex flex-col gap-3" style={{ background: "#fff8f2", border: "1.5px solid #ec6f9e" }}>
+        <form onSubmit={saveProfile} className="rounded-3xl p-5 flex flex-col gap-3" style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7" }}>
           <p className="text-xs" style={{ color: "#b799e5" }}>👤 Benutzername & E-Mail</p>
           <input type="text" required value={profile.name} placeholder="Benutzername"
             onChange={(e) => setProfile({ ...profile, name: e.target.value })}
@@ -91,7 +91,7 @@ export default function SettingsPage() {
         </form>
 
         {/* Passwort */}
-        <form onSubmit={savePassword} className="rounded-3xl p-5 flex flex-col gap-3" style={{ background: "#fff8f2", border: "1.5px solid #ec6f9e" }}>
+        <form onSubmit={savePassword} className="rounded-3xl p-5 flex flex-col gap-3" style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7" }}>
           <p className="text-xs" style={{ color: "#b799e5" }}>🔒 Passwort ändern</p>
           {["current", "newPw", "confirm"].map((field, i) => (
             <input key={field} type="password"
@@ -115,7 +115,7 @@ export default function SettingsPage() {
             Konto wechseln
           </Link>
           <Link href="/" className="w-full text-center font-medium rounded-2xl py-3 text-sm hover:opacity-90 transition-opacity"
-            style={{ background: "#fafafa", border: "1.5px solid #ec6f9e", color: "#b799e5" }}>
+            style={{ background: "#fafafa", border: "1.5px solid #f4c7d7", color: "#b799e5" }}>
             Abmelden
           </Link>
         </div>

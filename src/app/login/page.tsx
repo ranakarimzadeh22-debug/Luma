@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -27,14 +27,14 @@ export default function LoginPage() {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors"
-            style={{ background: "#fff8f2", border: "1.5px solid #ec6f9e", color: "#3a2d3f" }}
+            style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7", color: "#3a2d3f" }}
           />
           <input
             type="password" required placeholder="Passwort"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors"
-            style={{ background: "#fff8f2", border: "1.5px solid #ec6f9e", color: "#3a2d3f" }}
+            style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7", color: "#3a2d3f" }}
           />
           <button
             type="submit"
