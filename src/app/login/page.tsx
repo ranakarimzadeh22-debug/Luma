@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import LumaLogo from "@/components/LumaLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,12 +17,8 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6" style={{ background: "#fafafa" }}>
       <div className="w-full max-w-xs">
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: "#cdb4db" }}>
-            <span className="text-2xl">🌸</span>
-          </div>
-          <h1 className="text-2xl font-light" style={{ color: "#3a2d3f" }}>Anmelden</h1>
-          <p className="text-xs mt-1" style={{ color: "#b79bcf" }}>Willkommen zurück</p>
+        <div className="flex flex-col items-center mb-8">
+          <LumaLogo size={0.7} />
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
