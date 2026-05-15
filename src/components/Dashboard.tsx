@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { AvatarSVG } from "./AvatarPicker";
@@ -21,9 +21,9 @@ function getCurrentPhaseKey(lastPeriodStart: Date, cycleLength: number, periodLe
   const start = new Date(lastPeriodStart);
   start.setHours(0, 0, 0, 0);
   const day = (Math.floor((today.getTime() - start.getTime()) / 86400000) % cycleLength) + 1;
-  if (day <= periodLength) return { key: "menstruation" as const, accent: "#f8d7e6", dot: "#b79bcf" };
+  if (day <= periodLength) return { key: "menstruation" as const, accent: "#ec6f9e", dot: "#b799e5" };
   if (day <= 13)           return { key: "follicular"   as const, accent: "#ffd9c7", dot: "#e8a87c" };
-  if (day <= 16)           return { key: "ovulation"    as const, accent: "#cdb4db", dot: "#b79bcf" };
+  if (day <= 16)           return { key: "ovulation"    as const, accent: "#b799e5", dot: "#b799e5" };
   return                          { key: "luteal"       as const, accent: "#cfe8d5", dot: "#7bbf8e" };
 }
 
@@ -46,20 +46,20 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen" style={{ background: "#fafafa" }}>
       {/* Header */}
-      <div className="px-6 pt-12 pb-5 border-b" style={{ background: "#fff8f2", borderColor: "#f8d7e6" }}>
+      <div className="px-6 pt-12 pb-5 border-b" style={{ background: "#fff8f2", borderColor: "#ec6f9e" }}>
         <div className="flex justify-between items-center max-w-md mx-auto">
           <div>
-            <p className="text-xs tracking-wide" style={{ color: "#b79bcf" }}>{t.greeting}</p>
+            <p className="text-xs tracking-wide" style={{ color: "#b799e5" }}>{t.greeting}</p>
             <h1 className="text-xl font-medium" style={{ color: "#3a2d3f" }}>{t.appName} 🌸</h1>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs rounded-full px-3 py-1" style={{ background: "#f8d7e6", color: "#b79bcf" }}>
+            <span className="text-xs rounded-full px-3 py-1" style={{ background: "#ec6f9e", color: "#b799e5" }}>
               {t.dayOf} {currentDay}
             </span>
-            <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #cdb4db" }}>
-              <AvatarSVG bg="#cdb4db" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" />
+            <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #b799e5" }}>
+              <AvatarSVG bg="#b799e5" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" />
             </Link>
-            <Link href="/settings" className="w-9 h-9 rounded-full flex items-center justify-center text-sm" style={{ background: "#f8d7e6", color: "#b79bcf" }}>
+            <Link href="/settings" className="w-9 h-9 rounded-full flex items-center justify-center text-sm" style={{ background: "#ec6f9e", color: "#b799e5" }}>
               ⚙️
             </Link>
           </div>
@@ -69,7 +69,7 @@ export default function Dashboard() {
       <div className="px-5 py-6 flex flex-col gap-4 max-w-md mx-auto">
 
         {/* Cycle Ring */}
-        <div className="rounded-3xl p-6 flex flex-col items-center" style={{ background: "#fff8f2", border: "1.5px solid #f8d7e6" }}>
+        <div className="rounded-3xl p-6 flex flex-col items-center" style={{ background: "#fff8f2", border: "1.5px solid #ec6f9e" }}>
           <CycleRing
             daysUntil={daysUntil}
             cycleLength={cycleData.cycleLength}
@@ -97,8 +97,8 @@ export default function Dashboard() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <StatCard label={t.nextPeriod} value={formatDate(nextPeriod)} sub={t.inDays(daysUntil)} emoji="📅" bg="#fff8f2" border="#f8d7e6" />
-          <StatCard label={t.ovulation}  value={formatDate(ovulation)}  sub={t.estimated}          emoji="🥚" bg="#fff8f2" border="#cdb4db" />
+          <StatCard label={t.nextPeriod} value={formatDate(nextPeriod)} sub={t.inDays(daysUntil)} emoji="📅" bg="#fff8f2" border="#ec6f9e" />
+          <StatCard label={t.ovulation}  value={formatDate(ovulation)}  sub={t.estimated}          emoji="🥚" bg="#fff8f2" border="#b799e5" />
           <StatCard label={t.cycleLength}  value={`${cycleData.cycleLength} ${t.days}`}  emoji="🔄" bg="#fff8f2" border="#cfe8d5" />
           <StatCard label={t.periodLength} value={`${cycleData.periodLength} ${t.days}`} emoji="🩸" bg="#fff8f2" border="#ffd9c7" />
         </div>
@@ -107,16 +107,17 @@ export default function Dashboard() {
         <SymptomLog />
 
         {/* Tip */}
-        <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #cdb4db" }}>
-          <p className="text-xs mb-2" style={{ color: "#b79bcf" }}>{t.tipTitle}</p>
+        <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #b799e5" }}>
+          <p className="text-xs mb-2" style={{ color: "#b799e5" }}>{t.tipTitle}</p>
           <p className="text-sm leading-relaxed" style={{ color: "#3a2d3f" }}>{t.tip(phase.name, phase.description)}</p>
         </div>
 
         {/* Partner */}
         <PartnerCard />
 
-        <p className="text-center text-xs pb-4" style={{ color: "#cdb4db" }}>{t.tagline}</p>
+        <p className="text-center text-xs pb-4" style={{ color: "#b799e5" }}>{t.tagline}</p>
       </div>
     </main>
   );
 }
+

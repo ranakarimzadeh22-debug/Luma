@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import LumaLogo from "@/components/LumaLogo";
 
 export default function Home() {
@@ -14,20 +14,21 @@ export default function Home() {
         <Link
           href="/login"
           className="w-full text-white font-medium rounded-2xl py-4 text-center text-sm tracking-wide hover:opacity-90 transition-opacity"
-          style={{ background: "#b79bcf" }}
+          style={{ background: "#b799e5" }}
         >
           Anmelden
         </Link>
         <Link
           href="/register"
           className="w-full font-medium rounded-2xl py-4 text-center text-sm tracking-wide hover:opacity-90 transition-opacity"
-          style={{ background: "#f8d7e6", color: "#b79bcf" }}
+          style={{ background: "#ec6f9e", color: "#b799e5" }}
         >
           Konto erstellen
         </Link>
       </div>
 
-      <p className="text-xs mt-10 tracking-wide" style={{ color: "#cdb4db" }}>Privat & sicher 🔒</p>
+      <p className="text-xs mt-10 tracking-wide" style={{ color: "#b799e5" }}>Privat & sicher 🔒</p>
     </main>
   );
 }
+

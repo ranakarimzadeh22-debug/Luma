@@ -9,10 +9,11 @@ export default function Page() {
         </div>
         <h1 className="text-xl font-medium" style={{ color: "#3a2d3f" }}>Mein Zyklus</h1>
         <p className="text-sm" style={{ color: "#a094a8" }}>Zyklus-Übersicht kommt bald</p>
-        <Link href="/dashboard" className="mt-4 text-sm font-medium rounded-2xl px-6 py-3 hover:opacity-80 transition-opacity" style={{ background: "#fff8f2", color: "#b79bcf" }}>
+        <Link href="/dashboard" className="mt-4 text-sm font-medium rounded-2xl px-6 py-3 hover:opacity-80 transition-opacity" style={{ background: "#fff8f2", color: "#b799e5" }}>
           ← Zurück
         </Link>
       </div>
     </main>
   );
 }
+

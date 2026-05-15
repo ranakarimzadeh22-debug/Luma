@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { generatePartnerCode } from "@/lib/partner";
@@ -41,15 +41,15 @@ export default function PartnerCard() {
   }
 
   return (
-    <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #cdb4db" }}>
-      <p className="text-xs mb-1" style={{ color: "#b79bcf" }}>💑 Mit Partner teilen</p>
+    <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #b799e5" }}>
+      <p className="text-xs mb-1" style={{ color: "#b799e5" }}>💑 Mit Partner teilen</p>
       <p className="text-xs mb-4 leading-relaxed" style={{ color: "#a094a8" }}>
         Dein Partner sieht deine Phase und bekommt Benachrichtigungen wenn deine Periode beginnt.
       </p>
 
-      <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-3" style={{ background: "#fafafa", border: "1.5px solid #f8d7e6" }}>
+      <div className="flex items-center justify-between rounded-2xl px-4 py-3 mb-3" style={{ background: "#fafafa", border: "1.5px solid #ec6f9e" }}>
         <span className="text-xs font-mono truncate" style={{ color: "#a094a8" }}>{url}</span>
-        <button onClick={copy} className="text-xs font-medium ml-2 shrink-0" style={{ color: "#b79bcf" }}>
+        <button onClick={copy} className="text-xs font-medium ml-2 shrink-0" style={{ color: "#b799e5" }}>
           {copied ? "✓" : "Kopieren"}
         </button>
       </div>
@@ -57,7 +57,7 @@ export default function PartnerCard() {
       <button
         onClick={share}
         className="w-full text-white font-medium rounded-2xl py-3 text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-        style={{ background: "#cdb4db" }}
+        style={{ background: "#b799e5" }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -67,3 +67,4 @@ export default function PartnerCard() {
     </div>
   );
 }
+

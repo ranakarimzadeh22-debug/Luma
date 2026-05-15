@@ -1,4 +1,4 @@
-interface StatCardProps {
+﻿interface StatCardProps {
   label: string;
   value: string;
   sub?: string;
@@ -13,7 +13,8 @@ export default function StatCard({ label, value, sub, emoji, bg, border }: StatC
       <span className="text-xl">{emoji}</span>
       <p className="text-xs mt-2" style={{ color: "#a094a8" }}>{label}</p>
       <p className="text-sm font-medium mt-0.5" style={{ color: "#3a2d3f" }}>{value}</p>
-      {sub && <p className="text-xs mt-0.5" style={{ color: "#cdb4db" }}>{sub}</p>}
+      {sub && <p className="text-xs mt-0.5" style={{ color: "#b799e5" }}>{sub}</p>}
     </div>
   );
 }
+
