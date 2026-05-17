@@ -119,15 +119,96 @@ function MoodFace({ expression, bg, skin, hair, hairStyle, top, size = 56 }: {
 }
 
 const moods = [
-  { key: "happy",    label: "Glücklich",   color: "#cfe8d5", textColor: "#5a9e72", partnerMsg: "Deine Partnerin fühlt sich heute glücklich und gut! 😊 Vielleicht ist heute ein guter Tag für etwas zusammen 🌟" },
-  { key: "sad",      label: "Traurig",     color: "#b799e5", textColor: "#7a5a9e", partnerMsg: "Deine Partnerin fühlt sich heute etwas traurig 😢 Vielleicht braucht sie gerade eine Umarmung oder einfach jemanden der zuhört 💜" },
-  { key: "tired",    label: "Müde",        color: "#ffd9c7", textColor: "#c4845a", partnerMsg: "Deine Partnerin ist heute sehr müde 😴 Gönn ihr etwas Ruhe und verwöhn sie ein bisschen 🧡" },
-  { key: "stressed", label: "Gestresst",   color: "#f4c7d7", textColor: "#c47a9a", partnerMsg: "Deine Partnerin ist heute gestresst 😤 Ein ruhiger Abend zusammen oder einfach Verständnis kann viel helfen 💕" },
-  { key: "anxious",  label: "Ängstlich",   color: "#ffd9c7", textColor: "#c4845a", partnerMsg: "Deine Partnerin fühlt sich etwas ängstlich 😟 Sei einfach für sie da — das gibt ihr Sicherheit 🤗" },
-  { key: "calm",     label: "Entspannt",   color: "#cfe8d5", textColor: "#5a9e72", partnerMsg: "Deine Partnerin ist heute entspannt und ausgeglichen 😌 Eine schöne Zeit für euch zusammen 🌿" },
-  { key: "loving",   label: "Verliebt",    color: "#f4c7d7", textColor: "#c47a9a", partnerMsg: "Deine Partnerin denkt heute besonders an dich 🥰 Zeig ihr auch, wie viel sie dir bedeutet 💝" },
-  { key: "sick",     label: "Krank",       color: "#b799e5", textColor: "#7a5a9e", partnerMsg: "Deine Partnerin ist heute krank 🤒 Bring ihr vielleicht Tee, Suppe oder einfach Fürsorge 💜" },
-  { key: "energetic",label: "Energievoll", color: "#cfe8d5", textColor: "#5a9e72", partnerMsg: "Deine Partnerin ist heute voller Energie ⚡ Perfekt für ein gemeinsames Abenteuer! 🌟" },
+  {
+    key: "happy", label: "Glücklich", color: "#cfe8d5", textColor: "#5a9e72",
+    partnerMsg: "Deine Partnerin fühlt sich heute glücklich und gut! 😊 Vielleicht ist heute ein guter Tag für etwas zusammen 🌟",
+    tips: [
+      { icon: "🚶‍♀️", text: "Spazieren gehen & die gute Laune genießen" },
+      { icon: "📖", text: "Ein Buch lesen oder etwas Neues lernen" },
+      { icon: "🎵", text: "Deine Lieblingsmusik hören & tanzen" },
+      { icon: "💌", text: "Jemandem eine nette Nachricht schicken" },
+    ],
+  },
+  {
+    key: "sad", label: "Traurig", color: "#b799e5", textColor: "#7a5a9e",
+    partnerMsg: "Deine Partnerin fühlt sich heute etwas traurig 😢 Vielleicht braucht sie gerade eine Umarmung oder einfach jemanden der zuhört 💜",
+    tips: [
+      { icon: "💧", text: "Viel Wasser trinken — das hilft dem Körper" },
+      { icon: "🧘‍♀️", text: "5 Minuten ruhig atmen oder meditieren" },
+      { icon: "🚶‍♀️", text: "Kurzer Spaziergang an der frischen Luft" },
+      { icon: "🍫", text: "Etwas Schokolade — du verdienst es 💜" },
+    ],
+  },
+  {
+    key: "tired", label: "Müde", color: "#ffd9c7", textColor: "#c4845a",
+    partnerMsg: "Deine Partnerin ist heute sehr müde 😴 Gönn ihr etwas Ruhe und verwöhn sie ein bisschen 🧡",
+    tips: [
+      { icon: "😴", text: "Ein kurzes Nickerchen von 20 Minuten" },
+      { icon: "🍵", text: "Warmen Kräutertee trinken" },
+      { icon: "🧘‍♀️", text: "Sanfte Dehnübungen im Bett" },
+      { icon: "📵", text: "Handy weglegen & Augen ausruhen" },
+    ],
+  },
+  {
+    key: "stressed", label: "Gestresst", color: "#f4c7d7", textColor: "#c47a9a",
+    partnerMsg: "Deine Partnerin ist heute gestresst 😤 Ein ruhiger Abend zusammen oder einfach Verständnis kann viel helfen 💕",
+    tips: [
+      { icon: "🌬️", text: "4-7-8 Atemübung: 4 sek ein, 7 halten, 8 aus" },
+      { icon: "🚶‍♀️", text: "10 Minuten Spazieren zum Abschalten" },
+      { icon: "📝", text: "Gedanken aufschreiben — hilft den Kopf zu leeren" },
+      { icon: "🛁", text: "Warmes Bad oder Dusche nehmen" },
+    ],
+  },
+  {
+    key: "anxious", label: "Ängstlich", color: "#ffd9c7", textColor: "#c4845a",
+    partnerMsg: "Deine Partnerin fühlt sich etwas ängstlich 😟 Sei einfach für sie da — das gibt ihr Sicherheit 🤗",
+    tips: [
+      { icon: "🌬️", text: "Tief ein- und ausatmen — 5 mal langsam" },
+      { icon: "🧘‍♀️", text: "Yoga oder sanfte Bewegung beruhigt das Nervensystem" },
+      { icon: "🍵", text: "Kamillentee trinken — natürlich beruhigend" },
+      { icon: "💬", text: "Mit jemandem sprechen den du vertraust" },
+    ],
+  },
+  {
+    key: "calm", label: "Entspannt", color: "#cfe8d5", textColor: "#5a9e72",
+    partnerMsg: "Deine Partnerin ist heute entspannt und ausgeglichen 😌 Eine schöne Zeit für euch zusammen 🌿",
+    tips: [
+      { icon: "🌿", text: "In der Natur spazieren & die Ruhe genießen" },
+      { icon: "📖", text: "Lesen oder Tagebuch schreiben" },
+      { icon: "🎨", text: "Kreativ sein — malen, basteln, kochen" },
+      { icon: "🧘‍♀️", text: "Meditation oder sanftes Yoga" },
+    ],
+  },
+  {
+    key: "loving", label: "Verliebt", color: "#f4c7d7", textColor: "#c47a9a",
+    partnerMsg: "Deine Partnerin denkt heute besonders an dich 🥰 Zeig ihr auch, wie viel sie dir bedeutet 💝",
+    tips: [
+      { icon: "💌", text: "Deinem Partner eine liebe Nachricht schicken" },
+      { icon: "🌹", text: "Etwas Schönes zusammen planen" },
+      { icon: "📸", text: "Schöne Erinnerungen anschauen" },
+      { icon: "🍳", text: "Zusammen kochen oder essen gehen" },
+    ],
+  },
+  {
+    key: "sick", label: "Krank", color: "#b799e5", textColor: "#7a5a9e",
+    partnerMsg: "Deine Partnerin ist heute krank 🤒 Bring ihr vielleicht Tee, Suppe oder einfach Fürsorge 💜",
+    tips: [
+      { icon: "💧", text: "Viel Wasser oder Ingwertee trinken" },
+      { icon: "😴", text: "So viel schlafen wie möglich" },
+      { icon: "🍲", text: "Leichte Suppe oder Brühe essen" },
+      { icon: "🌡️", text: "Temperatur messen & Arzt kontaktieren falls nötig" },
+    ],
+  },
+  {
+    key: "energetic", label: "Energievoll", color: "#cfe8d5", textColor: "#5a9e72",
+    partnerMsg: "Deine Partnerin ist heute voller Energie ⚡ Perfekt für ein gemeinsames Abenteuer! 🌟",
+    tips: [
+      { icon: "🏃‍♀️", text: "Laufen, Radfahren oder Sport machen" },
+      { icon: "🧹", text: "Die Wohnung aufräumen — macht den Kopf frei" },
+      { icon: "🎯", text: "Ein Ziel angehen das du schon lange planst" },
+      { icon: "🕺", text: "Tanzen & die Energie rauslassen" },
+    ],
+  },
 ];
 
 function sendPartnerNotification(mood: typeof moods[0], name: string) {
@@ -241,6 +322,21 @@ export default function GefuhlPage() {
             </button>
           ))}
         </div>
+
+        {/* Empfehlungen für dich */}
+        {activeMood && (
+          <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: `1.5px solid ${activeMood.color}` }}>
+            <p className="text-xs mb-3" style={{ color: "#b799e5" }}>✨ Das könnte dir heute helfen</p>
+            <div className="flex flex-col gap-2.5">
+              {activeMood.tips.map((tip, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5" style={{ background: activeMood.color + "55" }}>
+                  <span className="text-xl">{tip.icon}</span>
+                  <p className="text-xs leading-snug" style={{ color: "#3a2d3f" }}>{tip.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Partner Nachricht Vorschau */}
         {activeMood && (
