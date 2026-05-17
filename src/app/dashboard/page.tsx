@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import LumaLogo from "@/components/LumaLogo";
+import PeriodReminder from "@/components/PeriodReminder";
 
 const menu = [
   {
@@ -104,6 +105,9 @@ export default function DashboardPage() {
 
         <LumaLogo size={0.65} />
       </div>
+
+      {/* Periode Erinnerung */}
+      <PeriodReminder />
 
       {/* Menu */}
       <div className="px-5 py-6 max-w-md mx-auto">
