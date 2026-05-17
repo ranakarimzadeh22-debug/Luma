@@ -57,7 +57,7 @@ export default function Dashboard() {
               {t.dayOf} {currentDay}
             </span>
             <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #b799e5" }}>
-              <AvatarSVG bg="#b799e5" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" />
+              <AvatarSVG bg="#b799e5" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" top="#f4c7d7" />
             </Link>
             <Link href="/settings" className="w-9 h-9 rounded-full flex items-center justify-center text-sm" style={{ background: "#f4c7d7", color: "#b799e5" }}>
               ⚙️
