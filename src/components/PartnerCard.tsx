@@ -1,26 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase";
 import { generatePartnerCode } from "@/lib/partner";
 
 export default function PartnerCard() {
+  const { user } = useAuth();
+  const supabase = createClient();
   const [code, setCode] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem("luma-user");
-    let partnerCode = "";
-    if (raw) {
-      const user = JSON.parse(raw);
-      partnerCode = user.partnerCode;
-    }
-    if (!partnerCode) {
-      partnerCode = generatePartnerCode("Luma");
-      const existing = raw ? JSON.parse(raw) : {};
-      localStorage.setItem("luma-user", JSON.stringify({ ...existing, partnerCode }));
-    }
-    setCode(partnerCode);
-  }, []);
+    if (!user) return;
+
+    supabase.from("profiles").select("partner_code").eq("id", user.id).single().then(({ data }) => {
+      let partnerCode = data?.partner_code;
+      if (!partnerCode) {
+        partnerCode = generatePartnerCode("Luma");
+        supabase.from("profiles").upsert({
+          id: user.id,
+          partner_code: partnerCode,
+        }, { onConflict: "id" });
+      }
+      setCode(partnerCode);
+    });
+  }, [user]);
 
   if (!code) return null;
 
@@ -67,4 +72,3 @@ export default function PartnerCard() {
     </div>
   );
 }
-

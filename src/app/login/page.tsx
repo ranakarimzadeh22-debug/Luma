@@ -3,14 +3,32 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase";
 import LumaLogo from "@/components/LumaLogo";
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
     router.push("/dashboard");
   }
 
@@ -36,12 +54,18 @@ export default function LoginPage() {
             className="w-full rounded-2xl px-4 py-3.5 text-sm outline-none transition-colors"
             style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7", color: "#3a2d3f" }}
           />
+
+          {error && (
+            <p className="text-xs text-red-400 text-center">{error}</p>
+          )}
+
           <button
             type="submit"
-            className="w-full text-white font-medium rounded-2xl py-4 text-sm mt-2 hover:opacity-90 transition-opacity"
+            disabled={loading}
+            className="w-full text-white font-medium rounded-2xl py-4 text-sm mt-2 hover:opacity-90 transition-opacity disabled:opacity-50"
             style={{ background: "#b799e5" }}
           >
-            Anmelden
+            {loading ? "Wird angemeldet..." : "Anmelden"}
           </button>
         </form>
 
@@ -56,4 +80,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

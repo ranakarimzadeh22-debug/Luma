@@ -1,19 +1,18 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AvatarSVG } from "./AvatarPicker";
 import { useLocale } from "@/context/LocaleContext";
-import CycleRing from "./CycleRing";
+import CycleWheel from "./CycleWheel";
 import StatCard from "./StatCard";
 import SymptomLog from "./SymptomLog";
 import PartnerCard from "./PartnerCard";
+import CycleEditModal from "./CycleEditModal";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase";
 import { getDaysUntilNextPeriod, getNextPeriodDate, getOvulationDate, formatDate } from "@/lib/cycle";
-
-const cycleData = {
-  lastPeriodStart: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-  cycleLength: 28,
-  periodLength: 5,
-};
+import { getProfile } from "@/lib/profile";
+import { avatarList, AvatarSVG } from "./AvatarPicker";
 
 function getCurrentPhaseKey(lastPeriodStart: Date, cycleLength: number, periodLength: number) {
   const today = new Date();
@@ -27,8 +26,57 @@ function getCurrentPhaseKey(lastPeriodStart: Date, cycleLength: number, periodLe
   return                          { key: "luteal"       as const, accent: "#cfe8d5", dot: "#7bbf8e" };
 }
 
+const fallbackCycleData = {
+  lastPeriodStart: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+  cycleLength: 28,
+  periodLength: 5,
+};
+
 export default function Dashboard() {
   const { t } = useLocale();
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  const [cycleData, setCycleData] = useState(fallbackCycleData);
+  const [cycleLoaded, setCycleLoaded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userAvatar, setUserAvatar] = useState("a1");
+
+  function loadCycleData() {
+    if (!user) {
+      setCycleLoaded(true);
+      return;
+    }
+    supabase
+      .from("user_cycles")
+      .select("*")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.last_period_start) {
+          setCycleData({
+            lastPeriodStart: new Date(data.last_period_start),
+            cycleLength: data.cycle_length ?? 28,
+            periodLength: data.period_length ?? 5,
+          });
+        }
+        setCycleLoaded(true);
+      });
+  }
+
+  useEffect(() => {
+    loadCycleData();
+    if (user) {
+      getProfile(user.id).then((p) => {
+        if (p) {
+          setUserName(p.name || "");
+          setUserAvatar(p.avatar || "a1");
+        }
+      });
+    }
+  }, [user]);
+
   const { key: phaseKey, accent, dot } = getCurrentPhaseKey(
     cycleData.lastPeriodStart, cycleData.cycleLength, cycleData.periodLength
   );
@@ -48,18 +96,28 @@ export default function Dashboard() {
       {/* Header */}
       <div className="px-6 pt-12 pb-5 border-b" style={{ background: "#fff8f2", borderColor: "#f4c7d7" }}>
         <div className="flex justify-between items-center max-w-md mx-auto">
-          <div>
-            <p className="text-xs tracking-wide" style={{ color: "#b799e5" }}>{t.greeting}</p>
-            <h1 className="text-xl font-medium" style={{ color: "#3a2d3f" }}>{t.appName} 🌸</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs rounded-full px-3 py-1" style={{ background: "#f4c7d7", color: "#b799e5" }}>
-              {t.dayOf} {currentDay}
-            </span>
-            <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #b799e5" }}>
-              <AvatarSVG bg="#b799e5" skin="#FDDBB4" hair="#3b1f0e" hairStyle="long" top="#f4c7d7" />
-            </Link>
-            <Link href="/settings" className="w-9 h-9 rounded-full flex items-center justify-center text-sm" style={{ background: "#f4c7d7", color: "#b799e5" }}>
+            <div>
+              <p className="text-xs tracking-wide" style={{ color: "#b799e5" }}>
+                {userName ? `${t.greeting}, ${userName}` : t.greeting}
+              </p>
+              <h1 className="text-xl font-medium" style={{ color: "#3a2d3f" }}>{t.appName} 🌸</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs rounded-full px-3 py-1" style={{ background: "#f4c7d7", color: "#b799e5" }}>
+                {t.dayOf} {currentDay}
+              </span>
+              <Link href="/profile" className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #b799e5" }}>
+                {(() => { const a = avatarList.find(x => x.id === userAvatar) ?? avatarList[0]; return <AvatarSVG bg={a.bg} skin={a.skin} hair={a.hair} hairStyle={a.hairStyle} top={a.top} />; })()}
+              </Link>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm"
+              style={{ background: "#f4c7d7", color: "#b799e5" }}
+              title="Zyklus bearbeiten"
+            >
+              🔄
+            </button>
+            <Link href="/profile" className="w-9 h-9 rounded-full flex items-center justify-center text-sm" style={{ background: "#f4c7d7", color: "#b799e5" }}>
               ⚙️
             </Link>
           </div>
@@ -68,17 +126,9 @@ export default function Dashboard() {
 
       <div className="px-5 py-6 flex flex-col gap-4 max-w-md mx-auto">
 
-        {/* Cycle Ring */}
+        {/* Cycle Wheel */}
         <div className="rounded-3xl p-6 flex flex-col items-center" style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7" }}>
-          <CycleRing
-            daysUntil={daysUntil}
-            cycleLength={cycleData.cycleLength}
-            currentDay={currentDay}
-            phase={phase.name}
-            phaseColor="rose"
-            labelUntil={t.daysUntil}
-            labelExpected={t.periodExpected}
-          />
+          <CycleWheel currentDay={currentDay} cycleLength={cycleData.cycleLength} periodLength={cycleData.periodLength} />
         </div>
 
         {/* Phase */}
@@ -117,7 +167,13 @@ export default function Dashboard() {
 
         <p className="text-center text-xs pb-4" style={{ color: "#b799e5" }}>{t.tagline}</p>
       </div>
+
+      {/* Cycle Edit Modal */}
+      <CycleEditModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => loadCycleData()}
+      />
     </main>
   );
 }
-

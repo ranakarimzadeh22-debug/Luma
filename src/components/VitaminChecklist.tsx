@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useLocale } from "@/context/LocaleContext";
+import { useAuth } from "@/context/AuthContext";
+import { getDailyHealth, upsertDailyHealth, getTodayKey } from "@/lib/health";
 
 interface Vitamin {
   name: string;
@@ -43,12 +45,8 @@ const categoryColors: Record<string, string> = {
   "برای سیستم ایمنی شما": "#d5f5e8",
 };
 
-function getTodayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
 
-function loadChecked(): Record<string, boolean> {
+function loadCheckedLocal(): Record<string, boolean> {
   if (typeof window === "undefined") return {};
   try {
     const saved = localStorage.getItem("luma-vitamins");
@@ -61,7 +59,7 @@ function loadChecked(): Record<string, boolean> {
   }
 }
 
-function saveChecked(checked: Record<string, boolean>) {
+function saveCheckedLocal(checked: Record<string, boolean>) {
   if (typeof window === "undefined") return;
   const today = getTodayKey();
   const existing = localStorage.getItem("luma-vitamins");
@@ -72,25 +70,49 @@ function saveChecked(checked: Record<string, boolean>) {
 
 export default function VitaminChecklist({ vitamins }: { vitamins: Vitamin[] }) {
   const { t, isRtl } = useLocale();
+  const { user } = useAuth();
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setChecked(loadChecked());
-    setLoaded(true);
-  }, []);
+    async function init() {
+      // Load from DB if user is logged in
+      if (user) {
+        const today = getTodayKey();
+        const daily = await getDailyHealth(user.id, today);
+        if (daily && daily.vitamins_checked && Object.keys(daily.vitamins_checked).length > 0) {
+          setChecked(daily.vitamins_checked as Record<string, boolean>);
+          setLoaded(true);
+          return;
+        }
+      }
+      // Fallback to localStorage
+      setChecked(loadCheckedLocal());
+      setLoaded(true);
+    }
+    init();
+  }, [user]);
 
   function toggle(name: string) {
     setChecked((prev) => {
       const next = { ...prev, [name]: !prev[name] };
-      saveChecked(next);
+      saveCheckedLocal(next);
+      // Save to DB if user is logged in
+      if (user) {
+        const today = getTodayKey();
+        upsertDailyHealth(user.id, today, -1, next); // -1 = don't change water
+      }
       return next;
     });
   }
 
   function resetAll() {
     setChecked({});
-    saveChecked({});
+    saveCheckedLocal({});
+    if (user) {
+      const today = getTodayKey();
+      upsertDailyHealth(user.id, today, -1, {});
+    }
   }
 
   const total = vitamins.length;
@@ -116,6 +138,9 @@ export default function VitaminChecklist({ vitamins }: { vitamins: Vitamin[] }) 
               {t.vitamins.title} – To-do
             </h2>
           </div>
+          {user && (
+            <span className="text-xs" style={{ color: "#7a5a9e" }}>☁️</span>
+          )}
           <button
             onClick={resetAll}
             className="text-xs font-medium rounded-xl px-3 py-1.5 transition-all hover:opacity-80"

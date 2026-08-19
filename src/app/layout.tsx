@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { AuthProvider } from "@/context/AuthContext";
 import { LocaleProvider } from "@/context/LocaleContext";
+import { ProfileProvider } from "@/context/ProfileContext";
 import SwRegister from "@/components/SwRegister";
 import "./globals.css";
 
@@ -22,7 +24,13 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full bg-rose-50 text-gray-800">
-        <LocaleProvider>{children}</LocaleProvider>
+        <AuthProvider>
+          <LocaleProvider>
+            <ProfileProvider>
+              {children}
+            </ProfileProvider>
+          </LocaleProvider>
+        </AuthProvider>
         <SwRegister />
       </body>
     </html>

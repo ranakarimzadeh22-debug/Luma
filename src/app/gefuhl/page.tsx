@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase";
 import { avatarList } from "@/components/AvatarPicker";
+import { useLocale } from "@/context/LocaleContext";
+import {
+  MOODS, loadMoods, saveMood, getTodayEntry, calcStreak,
+  getCalendarDays, analyzePatterns, getBuddyResponse,
+  type MoodKey, type CalendarDay, type PatternResult, type BuddyResponse,
+} from "@/lib/emotions";
 
-// Mini Charakter mit verschiedenen Gesichtsausdrücken
+/* ========== MoodFace (Avatar mit Gesichtsausdruck) ========== */
+
 function MoodFace({ expression, bg, skin, hair, hairStyle, top, size = 56 }: {
   expression: string; bg: string; skin: string; hair: string; hairStyle: string; top: string; size?: number;
 }) {
@@ -32,15 +41,12 @@ function MoodFace({ expression, bg, skin, hair, hairStyle, top, size = 56 }: {
     energetic:null,
   };
 
-  // Augen je nach Stimmung
   const eyesClosed = expression === "tired";
   const eyesHeart  = expression === "loving";
 
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <circle cx="50" cy="50" r="50" fill={bg} />
-
-      {/* Haare */}
       {hairStyle === "long" && <>
         <ellipse cx="50" cy="34" rx="20" ry="22" fill={hair} />
         <rect x="30" y="44" width="7" height="32" rx="3.5" fill={hair} />
@@ -68,24 +74,14 @@ function MoodFace({ expression, bg, skin, hair, hairStyle, top, size = 56 }: {
         <ellipse cx="68" cy="34" rx="5" ry="9" fill={hair} />
         <ellipse cx="50" cy="18" rx="14" ry="8" fill={hair} />
       </>}
-
-      {/* Hals + Body */}
       <rect x="44" y="60" width="12" height="10" rx="5" fill={skin} />
       <ellipse cx="50" cy="88" rx="20" ry="16" fill={top} />
-
-      {/* Gesicht */}
       <ellipse cx="50" cy="46" rx="18" ry="20" fill={skin} />
       <ellipse cx="31" cy="47" rx="3.5" ry="4.5" fill={skin} />
       <ellipse cx="69" cy="47" rx="3.5" ry="4.5" fill={skin} />
-
-      {/* Wangen */}
       <ellipse cx="37" cy="52" rx="6" ry="3.5" fill="#ffb3c6" opacity="0.4" />
       <ellipse cx="63" cy="52" rx="6" ry="3.5" fill="#ffb3c6" opacity="0.4" />
-
-      {/* Augenbrauen */}
       {eyebrows[expression]}
-
-      {/* Augen */}
       {eyesClosed ? (
         <>
           <path d="M38 45 Q42 48 46 45" stroke="#1a1a2e" strokeWidth="2" fill="none" strokeLinecap="round" />
@@ -98,165 +94,149 @@ function MoodFace({ expression, bg, skin, hair, hairStyle, top, size = 56 }: {
         </>
       ) : (
         <>
-          <g className="avatar-eye avatar-eye-left">
-            <ellipse cx="42" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
-            <circle cx="43.5" cy="43" r="1.5" fill="white" />
-          </g>
-          <g className="avatar-eye avatar-eye-right">
-            <ellipse cx="58" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
-            <circle cx="59.5" cy="43" r="1.5" fill="white" />
-          </g>
+          <ellipse cx="42" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
+          <circle cx="43.5" cy="43" r="1.5" fill="white" />
+          <ellipse cx="58" cy="45" rx="4" ry="4.5" fill="#1a1a2e" />
+          <circle cx="59.5" cy="43" r="1.5" fill="white" />
         </>
       )}
-
-      {/* Mund */}
       {mouth[expression] ?? <path d="M44 57 Q50 63 56 57" stroke="#d4748a" strokeWidth="1.8" fill="none" strokeLinecap="round" />}
-
-      {/* Nase */}
       <circle cx="50" cy="52" r="1.2" fill={skin === "#fde8d0" ? "#e8a87c" : "#b87040"} opacity="0.5" />
     </svg>
   );
 }
 
-const moods = [
-  {
-    key: "happy", label: "Glücklich", color: "#cfe8d5", textColor: "#5a9e72",
-    partnerMsg: "Deine Partnerin fühlt sich heute glücklich und gut! 😊 Vielleicht ist heute ein guter Tag für etwas zusammen 🌟",
-    tips: [
-      { icon: "🚶‍♀️", text: "Spazieren gehen & die gute Laune genießen" },
-      { icon: "📖", text: "Ein Buch lesen oder etwas Neues lernen" },
-      { icon: "🎵", text: "Deine Lieblingsmusik hören & tanzen" },
-      { icon: "💌", text: "Jemandem eine nette Nachricht schicken" },
-    ],
-  },
-  {
-    key: "sad", label: "Traurig", color: "#b799e5", textColor: "#7a5a9e",
-    partnerMsg: "Deine Partnerin fühlt sich heute etwas traurig 😢 Vielleicht braucht sie gerade eine Umarmung oder einfach jemanden der zuhört 💜",
-    tips: [
-      { icon: "💧", text: "Viel Wasser trinken — das hilft dem Körper" },
-      { icon: "🧘‍♀️", text: "5 Minuten ruhig atmen oder meditieren" },
-      { icon: "🚶‍♀️", text: "Kurzer Spaziergang an der frischen Luft" },
-      { icon: "🍫", text: "Etwas Schokolade — du verdienst es 💜" },
-    ],
-  },
-  {
-    key: "tired", label: "Müde", color: "#ffd9c7", textColor: "#c4845a",
-    partnerMsg: "Deine Partnerin ist heute sehr müde 😴 Gönn ihr etwas Ruhe und verwöhn sie ein bisschen 🧡",
-    tips: [
-      { icon: "😴", text: "Ein kurzes Nickerchen von 20 Minuten" },
-      { icon: "🍵", text: "Warmen Kräutertee trinken" },
-      { icon: "🧘‍♀️", text: "Sanfte Dehnübungen im Bett" },
-      { icon: "📵", text: "Handy weglegen & Augen ausruhen" },
-    ],
-  },
-  {
-    key: "stressed", label: "Gestresst", color: "#f4c7d7", textColor: "#c47a9a",
-    partnerMsg: "Deine Partnerin ist heute gestresst 😤 Ein ruhiger Abend zusammen oder einfach Verständnis kann viel helfen 💕",
-    tips: [
-      { icon: "🌬️", text: "4-7-8 Atemübung: 4 sek ein, 7 halten, 8 aus" },
-      { icon: "🚶‍♀️", text: "10 Minuten Spazieren zum Abschalten" },
-      { icon: "📝", text: "Gedanken aufschreiben — hilft den Kopf zu leeren" },
-      { icon: "🛁", text: "Warmes Bad oder Dusche nehmen" },
-    ],
-  },
-  {
-    key: "anxious", label: "Ängstlich", color: "#ffd9c7", textColor: "#c4845a",
-    partnerMsg: "Deine Partnerin fühlt sich etwas ängstlich 😟 Sei einfach für sie da — das gibt ihr Sicherheit 🤗",
-    tips: [
-      { icon: "🌬️", text: "Tief ein- und ausatmen — 5 mal langsam" },
-      { icon: "🧘‍♀️", text: "Yoga oder sanfte Bewegung beruhigt das Nervensystem" },
-      { icon: "🍵", text: "Kamillentee trinken — natürlich beruhigend" },
-      { icon: "💬", text: "Mit jemandem sprechen den du vertraust" },
-    ],
-  },
-  {
-    key: "calm", label: "Entspannt", color: "#cfe8d5", textColor: "#5a9e72",
-    partnerMsg: "Deine Partnerin ist heute entspannt und ausgeglichen 😌 Eine schöne Zeit für euch zusammen 🌿",
-    tips: [
-      { icon: "🌿", text: "In der Natur spazieren & die Ruhe genießen" },
-      { icon: "📖", text: "Lesen oder Tagebuch schreiben" },
-      { icon: "🎨", text: "Kreativ sein — malen, basteln, kochen" },
-      { icon: "🧘‍♀️", text: "Meditation oder sanftes Yoga" },
-    ],
-  },
-  {
-    key: "loving", label: "Verliebt", color: "#f4c7d7", textColor: "#c47a9a",
-    partnerMsg: "Deine Partnerin denkt heute besonders an dich 🥰 Zeig ihr auch, wie viel sie dir bedeutet 💝",
-    tips: [
-      { icon: "💌", text: "Deinem Partner eine liebe Nachricht schicken" },
-      { icon: "🌹", text: "Etwas Schönes zusammen planen" },
-      { icon: "📸", text: "Schöne Erinnerungen anschauen" },
-      { icon: "🍳", text: "Zusammen kochen oder essen gehen" },
-    ],
-  },
-  {
-    key: "sick", label: "Krank", color: "#b799e5", textColor: "#7a5a9e",
-    partnerMsg: "Deine Partnerin ist heute krank 🤒 Bring ihr vielleicht Tee, Suppe oder einfach Fürsorge 💜",
-    tips: [
-      { icon: "💧", text: "Viel Wasser oder Ingwertee trinken" },
-      { icon: "😴", text: "So viel schlafen wie möglich" },
-      { icon: "🍲", text: "Leichte Suppe oder Brühe essen" },
-      { icon: "🌡️", text: "Temperatur messen & Arzt kontaktieren falls nötig" },
-    ],
-  },
-  {
-    key: "energetic", label: "Energievoll", color: "#cfe8d5", textColor: "#5a9e72",
-    partnerMsg: "Deine Partnerin ist heute voller Energie ⚡ Perfekt für ein gemeinsames Abenteuer! 🌟",
-    tips: [
-      { icon: "🏃‍♀️", text: "Laufen, Radfahren oder Sport machen" },
-      { icon: "🧹", text: "Die Wohnung aufräumen — macht den Kopf frei" },
-      { icon: "🎯", text: "Ein Ziel angehen das du schon lange planst" },
-      { icon: "🕺", text: "Tanzen & die Energie rauslassen" },
-    ],
-  },
-];
+/* ========== Emotion Calendar Component ========== */
 
-function sendPartnerNotification(mood: typeof moods[0], name: string) {
-  if (Notification.permission === "granted") {
-    new Notification("🌸 Luma – Partnerinfo", {
-      body: mood.partnerMsg.replace("Deine Partnerin", name),
-      icon: "/favicon.ico",
-    });
+function EmotionCalendar({ days }: { days: CalendarDay[] }) {
+  // group by week
+  const weeks: CalendarDay[][] = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
   }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {weeks.map((week, wi) => (
+        <div key={wi} className="flex gap-1.5 justify-center">
+          {week.map((day) => {
+            const moodDef = day.entry ? MOODS.find((m) => m.key === day.entry!.key) : undefined;
+            const isToday = day.date === new Date().toISOString().split("T")[0];
+            return (
+              <div
+                key={day.date}
+                title={day.entry ? `${day.day}.${day.month + 1} – ${moodDef?.labelDe ?? day.entry.key}` : `${day.day}.${day.month + 1}`}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-medium transition-all"
+                style={{
+                  background: moodDef ? moodDef.color : "#f4e8f8",
+                  color: moodDef ? moodDef.textColor : "#a094a8",
+                  border: isToday ? `2px solid ${moodDef?.textColor ?? "#b799e5"}` : "2px solid transparent",
+                  transform: isToday ? "scale(1.15)" : "scale(1)",
+                }}
+              >
+                {day.day}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
 }
 
+/* ========== Main Page ========== */
+
 export default function GefuhlPage() {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [notifEnabled, setNotifEnabled] = useState(
-    typeof Notification !== "undefined" && Notification.permission === "granted"
-  );
+  const { t } = useLocale();
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  // User / Avatar
   const [avatarData, setAvatarData] = useState(avatarList[0]);
   const [userName, setUserName] = useState("Deine Partnerin");
 
+  // Mood selection
+  const [selected, setSelected] = useState<MoodKey | null>(null);
+  const [intensity, setIntensity] = useState(3);
+  const [note, setNote] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  // Notifications
+  const [notifEnabled, setNotifEnabled] = useState(
+    typeof Notification !== "undefined" && Notification.permission === "granted"
+  );
+
+  // Computed data
+  const [streak, setStreak] = useState(0);
+  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
+  const [patterns, setPatterns] = useState<PatternResult[]>([]);
+  const [buddyMsg, setBuddyMsg] = useState<BuddyResponse | null>(null);
+
   useEffect(() => {
-    const raw = localStorage.getItem("luma-user");
-    if (raw) {
-      const user = JSON.parse(raw);
-      const found = avatarList.find((a) => a.id === user.avatar);
-      if (found) setAvatarData(found);
-      if (user.name) setUserName(user.name);
+    if (user) {
+      const db = createClient();
+      if (!db) return;
+      db.from("profiles").select("name").eq("id", user.id).single().then(({ data }) => {
+        if (data?.name) setUserName(data.name);
+      });
     }
+    // Load today's entry
+    const today = getTodayEntry();
+    if (today) {
+      setSelected(today.key);
+      setIntensity(today.intensity);
+      setNote(today.note ?? "");
+    }
+    // Computed
+    setStreak(calcStreak());
+    setCalendarDays(getCalendarDays(28));
+    setPatterns(analyzePatterns());
+    setBuddyMsg(getBuddyResponse(today?.key));
   }, []);
 
-  const activeMood = moods.find((m) => m.key === selected);
+  const activeMood = MOODS.find((m) => m.key === selected);
 
   async function enableNotif() {
     const perm = await Notification.requestPermission();
     setNotifEnabled(perm === "granted");
   }
 
-  function save() {
-    const mood = moods.find((m) => m.key === selected);
-    if (!mood) return;
-    const today = new Date().toISOString().split("T")[0];
-    const raw = localStorage.getItem("luma-moods") ?? "{}";
-    const moods_saved = JSON.parse(raw);
-    moods_saved[today] = mood.key;
-    localStorage.setItem("luma-moods", JSON.stringify(moods_saved));
-    sendPartnerNotification(mood, userName);
+  function sendPartnerNotification(mood: typeof MOODS[0]) {
+    if (Notification.permission === "granted") {
+      new Notification("🌸 Luma – Partnerinfo", {
+        body: mood.partnerMsgDe.replace("Deine Partnerin", userName),
+        icon: "/favicon.ico",
+      });
+    }
+  }
+
+  function handleSave() {
+    if (!selected) return;
+    const entry = {
+      date: new Date().toISOString().split("T")[0],
+      key: selected,
+      intensity,
+      note: note.trim() || undefined,
+      timestamp: Date.now(),
+    };
+    saveMood(entry);
+    sendPartnerNotification(MOODS.find((m) => m.key === selected)!);
+
+    // Refresh computed
+    setStreak(calcStreak());
+    setCalendarDays(getCalendarDays(28));
+    setPatterns(analyzePatterns());
+    setBuddyMsg(getBuddyResponse(selected));
+
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
+  }
+
+  function handleMoodSelect(key: MoodKey) {
+    setSelected(key);
+    setSaved(false);
+    // update buddy response for this mood
+    setBuddyMsg(getBuddyResponse(key));
   }
 
   return (
@@ -268,38 +248,60 @@ export default function GefuhlPage() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </Link>
-        <h1 className="text-lg font-medium" style={{ color: "#3a2d3f" }}>Dein Gefühl</h1>
-      </div>
-
-      {/* Großer Avatar oben mit Stimmungsfarbe */}
-      <div
-        className="flex flex-col items-center py-8 transition-all duration-700"
-        style={{ background: activeMood ? activeMood.color : "#fff8f2" }}
-      >
-        <div className="w-32 h-32 rounded-full overflow-hidden" style={{ border: "3px solid #fff", boxShadow: "0 4px 20px #b799e530" }}>
-          <MoodFace
-            expression={selected ?? "happy"}
-            bg={activeMood ? activeMood.color : avatarData.bg}
-            skin={avatarData.skin}
-            hair={avatarData.hair}
-            hairStyle={avatarData.hairStyle}
-            top={avatarData.top}
-            size={128}
-          />
-        </div>
-        <p className="mt-3 text-sm font-medium" style={{ color: activeMood ? activeMood.textColor : "#a094a8" }}>
-          {activeMood ? activeMood.label : "Wie fühlst du dich heute?"}
-        </p>
+        <h1 className="text-lg font-medium" style={{ color: "#3a2d3f" }}>{t.emotions.title}</h1>
       </div>
 
       <div className="px-5 py-6 max-w-md mx-auto flex flex-col gap-5">
 
-        {/* Mood Grid — Charakter statt Emoji */}
+        {/* === Buddy === */}
+        {buddyMsg && (
+          <div className="rounded-3xl p-5 transition-all duration-500" style={{ background: "#fff8f2", border: "1.5px solid #b799e5" }}>
+            <p className="text-xs mb-2" style={{ color: "#b799e5" }}>{t.emotions.buddy}</p>
+            <p className="text-sm leading-relaxed" style={{ color: "#3a2d3f" }}>{buddyMsg.emoji} {buddyMsg.textDe}</p>
+          </div>
+        )}
+
+        {/* === Großer Avatar oben === */}
+        <div
+          className="flex flex-col items-center py-8 rounded-3xl transition-all duration-700"
+          style={{ background: activeMood ? activeMood.color : "#fff8f2" }}
+        >
+          <div className="w-32 h-32 rounded-full overflow-hidden" style={{ border: "3px solid #fff", boxShadow: "0 4px 20px #b799e530" }}>
+            <MoodFace
+              expression={selected ?? "happy"}
+              bg={activeMood ? activeMood.color : avatarData.bg}
+              skin={avatarData.skin}
+              hair={avatarData.hair}
+              hairStyle={avatarData.hairStyle}
+              top={avatarData.top}
+              size={128}
+            />
+          </div>
+          <p className="mt-3 text-sm font-medium" style={{ color: activeMood ? activeMood.textColor : "#a094a8" }}>
+            {activeMood ? activeMood.labelDe : t.emotions.howAreYou}
+          </p>
+
+          {/* Streak + Intensität */}
+          <div className="flex items-center gap-4 mt-3">
+            {streak > 0 && (
+              <span className="text-xs rounded-full px-3 py-1" style={{ background: "#fff", color: "#c4845a" }}>
+                {t.emotions.streak}: {streak}
+              </span>
+            )}
+            {activeMood && (
+              <span className="text-xs rounded-full px-3 py-1" style={{ background: "#fff", color: activeMood.textColor }}>
+                {t.emotions.intensity}: {intensity}/5
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* === Mood Grid === */}
         <div className="grid grid-cols-3 gap-3">
-          {moods.map((mood) => (
+          {MOODS.map((mood) => (
             <button
               key={mood.key}
-              onClick={() => { setSelected(mood.key); setSaved(false); }}
+              onClick={() => handleMoodSelect(mood.key)}
               className="flex flex-col items-center gap-1 rounded-3xl pt-3 pb-3 px-1 transition-all"
               style={
                 selected === mood.key
@@ -317,60 +319,128 @@ export default function GefuhlPage() {
                 size={56}
               />
               <span className="text-xs font-medium mt-1" style={{ color: selected === mood.key ? mood.textColor : "#a094a8" }}>
-                {mood.label}
+                {mood.labelDe}
               </span>
             </button>
           ))}
         </div>
 
-        {/* Empfehlungen für dich */}
+        {/* === Intensity Slider === */}
         {activeMood && (
           <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: `1.5px solid ${activeMood.color}` }}>
-            <p className="text-xs mb-3" style={{ color: "#b799e5" }}>✨ Das könnte dir heute helfen</p>
+            <p className="text-xs mb-3" style={{ color: "#b799e5" }}>{t.emotions.intensity}</p>
+            <input
+              type="range"
+              min={1}
+              max={5}
+              value={intensity}
+              onChange={(e) => setIntensity(Number(e.target.value))}
+              className="w-full accent-[#b799e5]"
+              style={{ accentColor: activeMood.textColor }}
+            />
+            <div className="flex justify-between text-xs mt-1" style={{ color: "#a094a8" }}>
+              <span>1 – leicht</span>
+              <span>5 – sehr stark</span>
+            </div>
+          </div>
+        )}
+
+        {/* === Note === */}
+        {activeMood && (
+          <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: `1.5px solid ${activeMood.color}` }}>
+            <p className="text-xs mb-3" style={{ color: "#b799e5" }}>{t.emotions.note}</p>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder={t.emotions.notePlaceholder}
+              rows={3}
+              className="w-full text-sm rounded-2xl p-3 resize-none outline-none"
+              style={{ background: "#fafafa", color: "#3a2d3f", border: "1px solid #f4e8f8" }}
+            />
+          </div>
+        )}
+
+        {/* === Tipps === */}
+        {activeMood && (
+          <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: `1.5px solid ${activeMood.color}` }}>
+            <p className="text-xs mb-3" style={{ color: "#b799e5" }}>{t.emotions.tips}</p>
             <div className="flex flex-col gap-2.5">
               {activeMood.tips.map((tip, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-2xl px-3 py-2.5" style={{ background: activeMood.color + "55" }}>
                   <span className="text-xl">{tip.icon}</span>
-                  <p className="text-xs leading-snug" style={{ color: "#3a2d3f" }}>{tip.text}</p>
+                  <p className="text-xs leading-snug" style={{ color: "#3a2d3f" }}>{tip.textDe}</p>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Partner Nachricht Vorschau */}
+        {/* === Partner Message === */}
         {activeMood && (
           <div className="rounded-3xl p-4" style={{ background: "#fff8f2", border: `1.5px solid ${activeMood.color}` }}>
-            <p className="text-xs mb-2" style={{ color: "#b799e5" }}>💑 Nachricht an deinen Partner</p>
-            <p className="text-xs leading-relaxed" style={{ color: "#3a2d3f" }}>{activeMood.partnerMsg}</p>
+            <p className="text-xs mb-2" style={{ color: "#b799e5" }}>{t.emotions.partnerMsg}</p>
+            <p className="text-xs leading-relaxed" style={{ color: "#3a2d3f" }}>{activeMood.partnerMsgDe}</p>
           </div>
         )}
 
-        {/* Benachrichtigung aktivieren */}
+        {/* === Notifications === */}
         {!notifEnabled && (
           <div className="rounded-3xl p-4" style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7" }}>
-            <p className="text-xs mb-2" style={{ color: "#b799e5" }}>🔔 Partner-Benachrichtigungen</p>
+            <p className="text-xs mb-2" style={{ color: "#b799e5" }}>{t.emotions.notifyEnable}</p>
             <p className="text-xs mb-3 leading-relaxed" style={{ color: "#a094a8" }}>
-              Aktiviere Benachrichtigungen damit dein Partner sofort informiert wird.
+              {t.emotions.notifyText}
             </p>
             <button onClick={enableNotif}
               className="w-full text-white font-medium rounded-2xl py-3 text-sm hover:opacity-90 transition-opacity"
               style={{ background: "#b799e5" }}>
-              🔔 Benachrichtigungen aktivieren
+              {t.emotions.notifyEnable}
             </button>
           </div>
         )}
 
-        {/* Speichern */}
+        {/* === Save Button === */}
         <button
-          onClick={save}
+          onClick={handleSave}
           disabled={!selected}
           className="w-full text-white font-medium rounded-2xl py-4 text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
           style={{ background: saved ? "#cfe8d5" : "#b799e5" }}
         >
-          {saved ? "✓ Gespeichert & Partner benachrichtigt 💕" : "Heute speichern & Partner informieren"}
+          {saved ? t.emotions.saved : t.emotions.saveToday}
         </button>
 
+        {/* === Emotion Calendar === */}
+        <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #f4c7d7" }}>
+          <p className="text-xs mb-3" style={{ color: "#b799e5" }}>{t.emotions.calendar} (28 Tage)</p>
+          {calendarDays.length > 0 ? (
+            <EmotionCalendar days={calendarDays} />
+          ) : (
+            <p className="text-xs text-center" style={{ color: "#a094a8" }}>{t.emotions.noData}</p>
+          )}
+          <div className="flex flex-wrap gap-2 mt-3 justify-center">
+            {MOODS.map((m) => (
+              <span key={m.key} className="text-[10px] rounded-full px-2 py-0.5" style={{ background: m.color + "55", color: m.textColor }}>
+                ● {m.labelDe}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* === Patterns === */}
+        {patterns.length > 0 && (
+          <div className="rounded-3xl p-5" style={{ background: "#fff8f2", border: "1.5px solid #b799e5" }}>
+            <p className="text-xs mb-3" style={{ color: "#b799e5" }}>{t.emotions.patterns}</p>
+            <div className="flex flex-col gap-3">
+              {patterns.map((p, i) => (
+                <div key={i} className="text-sm leading-relaxed" style={{ color: "#3a2d3f" }}>
+                  <span>{p.emoji} <strong>{p.titleDe}</strong></span>
+                  <p className="text-xs mt-1" style={{ color: "#a094a8" }}>{p.descDe}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="text-center text-xs pb-4" style={{ color: "#b799e5" }}>glow with care 🌸</p>
       </div>
     </main>
   );
