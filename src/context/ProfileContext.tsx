@@ -5,9 +5,7 @@ import { useAuth } from "./AuthContext";
 import {
   getFullUserData,
   saveProfile,
-  getUserPreferences,
   saveUserPreferences,
-  getPersonalizedTip,
   type UserProfile,
   type UserPreferences,
   type LifeStage,
@@ -15,6 +13,7 @@ import {
   type Goal,
   type Interest,
 } from "@/lib/profile";
+import { getPersonalizedTip } from "@/lib/profile-types";
 
 // ============================================
 // Theme-Farben basierend auf Lebensphase

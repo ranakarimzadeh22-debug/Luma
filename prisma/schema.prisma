@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile               Profile?
+  cycle                 UserCycle?
+  pregnancy             Pregnancy?
+  bodyMetrics           UserBodyMetrics?
+  preferences           UserPreferences?
+  pregnancyShare        PregnancyShare?
+  dailyHealth           UserDailyHealth[]
+  supplements           UserSupplement[]
+  supplementLogs        UserSupplementLog[]
+  supplementReminders   UserSupplementReminder[]
+  supplementCalendar    UserSupplementCalendar[]
+  supplementStreaks     UserSupplementStreak[]
+  interactionLogs       UserInteractionLog[]
+  dailyTips             UserDailyTip[]
+
+  @@map("users")
+}
+
+model Profile {
+  id                  String   @id
+  user                User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  name                String
+  email               String
+  birthYear           Int?     @map("birth_year")
+  avatar              String   @default("🌸")
+  takesSupplements    Boolean  @default(false) @map("takes_supplements")
+  medications         Json     @default("[]") @map("medications")
+  partnerCode         String?  @map("partner_code")
+  locale              String   @default("de")
+  lifeStage           String?  @map("life_stage")
+  ageGroup            String?  @map("age_group")
+  experienceLevel     String?  @map("experience_level")
+  goals               String[] @default([])
+  interests           String[] @default([])
+  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+  onboardingStep      Int      @default(0) @map("onboarding_step")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}
+
+model UserCycle {
+  id              BigInt   @id @default(autoincrement())
+  userId          String   @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastPeriodStart DateTime @map("last_period_start") @db.Date
+  cycleLength     Int      @default(28) @map("cycle_length")
+  periodLength    Int      @default(5) @map("period_length")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_cycles")
+}
+
+model Pregnancy {
+  id              BigInt    @id @default(autoincrement())
+  userId          String    @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPregnant      Boolean   @default(false) @map("is_pregnant")
+  lastPeriodStart DateTime? @map("last_period_start") @db.Date
+  dueDate         DateTime? @map("due_date") @db.Date
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("pregnancies")
+}
+
+model UserDailyHealth {
+  id               BigInt   @id @default(autoincrement())
+  userId           String   @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  waterLiters      Float    @default(0) @map("water_liters")
+  vitaminsChecked  Json     @default("{}") @map("vitamins_checked")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, date])
+  @@map("user_daily_health")
+}
+
+model UserBodyMetrics {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weightKg  Float?   @map("weight_kg")
+  heightCm  Float?   @map("height_cm")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_body_metrics")
+}
+
+model UserSupplement {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  dose      String   @default("")
+  time      String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  logs      UserSupplementLog[]
+  calendar  UserSupplementCalendar[]
+  streaks   UserSupplementStreak[]
+
+  @@map("user_supplements")
+}
+
+model UserSupplementLog {
+  id           BigInt         @id @default(autoincrement())
+  userId       String         @map("user_id")
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplementId BigInt         @map("supplement_id")
+  supplement   UserSupplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  date         DateTime       @db.Date
+  checked      Boolean        @default(false)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@unique([userId, supplementId, date])
+  @@map("user_supplement_log")
+}
+
+model UserSupplementReminder {
+  id              BigInt   @id @default(autoincrement())
+  userId          String   @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplementName  String   @map("supplement_name")
+  time            String
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("user_supplement_reminders")
+}
+
+model UserSupplementCalendar {
+  id           BigInt         @id @default(autoincrement())
+  userId       String         @map("user_id")
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplementId BigInt         @map("supplement_id")
+  supplement   UserSupplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  date         DateTime       @db.Date
+  status       String         @default("open")
+  takenAt      DateTime?      @map("taken_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@unique([userId, supplementId, date])
+  @@map("user_supplement_calendar")
+}
+
+model UserSupplementStreak {
+  id             BigInt         @id @default(autoincrement())
+  userId         String         @map("user_id")
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplementId   BigInt         @map("supplement_id")
+  supplement     UserSupplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  currentStreak  Int            @default(0) @map("current_streak")
+  longestStreak  Int            @default(0) @map("longest_streak")
+  lastTakenDate  DateTime?      @map("last_taken_date") @db.Date
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@unique([userId, supplementId])
+  @@map("user_supplement_streaks")
+}
+
+model PregnancyShare {
+  id          BigInt   @id @default(autoincrement())
+  userId      String   @unique @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareToken  String   @unique @default(uuid()) @map("share_token")
+  partnerName String   @default("") @map("partner_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("pregnancy_shares")
+}
+
+model PregnancyWeek {
+  week        Int     @id
+  fruit       String
+  fruitDe     String  @map("fruit_de")
+  fruitEn     String  @map("fruit_en")
+  fruitFa     String  @map("fruit_fa")
+  sizeCm      Decimal @map("size_cm") @db.Decimal(5, 2)
+  weightG     Int     @map("weight_g")
+  milestoneDe String  @map("milestone_de")
+  milestoneEn String  @map("milestone_en")
+  milestoneFa String  @map("milestone_fa")
+  tipDe       String  @map("tip_de")
+  tipEn       String  @map("tip_en")
+  tipFa       String  @map("tip_fa")
+
+  @@map("pregnancy_weeks")
+}
+
+model UserPreferences {
+  id                     BigInt   @id @default(autoincrement())
+  userId                 String   @unique @map("user_id")
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                  String   @default("rose")
+  notificationsEnabled   Boolean  @default(true) @map("notifications_enabled")
+  reminderTime           String   @default("08:00") @map("reminder_time")
+  showFertility          Boolean  @default(true) @map("show_fertility")
+  showEducationalContent Boolean  @default(true) @map("show_educational_content")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("user_preferences")
+}
+
+model UserInteractionLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page      String
+  action    String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("user_interaction_log")
+}
+
+model UserDailyTip {
+  id        BigInt   @id @default(autoincrement())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  tipKey    String   @map("tip_key")
+  tipText   String   @map("tip_text")
+  category  String   @default("general")
+  shown     Boolean  @default(false)
+  liked     Boolean?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, date, tipKey])
+  @@map("user_daily_tips")
+}

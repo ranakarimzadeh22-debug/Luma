@@ -6,8 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getSupplements,
   updateSupplement,
-  getTodayKey,
 } from "@/lib/health";
+import { getTodayKey } from "@/lib/health-utils";
 
 interface SupplementItem {
   id: string;

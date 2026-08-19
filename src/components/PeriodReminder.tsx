@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getPeriodReminderData } from "@/lib/actions/user-data";
 import { getDaysUntilNextPeriod } from "@/lib/cycle";
 
 const STORAGE_KEY = "luma-reminder-last-shown";
@@ -41,50 +41,42 @@ function getMessages(days: number, name: string) {
 
 export default function PeriodReminder() {
   const { user } = useAuth();
-  const supabase = createClient();
   const [banner, setBanner] = useState<{ text: string; color: string; textColor: string } | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
-    // Profile laden für name
-    supabase.from("profiles").select("name").eq("id", user.id).single().then(({ data }) => {
-      const name = data?.name ?? "du";
+    getPeriodReminderData().then((data) => {
+      if (!data?.cycle?.last_period_start) return;
+      const { name, cycle } = data;
 
-      // Zyklusdaten laden
-      supabase.from("user_cycles").select("*").eq("user_id", user.id).single().then(({ data: cycle }) => {
-        if (!cycle?.last_period_start) return;
+      const cycleData = {
+        lastPeriodStart: new Date(cycle.last_period_start),
+        cycleLength: cycle.cycle_length ?? 28,
+        periodLength: cycle.period_length ?? 5,
+      };
 
-        const cycleData = {
-          lastPeriodStart: new Date(cycle.last_period_start),
-          cycleLength: cycle.cycle_length ?? 28,
-          periodLength: cycle.period_length ?? 5,
-        };
+      const days = getDaysUntilNextPeriod(cycleData);
+      const msg = getMessages(days, name);
+      if (!msg) return;
 
-        const days = getDaysUntilNextPeriod(cycleData);
-        const msg = getMessages(days, name);
-        if (!msg) return;
+      setBanner({ text: msg.banner, color: msg.color, textColor: msg.textColor });
 
-        // Banner immer anzeigen wenn relevant
-        setBanner({ text: msg.banner, color: msg.color, textColor: msg.textColor });
+      const today = new Date().toISOString().split("T")[0];
+      const lastShown = localStorage.getItem(STORAGE_KEY);
+      if (lastShown === today) return;
 
-        // Push-Benachrichtigung einmal pro Tag senden
-        const today = new Date().toISOString().split("T")[0];
-        const lastShown = localStorage.getItem(STORAGE_KEY);
-        if (lastShown === today) return;
-
-        if (Notification.permission === "granted") {
-          new Notification(msg.title, { body: msg.body, icon: "/favicon.ico" });
-          localStorage.setItem(STORAGE_KEY, today);
-        } else if (Notification.permission === "default") {
-          Notification.requestPermission().then((perm) => {
-            if (perm === "granted") {
-              new Notification(msg.title, { body: msg.body, icon: "/favicon.ico" });
-              localStorage.setItem(STORAGE_KEY, today);
-            }
-          });
-        }
-      });
+      if (Notification.permission === "granted") {
+        new Notification(msg.title, { body: msg.body, icon: "/favicon.ico" });
+        localStorage.setItem(STORAGE_KEY, today);
+      } else if (Notification.permission === "default") {
+        Notification.requestPermission().then((perm) => {
+          if (perm === "granted") {
+            new Notification(msg.title, { body: msg.body, icon: "/favicon.ico" });
+            localStorage.setItem(STORAGE_KEY, today);
+          }
+        });
+      }
     });
   }, [user]);
 

@@ -3,11 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
 import { useLocale } from "@/context/LocaleContext";
-import { getProfile, getFullUserData, saveProfile } from "@/lib/profile";
-import { getBodyMetrics, upsertBodyMetrics } from "@/lib/health";
-import { generatePartnerCode } from "@/lib/partner";
+import { getFullUserData, saveProfile } from "@/lib/profile";
+import {
+  upsertBodyMetrics,
+  getSupplements,
+  addSupplement as addSupplementDb,
+  deleteSupplement as deleteSupplementDb,
+} from "@/lib/health";
+import { getOrCreatePartnerCode } from "@/lib/actions/partner";
+import { getUserCycle, saveUserCycle } from "@/lib/actions/cycle";
+import { getUserPregnancy, saveUserPregnancy } from "@/lib/actions/pregnancy";
 import {
   createPregnancyShare,
   getPregnancyShare,
@@ -48,7 +54,6 @@ interface SupplementItem {
 export default function ProfilePage() {
   const { t, isRtl, locale, setLocale } = useLocale();
   const { user, signOut } = useAuth();
-  const supabase = createClient();
   const [saved, setSaved] = useState(false);
   const [partnerUrl, setPartnerUrl] = useState("");
   const [copied, setCopied] = useState(false);
@@ -126,21 +131,15 @@ export default function ProfilePage() {
       });
 
       // Load supplements from user_supplements
-      const { data: suppData } = await supabase
-        .from("user_supplements")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: true });
+      const suppData = await getSupplements();
       if (suppData) {
-        setSupplements(suppData);
+        setSupplements(
+          suppData.map((s) => ({ id: s.id!, name: s.name, dose: s.dose, time: s.time }))
+        );
       }
 
       // Pregnancy
-      const { data: pregData } = await supabase
-        .from("pregnancies")
-        .select("*")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const pregData = await getUserPregnancy();
       if (pregData) {
         setPregnancy({
           isPregnant: pregData.is_pregnant || false,
@@ -150,7 +149,7 @@ export default function ProfilePage() {
       }
 
       // Partner
-      const code = p?.partner_code ?? generatePartnerCode(p?.name ?? "Luma");
+      const code = (await getOrCreatePartnerCode()) ?? "LUMA";
       const cyclePayload = {
         name: p?.name ?? "Luma",
         lastPeriodStart: cd?.last_period_start ?? "",
@@ -175,15 +174,15 @@ export default function ProfilePage() {
     const errors: string[] = [];
 
     // Profile
-    const { error: profileErr } = await supabase.from("profiles").upsert({
-      id: user.id,
+    const profileOk = await saveProfile({
+      userId: user.id,
       name: profile.name,
       email: profile.email,
-      birth_year: profile.birthYear ? parseInt(profile.birthYear) : null,
+      birthYear: profile.birthYear ? parseInt(profile.birthYear) : null,
       avatar: profile.avatarId,
-      takes_supplements: supplements.length > 0,
-    }, { onConflict: "id" });
-    if (profileErr) errors.push(`Profil: ${profileErr.message}`);
+      takesSupplements: supplements.length > 0,
+    });
+    if (!profileOk) errors.push("Profil konnte nicht gespeichert werden");
 
     // Body
     const w = bodyMetrics.weightKg ? parseFloat(bodyMetrics.weightKg) : null;
@@ -192,22 +191,20 @@ export default function ProfilePage() {
     if (!bodyOk) errors.push("Körperdaten konnten nicht gespeichert werden");
 
     // Cycle
-    const { error: cycleErr } = await supabase.from("user_cycles").upsert({
-      user_id: user.id,
-      last_period_start: cycleSettings.lastPeriod,
-      cycle_length: cycleSettings.cycleLength,
-      period_length: cycleSettings.periodLength,
-    }, { onConflict: "user_id" });
-    if (cycleErr) errors.push(`Zyklus: ${cycleErr.message}`);
+    const cycleOk = await saveUserCycle({
+      lastPeriodStart: cycleSettings.lastPeriod,
+      cycleLength: cycleSettings.cycleLength,
+      periodLength: cycleSettings.periodLength,
+    });
+    if (!cycleOk) errors.push("Zyklus konnte nicht gespeichert werden");
 
     // Pregnancy
-    const { error: pregErr } = await supabase.from("pregnancies").upsert({
-      user_id: user.id,
-      is_pregnant: pregnancy.isPregnant,
-      last_period_start: pregnancy.lastPeriod || null,
-      due_date: pregnancy.dueDate || null,
-    }, { onConflict: "user_id" });
-    if (pregErr) errors.push(`Schwangerschaft: ${pregErr.message}`);
+    const pregOk = await saveUserPregnancy({
+      isPregnant: pregnancy.isPregnant,
+      lastPeriodStart: pregnancy.lastPeriod || null,
+      dueDate: pregnancy.dueDate || null,
+    });
+    if (!pregOk) errors.push("Schwangerschaft konnte nicht gespeichert werden");
 
     if (errors.length > 0) {
       setSaveError(errors.join(" | "));
@@ -218,33 +215,23 @@ export default function ProfilePage() {
     }
   }
 
-  async function addSupplement(name: string, dose: string) {
+  async function handleAddSupplementItem(name: string, dose: string) {
     if (!user || !name.trim()) return;
 
-    const { data } = await supabase
-      .from("user_supplements")
-      .insert({ user_id: user.id, name: name.trim(), dose: dose.trim(), time: "" })
-      .select()
-      .single();
-
-    if (data) {
-      setSupplements((prev) => [...prev, data]);
+    const created = await addSupplementDb(user.id, name.trim(), dose.trim(), "");
+    if (created) {
+      setSupplements((prev) => [...prev, { id: created.id!, name: created.name, dose: created.dose, time: created.time }]);
     }
   }
 
   async function removeSupplement(id: number) {
     if (!user) return;
-    await supabase
-      .from("user_supplements")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
-
+    await deleteSupplementDb(id, user.id);
     setSupplements((prev) => prev.filter((s) => s.id !== id));
   }
 
   function handleAddCustomSupplement() {
-    addSupplement(newSupplementName, newSupplementDose);
+    handleAddSupplementItem(newSupplementName, newSupplementDose);
     setNewSupplementName("");
     setNewSupplementDose("");
   }
@@ -254,7 +241,7 @@ export default function ProfilePage() {
     if (existing) {
       removeSupplement(existing.id);
     } else {
-      addSupplement(name, dose);
+      handleAddSupplementItem(name, dose);
     }
   }
 
@@ -263,8 +250,17 @@ export default function ProfilePage() {
     setPwError("");
     if (passwords.newPw !== passwords.confirm) { setPwError("Passwörter stimmen nicht überein"); return; }
     if (passwords.newPw.length < 6) { setPwError("Mindestens 6 Zeichen"); return; }
-    const { error } = await supabase.auth.updateUser({ password: passwords.newPw });
-    if (error) { setPwError(error.message); return; }
+
+    const res = await fetch("/api/profile/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newPassword: passwords.newPw }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setPwError(body.error || "Passwort konnte nicht geändert werden");
+      return;
+    }
     setPwSaved(true);
     setPasswords({ current: "", newPw: "", confirm: "" });
     setTimeout(() => setPwSaved(false), 2000);
@@ -289,7 +285,7 @@ export default function ProfilePage() {
     try {
       const result = await createPregnancyShare(user.id, partnerName);
       if (result) {
-        setPregnancyShareUrl(result.url);
+        setPregnancyShareUrl(`${window.location.origin}/schwangerschaft/partner/${result.share_token}`);
         setPregnancyShareToken(result.share_token);
       }
     } catch (err) {
@@ -304,7 +300,7 @@ export default function ProfilePage() {
     try {
       const result = await regeneratePregnancyShare(user.id, partnerName);
       if (result) {
-        setPregnancyShareUrl(result.url);
+        setPregnancyShareUrl(`${window.location.origin}/schwangerschaft/partner/${result.share_token}`);
         setPregnancyShareToken(result.share_token);
       }
     } catch (err) {

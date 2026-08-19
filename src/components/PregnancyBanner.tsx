@@ -5,10 +5,10 @@ import { useLocale } from "@/context/LocaleContext";
 import {
   getCurrentWeek,
   getPregnancyProgress,
-  getPregnancyWeekData,
   getDueDate,
   type PregnancyWeek,
 } from "@/lib/pregnancy";
+import { getPregnancyWeekData } from "@/lib/pregnancy-data";
 
 interface PregnancyBannerProps {
   lastPeriodStart: string;

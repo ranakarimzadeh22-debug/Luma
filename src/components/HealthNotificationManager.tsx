@@ -8,9 +8,9 @@ import {
   getTodaySupplementLogs,
   getDailyHealth,
   getBodyMetrics,
-  calculateWaterGoal,
-  getTodayKey,
 } from "@/lib/health";
+import { calculateWaterGoal, getTodayKey } from "@/lib/health-utils";
+import { getUserPregnancy } from "@/lib/actions/pregnancy";
 
 interface SupplementItem {
   id: string;
@@ -69,13 +69,7 @@ export default function HealthNotificationManager() {
       setWaterGoal(calculateWaterGoal(metrics?.weight_kg ?? null, metrics?.height_cm ?? null));
 
       // Check if pregnant
-      const { createClient } = await import("@/lib/supabase");
-      const supabase = createClient();
-      const { data: pregData } = await supabase
-        .from("pregnancies")
-        .select("is_pregnant")
-        .eq("user_id", currentUser.id)
-        .maybeSingle();
+      const pregData = await getUserPregnancy();
       if (pregData?.is_pregnant) {
         setIsPregnant(true);
       }

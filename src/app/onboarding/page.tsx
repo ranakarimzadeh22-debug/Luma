@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 import { useProfile } from "@/context/ProfileContext";
-import { generatePartnerCode } from "@/lib/partner";
 import { getProfile } from "@/lib/profile";
-import { AVATARS } from "@/lib/profile";
+import { saveOnboarding } from "@/lib/actions/onboarding";
 import {
+  AVATARS,
   LIFE_STAGE_LABELS,
   GOAL_LABELS,
   INTEREST_LABELS,
@@ -18,7 +17,7 @@ import {
   type LifeStage,
   type Goal,
   type Interest,
-} from "@/lib/profile";
+} from "@/lib/profile-types";
 // Alle Vitamine + Supplement-Vorschläge für die Auswahl im Onboarding
 const ALL_SUPPLEMENTS = [
   { name: "Folsäure (B9)", dose: "400 µg", emoji: "🧬" },
@@ -81,7 +80,6 @@ export default function OnboardingPage() {
   const { user } = useAuth();
   const { locale, t } = useLocale();
   const { refreshProfile } = useProfile();
-  const supabase = createClient();
 
   // --- Steps ---
   // 0: Welcome / Name
@@ -155,100 +153,31 @@ export default function OnboardingPage() {
 
   async function next() {
     if (step === totalSteps) {
-      // Save all data
       setSaving(true);
       if (user) {
-        const { error: profileErr } = await supabase.from("profiles").upsert({
-          id: user.id,
+        const ok = await saveOnboarding({
           name: data.name,
-          email: data.email || user.email,
-          birth_year: data.birthYear ? parseInt(data.birthYear) : null,
+          email: data.email,
+          birthYear: data.birthYear,
           avatar: data.avatar,
-          takes_supplements: data.takesSupplements,
-          life_stage: data.lifeStage || null,
-          age_group: data.birthYear ? getAgeGroup(parseInt(data.birthYear)) : null,
-          goals: data.goals.length > 0 ? data.goals : null,
-          interests: data.interests.length > 0 ? data.interests : null,
-          onboarding_completed: true,
-          onboarding_step: 0,
-        }, { onConflict: "id" });
-
-        const { error: cycleErr } = await supabase.from("user_cycles").upsert({
-          user_id: user.id,
-          last_period_start: data.lastPeriod,
-          cycle_length: data.cycleLength,
-          period_length: data.periodLength,
-        }, { onConflict: "user_id" });
-
-        if (data.weightKg) {
-          await supabase.from("user_body_metrics").upsert({
-            user_id: user.id,
-            weight_kg: data.weightKg ? parseFloat(data.weightKg) : null,
-            height_cm: data.heightCm ? parseFloat(data.heightCm) : null,
-          }, { onConflict: "user_id" });
-        }
-
-        // Save supplements
-        if (data.takesSupplements) {
-          const selectedNames = Object.keys(data.selectedSupplements);
-          for (const name of selectedNames) {
-            const dose = data.selectedSupplements[name];
-            await supabase.from("user_supplements").insert({
-              user_id: user.id,
-              name,
-              dose,
-              time: "",
-            });
-          }
-        }
-
-        // Save preferences based on life stage
-        const showFertility = data.lifeStage !== 'teen';
-        await supabase.from("user_preferences").upsert({
-          user_id: user.id,
-          theme: getThemeForLifeStageSimple(data.lifeStage as LifeStage),
-          notifications_enabled: true,
-          reminder_time: "08:00",
-          show_fertility: showFertility,
-          show_educational_content: true,
-        }, { onConflict: "user_id" });
-
-        // Partner code
-        const code = generatePartnerCode(data.name || user.email || "Luma");
-        await supabase.from("profiles").upsert({
-          id: user.id,
-          partner_code: code,
-        }, { onConflict: "id" });
-
-        if (profileErr) console.error("Profile error:", profileErr);
-        if (cycleErr) console.error("Cycle error:", cycleErr);
+          lifeStage: data.lifeStage,
+          goals: data.goals,
+          interests: data.interests,
+          takesSupplements: data.takesSupplements,
+          selectedSupplements: data.selectedSupplements,
+          lastPeriod: data.lastPeriod,
+          cycleLength: data.cycleLength,
+          periodLength: data.periodLength,
+          weightKg: data.weightKg,
+          heightCm: data.heightCm,
+        });
+        if (!ok) console.error("saveOnboarding failed");
       }
       setSaving(false);
       await refreshProfile();
       router.push("/dashboard");
     } else {
       setStep((s) => s + 1);
-    }
-  }
-
-  function getAgeGroup(birthYear: number): string {
-    const age = new Date().getFullYear() - birthYear;
-    if (age <= 17) return '13-17';
-    if (age <= 24) return '18-24';
-    if (age <= 34) return '25-34';
-    if (age <= 44) return '35-44';
-    return '45+';
-  }
-
-  function getThemeForLifeStageSimple(lifeStage: LifeStage): string {
-    switch (lifeStage) {
-      case 'teen': return 'lavender';
-      case 'trying_to_conceive':
-      case 'pregnant':
-      case 'postpartum': return 'peach';
-      case 'perimenopause':
-      case 'menopause': return 'sage';
-      default: return 'rose';
     }
   }
 

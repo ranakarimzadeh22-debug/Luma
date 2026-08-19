@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getUserCycle } from "@/lib/actions/cycle";
 import { getNextPeriodDate, getOvulationDate, formatDate } from "@/lib/cycle";
 import CycleWheel from "@/components/CycleWheel";
 import Calendar from "@/components/Calendar";
@@ -127,7 +127,6 @@ function HeatmapBar({
 
 export default function ZyklusPage() {
   const { user } = useAuth();
-  const supabase = createClient();
 
   const [userData, setUserData] = useState<{
     lastPeriodStart?: string;
@@ -139,21 +138,16 @@ export default function ZyklusPage() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    supabase
-      .from("user_cycles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (data && !error) {
-          setUserData({
-            lastPeriodStart: data.last_period_start,
-            cycleLength: data.cycle_length,
-            periodLength: data.period_length,
-          });
-        }
-        setLoading(false);
-      });
+    getUserCycle().then((cycle) => {
+      if (cycle) {
+        setUserData({
+          lastPeriodStart: cycle.last_period_start,
+          cycleLength: cycle.cycle_length,
+          periodLength: cycle.period_length,
+        });
+      }
+      setLoading(false);
+    });
   }, [user]);
 
   /* ── Loading ── */

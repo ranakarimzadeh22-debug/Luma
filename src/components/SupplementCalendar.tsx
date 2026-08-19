@@ -9,8 +9,8 @@ import {
   setSupplementStatus,
   getSupplementStreak,
   updateSupplementStreak,
-  getTodayKey,
 } from "@/lib/health";
+import { getTodayKey } from "@/lib/health-utils";
 
 const DAYS_SHOWN = 14;
 

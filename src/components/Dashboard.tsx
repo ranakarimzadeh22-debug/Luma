@@ -9,7 +9,7 @@ import SymptomLog from "./SymptomLog";
 import PartnerCard from "./PartnerCard";
 import CycleEditModal from "./CycleEditModal";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getUserCycle } from "@/lib/actions/cycle";
 import { getDaysUntilNextPeriod, getNextPeriodDate, getOvulationDate, formatDate } from "@/lib/cycle";
 import { getProfile } from "@/lib/profile";
 import { avatarList, AvatarSVG } from "./AvatarPicker";
@@ -35,7 +35,6 @@ const fallbackCycleData = {
 export default function Dashboard() {
   const { t } = useLocale();
   const { user } = useAuth();
-  const supabase = createClient();
 
   const [cycleData, setCycleData] = useState(fallbackCycleData);
   const [cycleLoaded, setCycleLoaded] = useState(false);
@@ -48,21 +47,16 @@ export default function Dashboard() {
       setCycleLoaded(true);
       return;
     }
-    supabase
-      .from("user_cycles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.last_period_start) {
-          setCycleData({
-            lastPeriodStart: new Date(data.last_period_start),
-            cycleLength: data.cycle_length ?? 28,
-            periodLength: data.period_length ?? 5,
-          });
-        }
-        setCycleLoaded(true);
-      });
+    getUserCycle().then((data) => {
+      if (data?.last_period_start) {
+        setCycleData({
+          lastPeriodStart: new Date(data.last_period_start),
+          cycleLength: data.cycle_length ?? 28,
+          periodLength: data.period_length ?? 5,
+        });
+      }
+      setCycleLoaded(true);
+    });
   }
 
   useEffect(() => {

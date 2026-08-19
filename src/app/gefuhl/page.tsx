@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getProfileName } from "@/lib/actions/user-data";
 import { avatarList } from "@/components/AvatarPicker";
 import { useLocale } from "@/context/LocaleContext";
 import {
@@ -149,7 +149,6 @@ function EmotionCalendar({ days }: { days: CalendarDay[] }) {
 export default function GefuhlPage() {
   const { t } = useLocale();
   const { user } = useAuth();
-  const supabase = createClient();
 
   // User / Avatar
   const [avatarData, setAvatarData] = useState(avatarList[0]);
@@ -174,10 +173,8 @@ export default function GefuhlPage() {
 
   useEffect(() => {
     if (user) {
-      const db = createClient();
-      if (!db) return;
-      db.from("profiles").select("name").eq("id", user.id).single().then(({ data }) => {
-        if (data?.name) setUserName(data.name);
+      getProfileName().then((name) => {
+        if (name) setUserName(name);
       });
     }
     // Load today's entry

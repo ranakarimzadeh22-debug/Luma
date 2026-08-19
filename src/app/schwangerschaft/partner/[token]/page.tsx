@@ -8,10 +8,10 @@ import PregnancyBelly from "@/components/PregnancyBelly";
 import {
   getCurrentWeek,
   getPregnancyProgress,
-  getPregnancyWeekData,
   getDueDate,
   type PregnancyWeek,
 } from "@/lib/pregnancy";
+import { getPregnancyWeekData } from "@/lib/pregnancy-data";
 
 /** Map fruit names to emojis for a more visual comparison */
 const fruitEmojiMap: Record<string, string> = {

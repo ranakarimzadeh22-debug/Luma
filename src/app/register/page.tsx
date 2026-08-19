@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
-import { generatePartnerCode } from "@/lib/partner";
-import { getTodayKey } from "@/lib/health";
+import { signIn } from "next-auth/react";
 import AvatarPicker, { avatarList } from "@/components/AvatarPicker";
 import { type Locale } from "@/lib/i18n";
 
@@ -47,7 +45,6 @@ interface SelectedSupplement {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [stepIndex, setStepIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -131,95 +128,42 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: form.email,
+        password: form.password,
+        name: form.name,
+        birthYear: form.birthYear ? parseInt(form.birthYear) : null,
+        avatar: form.avatarId,
+        weightKg: form.weightKg ? parseFloat(form.weightKg) : null,
+        heightCm: form.heightCm ? parseFloat(form.heightCm) : null,
+        lastPeriodStart: new Date(Date.now() - 14 * 86400000).toISOString().split("T")[0],
+        cycleLength: form.cycleLength,
+        periodLength: form.periodLength,
+        isPregnant: form.isPregnant,
+        supplements: form.selectedSupplements,
+      }),
     });
 
-    if (authError || !data.user) {
-      const msg = authError?.message ?? "";
-      console.error("Supabase signUp response:", { authError, data, msg });
-
-      if (!authError && !data.user) {
-        setError("Bitte bestätige deine E-Mail-Adresse. Wir haben dir eine E-Mail geschickt.");
-      } else if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("duplicate")) {
-        setError("Diese E-Mail ist bereits registriert. Bitte einloggen.");
-      } else if (msg.includes("weak") || msg.includes("short") || msg.includes("6 characters")) {
-        setError("Das Passwort ist zu kurz. Mindestens 6 Zeichen.");
-      } else if (msg.includes("rate limit") || msg.includes("too many")) {
-        setError("Zu viele Versuche. Bitte kurz warten und erneut versuchen.");
-      } else if (msg.includes("Invalid email") || msg.includes("invalid")) {
-        setError("Ungültige E-Mail-Adresse.");
-      } else if (msg) {
-        setError(msg);
-      } else {
-        setError("Registrierung fehlgeschlagen. Bitte überprüfe deine E-Mail-Bestätigung.");
-      }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || "Registrierung fehlgeschlagen. Bitte versuche es erneut.");
       setLoading(false);
       return;
     }
 
-    const userId = data.user.id;
-    const code = generatePartnerCode(form.name);
-
-    // Save profile (no medications field)
-    await supabase.from("profiles").upsert({
-      id: userId,
-      name: form.name,
+    const result = await signIn("credentials", {
       email: form.email,
-      birth_year: form.birthYear ? parseInt(form.birthYear) : null,
-      avatar: form.avatarId,
-      takes_supplements: form.selectedSupplements.length > 0,
-      partner_code: code,
-    }, { onConflict: "id" });
+      password: form.password,
+      redirect: false,
+    });
 
-    // Save cycle
-    await supabase.from("user_cycles").upsert({
-      user_id: userId,
-      last_period_start: new Date(Date.now() - 14 * 86400000).toISOString().split("T")[0],
-      cycle_length: form.cycleLength,
-      period_length: form.periodLength,
-    }, { onConflict: "user_id" });
-
-    // Save body metrics
-    if (form.weightKg) {
-      await supabase.from("user_body_metrics").upsert({
-        user_id: userId,
-        weight_kg: parseFloat(form.weightKg),
-        height_cm: parseFloat(form.heightCm),
-      }, { onConflict: "user_id" });
-    }
-
-    // Save pregnancy
-    if (form.isPregnant) {
-      await supabase.from("pregnancies").upsert({
-        user_id: userId,
-        is_pregnant: true,
-      }, { onConflict: "user_id" });
-    }
-
-    // Save supplements to user_supplements (single source of truth)
-    for (const supp of form.selectedSupplements) {
-      const { data: inserted } = await supabase
-        .from("user_supplements")
-        .insert({
-          user_id: userId,
-          name: supp.name,
-          dose: supp.dose,
-          time: supp.time,
-        })
-        .select()
-        .single();
-
-      // If time is set, also create a reminder
-      if (inserted && supp.time) {
-        await supabase.from("user_supplement_reminders").insert({
-          user_id: userId,
-          supplement_name: supp.name,
-          time: supp.time,
-          enabled: true,
-        });
-      }
+    if (result?.error) {
+      setError("Konto wurde erstellt, Anmeldung ist aber fehlgeschlagen. Bitte logge dich manuell ein.");
+      setLoading(false);
+      return;
     }
 
     setLoading(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase";
+import { getUserCycle, saveUserCycle } from "@/lib/actions/cycle";
 import { useAuth } from "@/context/AuthContext";
 
 interface CycleEditModalProps {
@@ -12,7 +12,6 @@ interface CycleEditModalProps {
 
 export default function CycleEditModal({ open, onClose, onSaved }: CycleEditModalProps) {
   const { user } = useAuth();
-  const supabase = createClient();
   const [lastPeriod, setLastPeriod] = useState(new Date().toISOString().split("T")[0]);
   const [cycleLength, setCycleLength] = useState(28);
   const [periodLength, setPeriodLength] = useState(5);
@@ -24,40 +23,31 @@ export default function CycleEditModal({ open, onClose, onSaved }: CycleEditModa
     if (!open || !user) return;
 
     setLoading(true);
-    supabase
-      .from("user_cycles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setLastPeriod(data.last_period_start ?? new Date().toISOString().split("T")[0]);
-          setCycleLength(data.cycle_length ?? 28);
-          setPeriodLength(data.period_length ?? 5);
-        }
-        setLoading(false);
-      });
+    getUserCycle().then((data) => {
+      if (data) {
+        setLastPeriod(data.last_period_start ?? new Date().toISOString().split("T")[0]);
+        setCycleLength(data.cycle_length ?? 28);
+        setPeriodLength(data.period_length ?? 5);
+      }
+      setLoading(false);
+    });
   }, [open, user]);
 
   async function handleSave() {
     if (!user) return;
     setSaving(true);
 
-    const { error } = await supabase.from("user_cycles").upsert(
-      {
-        user_id: user.id,
-        last_period_start: lastPeriod,
-        cycle_length: cycleLength,
-        period_length: periodLength,
-      },
-      { onConflict: "user_id" }
-    );
+    const ok = await saveUserCycle({
+      lastPeriodStart: lastPeriod,
+      cycleLength,
+      periodLength,
+    });
 
     setSaving(false);
 
-    if (error) {
-      console.error("Fehler beim Speichern der Zyklusdaten:", error);
-      alert("Fehler beim Speichern: " + error.message + "\n\nBitte stelle sicher, dass die RLS-Policies in Supabase eingerichtet sind.");
+    if (!ok) {
+      console.error("Fehler beim Speichern der Zyklusdaten");
+      alert("Fehler beim Speichern der Zyklusdaten. Bitte versuche es erneut.");
       return;
     }
 

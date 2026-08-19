@@ -3,12 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase";
+import { signIn } from "next-auth/react";
 import LumaLogo from "@/components/LumaLogo";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,13 +17,14 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const result = await signIn("credentials", {
       email: form.email,
       password: form.password,
+      redirect: false,
     });
 
-    if (authError) {
-      setError(authError.message);
+    if (result?.error) {
+      setError("E-Mail oder Passwort ist falsch.");
       setLoading(false);
       return;
     }

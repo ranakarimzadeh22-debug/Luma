@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase";
+import { getUserPregnancy, saveUserPregnancy } from "@/lib/actions/pregnancy";
 import { useAuth } from "@/context/AuthContext";
 import { useLocale } from "@/context/LocaleContext";
 
@@ -14,7 +14,6 @@ interface PregnancyModalProps {
 export default function PregnancyModal({ open, onClose, onSaved }: PregnancyModalProps) {
   const { user } = useAuth();
   const { locale } = useLocale();
-  const supabase = createClient();
   const [isPregnant, setIsPregnant] = useState(false);
   const [lastPeriod, setLastPeriod] = useState("");
   const [saving, setSaving] = useState(false);
@@ -23,18 +22,13 @@ export default function PregnancyModal({ open, onClose, onSaved }: PregnancyModa
   useEffect(() => {
     if (!open || !user) return;
     setLoading(true);
-    supabase
-      .from("pregnancies")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setIsPregnant(data.is_pregnant ?? false);
-          setLastPeriod(data.last_period_start ?? "");
-        }
-        setLoading(false);
-      });
+    getUserPregnancy().then((data) => {
+      if (data) {
+        setIsPregnant(data.is_pregnant ?? false);
+        setLastPeriod(data.last_period_start ?? "");
+      }
+      setLoading(false);
+    });
   }, [open, user]);
 
   async function handleSave() {
@@ -45,26 +39,22 @@ export default function PregnancyModal({ open, onClose, onSaved }: PregnancyModa
       ? new Date(new Date(lastPeriod).getTime() + 280 * 86400000).toISOString().split("T")[0]
       : null;
 
-    const { error } = await supabase.from("pregnancies").upsert(
-      {
-        user_id: user.id,
-        is_pregnant: isPregnant,
-        last_period_start: isPregnant ? lastPeriod : null,
-        due_date: isPregnant ? dueDate : null,
-      },
-      { onConflict: "user_id" }
-    );
+    const ok = await saveUserPregnancy({
+      isPregnant,
+      lastPeriodStart: isPregnant ? lastPeriod : null,
+      dueDate: isPregnant ? dueDate : null,
+    });
 
     setSaving(false);
 
-    if (error) {
-      console.error("Fehler beim Speichern der Schwangerschaftsdaten:", error);
+    if (!ok) {
+      console.error("Fehler beim Speichern der Schwangerschaftsdaten");
       alert(
         locale === "de"
-          ? "Fehler: " + error.message
+          ? "Fehler beim Speichern der Schwangerschaftsdaten."
           : locale === "fa"
-          ? "خطا: " + error.message
-          : "Error: " + error.message
+          ? "خطا در ذخیره اطلاعات بارداری."
+          : "Error saving pregnancy data."
       );
       return;
     }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getHomeData } from "@/lib/actions/user-data";
 import { useLocale } from "@/context/LocaleContext";
 import { useProfile } from "@/context/ProfileContext";
 import { getPersonaConfig, DASHBOARD_HERO, EDUCATION_MODULES, type PersonaId } from "@/lib/personas/persona-config";
@@ -17,7 +17,7 @@ import PregnancyModal from "@/components/PregnancyModal";
 import { getNextPeriodDate, getOvulationDate, formatDate, getCurrentPhase } from "@/lib/cycle";
 import { getCurrentWeek } from "@/lib/pregnancy";
 import { getCurrentPeriodDay, getDaysUntilNextPeriod, getDayInfo } from "@/lib/cycle-calendar";
-import { LIFE_STAGE_LABELS, type LifeStage } from "@/lib/profile";
+import { LIFE_STAGE_LABELS, type LifeStage } from "@/lib/profile-types";
 
 /* ─── Rose Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -663,7 +663,6 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { locale } = useLocale();
   const { profile, preferences, personalizedTip, theme } = useProfile();
-  const supabase = createClient();
   const [cycleData, setCycleData] = useState<{
     lastPeriodStart: Date;
     cycleLength: number;
@@ -695,51 +694,21 @@ export default function DashboardPage() {
       return;
     }
 
-    supabase
-      .from("user_cycles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (data && !error) {
-          setCycleData({
-            lastPeriodStart: new Date(data.last_period_start),
-            cycleLength: data.cycle_length,
-            periodLength: data.period_length,
-          });
-        }
-        setLoading(false);
-      });
+    getHomeData().then(({ cycle, pregnancy: preg, nextReminder: reminder }) => {
+      if (cycle) {
+        setCycleData({
+          lastPeriodStart: new Date(cycle.last_period_start),
+          cycleLength: cycle.cycle_length,
+          periodLength: cycle.period_length,
+        });
+      }
+      setLoading(false);
 
-    // Load pregnancy data
-    supabase
-      .from("pregnancies")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setPregnancy(data);
-        }
-        setPregnancyLoaded(true);
-      });
+      if (preg) setPregnancy(preg);
+      setPregnancyLoaded(true);
 
-    // Load next reminder
-    supabase
-      .from("user_supplement_reminders")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("enabled", true)
-      .order("time", { ascending: true })
-      .limit(1)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setNextReminder({
-            supplement_name: data[0].supplement_name,
-            time: data[0].time,
-          });
-        }
-      });
+      if (reminder) setNextReminder(reminder);
+    });
   }
 
   useEffect(() => {

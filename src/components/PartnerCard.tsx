@@ -2,28 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
-import { generatePartnerCode } from "@/lib/partner";
+import { getProfileNameAndCode } from "@/lib/actions/user-data";
 
 export default function PartnerCard() {
   const { user } = useAuth();
-  const supabase = createClient();
   const [code, setCode] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
-    supabase.from("profiles").select("partner_code").eq("id", user.id).single().then(({ data }) => {
-      let partnerCode = data?.partner_code;
-      if (!partnerCode) {
-        partnerCode = generatePartnerCode("Luma");
-        supabase.from("profiles").upsert({
-          id: user.id,
-          partner_code: partnerCode,
-        }, { onConflict: "id" });
-      }
-      setCode(partnerCode);
+    getProfileNameAndCode().then((data) => {
+      if (data?.partner_code) setCode(data.partner_code);
     });
   }, [user]);
 

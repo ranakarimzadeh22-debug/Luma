@@ -1,5 +1,8 @@
-import { createClient } from "./supabase";
-import type { SupabaseClient } from "@supabase/supabase-js";
+"use server";
+
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { getTodayKey } from "@/lib/health-utils";
 
 // ============================================
 // Typen
@@ -37,138 +40,140 @@ export interface SupplementReminder {
   enabled: boolean;
 }
 
-// ============================================
-// Hilfsfunktion: Heutiges Datum als YYYY-MM-DD
-// ============================================
-export function getTodayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+async function requireUserId(): Promise<string | null> {
+  const session = await auth();
+  return session?.user?.id ?? null;
+}
+
+function dateOnly(dateStr: string): Date {
+  return new Date(`${dateStr}T00:00:00.000Z`);
+}
+
+function toDateKey(d: Date): string {
+  return d.toISOString().split("T")[0];
 }
 
 // ============================================
 // user_daily_health
 // ============================================
 
-export async function getDailyHealth(userId: string, date?: string): Promise<DailyHealth | null> {
-  const supabase = createClient();
-  const targetDate = date || getTodayKey();
+export async function getDailyHealth(_userId?: string, date?: string): Promise<DailyHealth | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+  const targetDate = date || (await getTodayKey());
 
-  const { data, error } = await supabase
-    .from("user_daily_health")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("date", targetDate)
-    .maybeSingle();
+  const row = await prisma.userDailyHealth.findUnique({
+    where: { userId_date: { userId, date: dateOnly(targetDate) } },
+  });
+  if (!row) return null;
 
-  if (error) {
-    console.error("getDailyHealth error:", error);
-    return null;
-  }
-  return data;
+  return {
+    id: Number(row.id),
+    user_id: row.userId,
+    date: toDateKey(row.date),
+    water_liters: row.waterLiters,
+    vitamins_checked: row.vitaminsChecked as Record<string, boolean>,
+  };
 }
 
 export async function upsertDailyHealth(
-  userId: string,
+  _userId: string | undefined,
   date: string,
   waterLiters: number,
   vitaminsChecked: Record<string, boolean>
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase.from("user_daily_health").upsert(
-    {
-      user_id: userId,
-      date,
-      water_liters: waterLiters,
-      vitamins_checked: vitaminsChecked,
-    },
-    { onConflict: "user_id, date" }
-  );
-
-  if (error) {
-    console.error("upsertDailyHealth error:", error);
+  try {
+    await prisma.userDailyHealth.upsert({
+      where: { userId_date: { userId, date: dateOnly(date) } },
+      create: { userId, date: dateOnly(date), waterLiters, vitaminsChecked },
+      update: { waterLiters, vitaminsChecked },
+    });
+    return true;
+  } catch (err) {
+    console.error("upsertDailyHealth error:", err);
     return false;
   }
-  return true;
 }
 
 // ============================================
 // user_supplements
 // ============================================
 
-export async function getSupplements(userId: string): Promise<UserSupplement[]> {
-  const supabase = createClient();
+export async function getSupplements(_userId?: string): Promise<UserSupplement[]> {
+  const userId = await requireUserId();
+  if (!userId) return [];
 
-  const { data, error } = await supabase
-    .from("user_supplements")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("getSupplements error:", error);
-    return [];
-  }
-  return data || [];
+  const rows = await prisma.userSupplement.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map((r) => ({
+    id: Number(r.id),
+    user_id: r.userId,
+    name: r.name,
+    dose: r.dose,
+    time: r.time,
+  }));
 }
 
 export async function addSupplement(
-  userId: string,
+  _userId: string | undefined,
   name: string,
   dose: string,
   time: string
 ): Promise<UserSupplement | null> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return null;
 
-  const { data, error } = await supabase
-    .from("user_supplements")
-    .insert({ user_id: userId, name, dose, time })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("addSupplement error:", error);
+  try {
+    const row = await prisma.userSupplement.create({
+      data: { userId, name, dose, time },
+    });
+    return { id: Number(row.id), user_id: row.userId, name: row.name, dose: row.dose, time: row.time };
+  } catch (err) {
+    console.error("addSupplement error:", err);
     return null;
   }
-  return data;
 }
 
 export async function updateSupplement(
   id: number,
-  userId: string,
+  _userId: string | undefined,
   name: string,
   dose: string,
   time: string
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase
-    .from("user_supplements")
-    .update({ name, dose, time })
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) {
-    console.error("updateSupplement error:", error);
+  try {
+    const result = await prisma.userSupplement.updateMany({
+      where: { id: BigInt(id), userId },
+      data: { name, dose, time },
+    });
+    return result.count > 0;
+  } catch (err) {
+    console.error("updateSupplement error:", err);
     return false;
   }
-  return true;
 }
 
-export async function deleteSupplement(id: number, userId: string): Promise<boolean> {
-  const supabase = createClient();
+export async function deleteSupplement(id: number, _userId?: string): Promise<boolean> {
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase
-    .from("user_supplements")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) {
-    console.error("deleteSupplement error:", error);
+  try {
+    const result = await prisma.userSupplement.deleteMany({
+      where: { id: BigInt(id), userId },
+    });
+    return result.count > 0;
+  } catch (err) {
+    console.error("deleteSupplement error:", err);
     return false;
   }
-  return true;
 }
 
 // ============================================
@@ -176,71 +181,72 @@ export async function deleteSupplement(id: number, userId: string): Promise<bool
 // ============================================
 
 export async function getSupplementLog(
-  userId: string,
+  _userId: string | undefined,
   supplementId: number,
   date?: string
 ): Promise<SupplementLog | null> {
-  const supabase = createClient();
-  const targetDate = date || getTodayKey();
+  const userId = await requireUserId();
+  if (!userId) return null;
+  const targetDate = date || (await getTodayKey());
 
-  const { data, error } = await supabase
-    .from("user_supplement_log")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("supplement_id", supplementId)
-    .eq("date", targetDate)
-    .maybeSingle();
+  const row = await prisma.userSupplementLog.findUnique({
+    where: {
+      userId_supplementId_date: { userId, supplementId: BigInt(supplementId), date: dateOnly(targetDate) },
+    },
+  });
+  if (!row) return null;
 
-  if (error) {
-    console.error("getSupplementLog error:", error);
-    return null;
-  }
-  return data;
+  return {
+    id: Number(row.id),
+    user_id: row.userId,
+    supplement_id: Number(row.supplementId),
+    date: toDateKey(row.date),
+    checked: row.checked,
+  };
 }
 
 export async function upsertSupplementLog(
-  userId: string,
+  _userId: string | undefined,
   supplementId: number,
   date: string,
   checked: boolean
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase.from("user_supplement_log").upsert(
-    {
-      user_id: userId,
-      supplement_id: supplementId,
-      date,
-      checked,
-    },
-    { onConflict: "user_id, supplement_id, date" }
-  );
-
-  if (error) {
-    console.error("upsertSupplementLog error:", error);
+  try {
+    await prisma.userSupplementLog.upsert({
+      where: {
+        userId_supplementId_date: { userId, supplementId: BigInt(supplementId), date: dateOnly(date) },
+      },
+      create: { userId, supplementId: BigInt(supplementId), date: dateOnly(date), checked },
+      update: { checked },
+    });
+    return true;
+  } catch (err) {
+    console.error("upsertSupplementLog error:", err);
     return false;
   }
-  return true;
 }
 
 export async function getTodaySupplementLogs(
-  userId: string,
+  _userId?: string,
   date?: string
 ): Promise<SupplementLog[]> {
-  const supabase = createClient();
-  const targetDate = date || getTodayKey();
+  const userId = await requireUserId();
+  if (!userId) return [];
+  const targetDate = date || (await getTodayKey());
 
-  const { data, error } = await supabase
-    .from("user_supplement_log")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("date", targetDate);
-
-  if (error) {
-    console.error("getTodaySupplementLogs error:", error);
-    return [];
-  }
-  return data || [];
+  const rows = await prisma.userSupplementLog.findMany({
+    where: { userId, date: dateOnly(targetDate) },
+  });
+  return rows.map((r) => ({
+    id: Number(r.id),
+    user_id: r.userId,
+    supplement_id: Number(r.supplementId),
+    date: toDateKey(r.date),
+    checked: r.checked,
+  }));
 }
 
 // ============================================
@@ -250,58 +256,39 @@ export async function getTodaySupplementLogs(
 export interface SupplementHistoryItem {
   supplementName: string;
   dose: string;
-  logs: Record<string, boolean>; // date string → checked
+  logs: Record<string, boolean>;
 }
 
 export async function getSupplementHistory(
-  userId: string,
+  _userId?: string,
   days: number = 14
 ): Promise<{ dates: string[]; items: SupplementHistoryItem[] }> {
-  const supabase = createClient();
-
-  // Generate date range
+  const userId = await requireUserId();
   const dates: string[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
   }
+  if (!userId) return { dates, items: [] };
 
-  // Get all supplements
-  const { data: supplements, error: supErr } = await supabase
-    .from("user_supplements")
-    .select("*")
-    .eq("user_id", userId);
-
-  if (supErr || !supplements) return { dates, items: [] };
-
-  // Get all logs in date range
-  const { data: logs, error: logErr } = await supabase
-    .from("user_supplement_log")
-    .select("*")
-    .eq("user_id", userId)
-    .in("date", dates);
-
-  if (logErr) return { dates, items: [] };
-
-  // Build lookup: supplement_id + date → checked
-  const logMap = new Map<string, boolean>();
-  (logs || []).forEach((log: { supplement_id: number; date: string; checked: boolean }) => {
-    logMap.set(`${log.supplement_id}_${log.date}`, log.checked);
+  const supplements = await prisma.userSupplement.findMany({ where: { userId } });
+  const logs = await prisma.userSupplementLog.findMany({
+    where: { userId, date: { gte: dateOnly(dates[0]), lte: dateOnly(dates[dates.length - 1]) } },
   });
 
-  // Build items with logs for each supplement
+  const logMap = new Map<string, boolean>();
+  logs.forEach((log) => {
+    logMap.set(`${log.supplementId}_${toDateKey(log.date)}`, log.checked);
+  });
+
   const items: SupplementHistoryItem[] = supplements.map((s) => {
-    const logs: Record<string, boolean> = {};
+    const dayLogs: Record<string, boolean> = {};
     dates.forEach((date) => {
       const key = `${s.id}_${date}`;
-      logs[date] = logMap.has(key) ? logMap.get(key)! : false;
+      dayLogs[date] = logMap.has(key) ? logMap.get(key)! : false;
     });
-    return {
-      supplementName: s.name,
-      dose: s.dose,
-      logs,
-    };
+    return { supplementName: s.name, dose: s.dose, logs: dayLogs };
   });
 
   return { dates, items };
@@ -311,79 +298,78 @@ export async function getSupplementHistory(
 // user_supplement_reminders
 // ============================================
 
-export async function getReminders(userId: string): Promise<SupplementReminder[]> {
-  const supabase = createClient();
+export async function getReminders(_userId?: string): Promise<SupplementReminder[]> {
+  const userId = await requireUserId();
+  if (!userId) return [];
 
-  const { data, error } = await supabase
-    .from("user_supplement_reminders")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("getReminders error:", error);
-    return [];
-  }
-  return data || [];
+  const rows = await prisma.userSupplementReminder.findMany({
+    where: { userId },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map((r) => ({
+    id: Number(r.id),
+    user_id: r.userId,
+    supplement_name: r.supplementName,
+    time: r.time,
+    enabled: r.enabled,
+  }));
 }
 
 export async function addReminder(
-  userId: string,
+  _userId: string | undefined,
   supplementName: string,
   time: string,
   enabled: boolean
 ): Promise<SupplementReminder | null> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return null;
 
-  const { data, error } = await supabase
-    .from("user_supplement_reminders")
-    .insert({ user_id: userId, supplement_name: supplementName, time, enabled })
-    .select()
-    .single();
-
-  if (error) {
-    console.error("addReminder error:", error);
+  try {
+    const row = await prisma.userSupplementReminder.create({
+      data: { userId, supplementName, time, enabled },
+    });
+    return { id: Number(row.id), user_id: row.userId, supplement_name: row.supplementName, time: row.time, enabled: row.enabled };
+  } catch (err) {
+    console.error("addReminder error:", err);
     return null;
   }
-  return data;
 }
 
 export async function updateReminder(
   id: number,
-  userId: string,
+  _userId: string | undefined,
   supplementName: string,
   time: string,
   enabled: boolean
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase
-    .from("user_supplement_reminders")
-    .update({ supplement_name: supplementName, time, enabled })
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) {
-    console.error("updateReminder error:", error);
+  try {
+    const result = await prisma.userSupplementReminder.updateMany({
+      where: { id: BigInt(id), userId },
+      data: { supplementName, time, enabled },
+    });
+    return result.count > 0;
+  } catch (err) {
+    console.error("updateReminder error:", err);
     return false;
   }
-  return true;
 }
 
-export async function deleteReminder(id: number, userId: string): Promise<boolean> {
-  const supabase = createClient();
+export async function deleteReminder(id: number, _userId?: string): Promise<boolean> {
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase
-    .from("user_supplement_reminders")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) {
-    console.error("deleteReminder error:", error);
+  try {
+    const result = await prisma.userSupplementReminder.deleteMany({
+      where: { id: BigInt(id), userId },
+    });
+    return result.count > 0;
+  } catch (err) {
+    console.error("deleteReminder error:", err);
     return false;
   }
-  return true;
 }
 
 // ============================================
@@ -391,14 +377,11 @@ export async function deleteReminder(id: number, userId: string): Promise<boolea
 // ============================================
 
 export interface WaterHistoryEntry {
-  date: string; // YYYY-MM-DD
+  date: string;
   water_liters: number;
 }
 
-export async function getWaterHistory(userId: string): Promise<WaterHistoryEntry[]> {
-  const supabase = createClient();
-
-  // Generate last 7 dates
+export async function getWaterHistory(_userId?: string): Promise<WaterHistoryEntry[]> {
   const dates: string[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -406,28 +389,18 @@ export async function getWaterHistory(userId: string): Promise<WaterHistoryEntry
     dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
   }
 
-  const { data, error } = await supabase
-    .from("user_daily_health")
-    .select("date, water_liters")
-    .eq("user_id", userId)
-    .in("date", dates)
-    .order("date", { ascending: true });
+  const userId = await requireUserId();
+  if (!userId) return dates.map((date) => ({ date, water_liters: 0 }));
 
-  if (error) {
-    console.error("getWaterHistory error:", error);
-    return dates.map((date) => ({ date, water_liters: 0 }));
-  }
-
-  // Merge with all dates (fill missing with 0)
-  const dataMap = new Map<string, number>();
-  (data || []).forEach((row: { date: string; water_liters: number }) => {
-    dataMap.set(row.date, row.water_liters || 0);
+  const rows = await prisma.userDailyHealth.findMany({
+    where: { userId, date: { gte: dateOnly(dates[0]), lte: dateOnly(dates[dates.length - 1]) } },
+    orderBy: { date: "asc" },
   });
 
-  return dates.map((date) => ({
-    date,
-    water_liters: dataMap.get(date) || 0,
-  }));
+  const dataMap = new Map<string, number>();
+  rows.forEach((row) => dataMap.set(toDateKey(row.date), row.waterLiters || 0));
+
+  return dates.map((date) => ({ date, water_liters: dataMap.get(date) || 0 }));
 }
 
 // ============================================
@@ -438,7 +411,7 @@ export interface SupplementCalendarEntry {
   id?: number;
   user_id: string;
   supplement_id: number;
-  date: string; // YYYY-MM-DD
+  date: string;
   status: "taken" | "missed" | "open" | "late";
   taken_at?: string | null;
 }
@@ -452,173 +425,144 @@ export interface SupplementStreak {
   last_taken_date: string | null;
 }
 
-/**
- * Holt den Kalender-Status für ein Supplement für die letzten N Tage.
- */
 export async function getSupplementCalendar(
-  userId: string,
+  _userId: string | undefined,
   supplementId: number,
   days: number = 30
 ): Promise<SupplementCalendarEntry[]> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return [];
 
-  // Generate date range
   const dates: string[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    dates.push(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-    );
+    dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
   }
 
-  const { data, error } = await supabase
-    .from("user_supplement_calendar")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("supplement_id", supplementId)
-    .in("date", dates)
-    .order("date", { ascending: true });
+  const rows = await prisma.userSupplementCalendar.findMany({
+    where: {
+      userId,
+      supplementId: BigInt(supplementId),
+      date: { gte: dateOnly(dates[0]), lte: dateOnly(dates[dates.length - 1]) },
+    },
+    orderBy: { date: "asc" },
+  });
 
-  if (error) {
-    console.error("getSupplementCalendar error:", JSON.stringify(error, null, 2));
-    console.error("getSupplementCalendar - userId:", userId, "supplementId:", supplementId);
-    // If the table doesn't exist (PGRST205), return empty array gracefully
-    if (error.code === "PGRST205") {
-      console.warn("getSupplementCalendar - Table 'user_supplement_calendar' does not exist. Run migration 011.");
-    }
-    return [];
-  }
-  return data || [];
+  return rows.map((r) => ({
+    id: Number(r.id),
+    user_id: r.userId,
+    supplement_id: Number(r.supplementId),
+    date: toDateKey(r.date),
+    status: r.status as SupplementCalendarEntry["status"],
+    taken_at: r.takenAt ? r.takenAt.toISOString() : null,
+  }));
 }
 
-/**
- * Setzt den Status für ein Supplement an einem bestimmten Tag.
- */
 export async function setSupplementStatus(
-  userId: string,
+  _userId: string | undefined,
   supplementId: number,
   date: string,
   status: "taken" | "missed" | "open" | "late"
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase.from("user_supplement_calendar").upsert(
-    {
-      user_id: userId,
-      supplement_id: supplementId,
-      date,
-      status,
-      taken_at: status === "taken" ? new Date().toISOString() : null,
-    },
-    { onConflict: "user_id, supplement_id, date" }
-  );
-
-  if (error) {
-    console.error("setSupplementStatus error:", error);
+  try {
+    await prisma.userSupplementCalendar.upsert({
+      where: {
+        userId_supplementId_date: { userId, supplementId: BigInt(supplementId), date: dateOnly(date) },
+      },
+      create: {
+        userId,
+        supplementId: BigInt(supplementId),
+        date: dateOnly(date),
+        status,
+        takenAt: status === "taken" ? new Date() : null,
+      },
+      update: { status, takenAt: status === "taken" ? new Date() : null },
+    });
+    return true;
+  } catch (err) {
+    console.error("setSupplementStatus error:", err);
     return false;
   }
-  return true;
 }
 
-/**
- * Holt den Streak für ein Supplement.
- */
 export async function getSupplementStreak(
-  userId: string,
+  _userId: string | undefined,
   supplementId: number
 ): Promise<SupplementStreak | null> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return null;
 
-  const { data, error } = await supabase
-    .from("user_supplement_streaks")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("supplement_id", supplementId)
-    .maybeSingle();
+  const row = await prisma.userSupplementStreak.findUnique({
+    where: { userId_supplementId: { userId, supplementId: BigInt(supplementId) } },
+  });
+  if (!row) return null;
 
-  if (error) {
-    console.error("getSupplementStreak error:", error);
-    return null;
-  }
-  return data;
+  return {
+    id: Number(row.id),
+    user_id: row.userId,
+    supplement_id: Number(row.supplementId),
+    current_streak: row.currentStreak,
+    longest_streak: row.longestStreak,
+    last_taken_date: row.lastTakenDate ? toDateKey(row.lastTakenDate) : null,
+  };
 }
 
-/**
- * Aktualisiert den Streak nachdem ein Supplement eingenommen wurde.
- * Berechnet: current_streak = aufeinanderfolgende Tage seit last_taken_date
- */
 export async function updateSupplementStreak(
-  userId: string,
+  _userId: string | undefined,
   supplementId: number,
   date: string
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  // Hole aktuellen Streak
-  const { data: streak } = await supabase
-    .from("user_supplement_streaks")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("supplement_id", supplementId)
-    .maybeSingle();
+  const streak = await prisma.userSupplementStreak.findUnique({
+    where: { userId_supplementId: { userId, supplementId: BigInt(supplementId) } },
+  });
 
   const today = new Date(date + "T00:00:00");
-  const lastTaken = streak?.last_taken_date
-    ? new Date(streak.last_taken_date + "T00:00:00")
-    : null;
+  const lastTaken = streak?.lastTakenDate ? new Date(toDateKey(streak.lastTakenDate) + "T00:00:00") : null;
 
   let newStreak = 1;
   if (lastTaken) {
-    const diffDays = Math.floor(
-      (today.getTime() - lastTaken.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    newStreak = diffDays === 1 ? (streak?.current_streak || 0) + 1 : 1;
+    const diffDays = Math.floor((today.getTime() - lastTaken.getTime()) / (1000 * 60 * 60 * 24));
+    newStreak = diffDays === 1 ? (streak?.currentStreak || 0) + 1 : 1;
   }
 
-  const longest = Math.max(newStreak, streak?.longest_streak || 0);
+  const longest = Math.max(newStreak, streak?.longestStreak || 0);
 
-  const { error } = await supabase.from("user_supplement_streaks").upsert(
-    {
-      user_id: userId,
-      supplement_id: supplementId,
-      current_streak: newStreak,
-      longest_streak: longest,
-      last_taken_date: date,
-    },
-    { onConflict: "user_id, supplement_id" }
-  );
-
-  if (error) {
-    console.error("updateSupplementStreak error:", error);
+  try {
+    await prisma.userSupplementStreak.upsert({
+      where: { userId_supplementId: { userId, supplementId: BigInt(supplementId) } },
+      create: {
+        userId,
+        supplementId: BigInt(supplementId),
+        currentStreak: newStreak,
+        longestStreak: longest,
+        lastTakenDate: dateOnly(date),
+      },
+      update: { currentStreak: newStreak, longestStreak: longest, lastTakenDate: dateOnly(date) },
+    });
+    return true;
+  } catch (err) {
+    console.error("updateSupplementStreak error:", err);
     return false;
   }
-  return true;
 }
 
-/**
- * Holt alle Kalender-Einträge für alle Supplements eines Users für einen Zeitraum.
- * Wird für die Übersichts-Heatmap verwendet.
- */
 export async function getAllSupplementCalendar(
-  userId: string,
+  _userId?: string,
   days: number = 30
 ): Promise<{ supplementId: number; supplementName: string; dose: string; entries: SupplementCalendarEntry[] }[]> {
-  const supabase = createClient();
+  const supplements = await getSupplements();
 
-  // Alle Supplements laden
-  const supplements = await getSupplements(userId);
-
-  // Für jedes Supplement die Kalender-Daten holen
   const result = await Promise.all(
     supplements.map(async (s) => {
-      const entries = await getSupplementCalendar(userId, s.id!, days);
-      return {
-        supplementId: s.id!,
-        supplementName: s.name,
-        dose: s.dose,
-        entries,
-      };
+      const entries = await getSupplementCalendar(undefined, s.id!, days);
+      return { supplementId: s.id!, supplementName: s.name, dose: s.dose, entries };
     })
   );
 
@@ -636,58 +580,33 @@ export interface BodyMetrics {
   height_cm: number | null;
 }
 
-export async function getBodyMetrics(userId: string): Promise<BodyMetrics | null> {
-  const supabase = createClient();
+export async function getBodyMetrics(_userId?: string): Promise<BodyMetrics | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
 
-  const { data, error } = await supabase
-    .from("user_body_metrics")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    return null;
-  }
-  return data;
+  const row = await prisma.userBodyMetrics.findUnique({ where: { userId } });
+  if (!row) return null;
+  return { id: Number(row.id), user_id: row.userId, weight_kg: row.weightKg, height_cm: row.heightCm };
 }
 
 export async function upsertBodyMetrics(
-  userId: string,
+  _userId: string | undefined,
   weightKg: number | null,
   heightCm: number | null
 ): Promise<boolean> {
-  const supabase = createClient();
+  const userId = await requireUserId();
+  if (!userId) return false;
 
-  const { error } = await supabase.from("user_body_metrics").upsert(
-    {
-      user_id: userId,
-      weight_kg: weightKg,
-      height_cm: heightCm,
-    },
-    { onConflict: "user_id" }
-  );
-
-  if (error) {
-    console.error("upsertBodyMetrics error:", error);
+  try {
+    await prisma.userBodyMetrics.upsert({
+      where: { userId },
+      create: { userId, weightKg, heightCm },
+      update: { weightKg, heightCm },
+    });
+    return true;
+  } catch (err) {
+    console.error("upsertBodyMetrics error:", err);
     return false;
   }
-  return true;
 }
 
-/**
- * Berechnet die empfohlene tägliche Wasserzufuhr in Litern.
- * Formel (wenn height_cm vorhanden):
- *   water = (weight_kg × 0.03) + (height_cm × 0.004)
- * Formel (nur weight_kg):
- *   water = weight_kg × 0.033
- * Fallback: 2.0 Liter
- */
-export function calculateWaterGoal(weightKg: number | null, heightCm: number | null): number {
-  if (weightKg && weightKg > 0) {
-    if (heightCm && heightCm > 0) {
-      return parseFloat(((weightKg * 0.03) + (heightCm * 0.004)).toFixed(2));
-    }
-    return parseFloat((weightKg * 0.033).toFixed(2));
-  }
-  return 2.0; // Default fallback
-}

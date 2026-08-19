@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getUserPregnancy } from "@/lib/actions/pregnancy";
 import { useLocale } from "@/context/LocaleContext";
 import {
   getCurrentWeek,
   getPregnancyProgress,
-  getPregnancyWeekData,
   getDueDate,
   type PregnancyWeek,
 } from "@/lib/pregnancy";
+import { getPregnancyWeekData } from "@/lib/pregnancy-data";
 
 const fruitEmojiMap: Record<string, string> = {
   "Mohnsamen": "🌱", "Stecknadelkopf": "📌", "Apfelsamen": "🌱",
@@ -57,7 +57,6 @@ const C = {
 export default function SchwangerschaftPage() {
   const { user } = useAuth();
   const { locale } = useLocale();
-  const supabase = createClient();
 
   const [pregnancy, setPregnancy] = useState<{
     is_pregnant: boolean;
@@ -70,15 +69,10 @@ export default function SchwangerschaftPage() {
 
   function loadPregnancy() {
     if (!user) { setLoading(false); return; }
-    supabase
-      .from("pregnancies")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) setPregnancy(data);
-        setLoading(false);
-      });
+    getUserPregnancy().then((data) => {
+      if (data) setPregnancy(data);
+      setLoading(false);
+    });
   }
 
   useEffect(() => { loadPregnancy(); }, [user]);
@@ -96,10 +90,8 @@ export default function SchwangerschaftPage() {
     });
   }, [week, pregnancy?.is_pregnant, pregnancy?.last_period_start]);
 
-  // ── First name from user email / metadata ─────────────────────────────────
-  const firstName =
-    (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ||
-    (user?.email?.split("@")[0] ?? "");
+  // ── First name from user email ─────────────────────────────────
+  const firstName = user?.email?.split("@")[0] ?? "";
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (loading) {

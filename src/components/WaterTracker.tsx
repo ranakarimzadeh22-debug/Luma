@@ -7,9 +7,9 @@ import {
   getDailyHealth,
   upsertDailyHealth,
   getBodyMetrics,
-  calculateWaterGoal,
-  getTodayKey,
 } from "@/lib/health";
+import { calculateWaterGoal, getTodayKey } from "@/lib/health-utils";
+import { getUserPregnancy } from "@/lib/actions/pregnancy";
 
 const GLASS_SIZE = 0.25; // 0.25 Liter per Glas
 
@@ -43,13 +43,7 @@ export default function WaterTracker() {
         }
 
         // Check if pregnant
-        const { createClient } = await import("@/lib/supabase");
-        const supabase = createClient();
-        const { data: pregData } = await supabase
-          .from("pregnancies")
-          .select("is_pregnant")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const pregData = await getUserPregnancy();
         if (pregData?.is_pregnant) {
           setIsPregnant(true);
         }

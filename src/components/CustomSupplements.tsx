@@ -9,12 +9,12 @@ import {
   deleteSupplement as dbDeleteSupplement,
   getTodaySupplementLogs,
   upsertSupplementLog,
-  getTodayKey,
 } from "@/lib/health";
+import { getTodayKey } from "@/lib/health-utils";
 
 interface Supplement {
   id: string;
-  dbId?: number; // Supabase DB ID (only when user is logged in)
+  dbId?: number; // DB id (only when user is logged in)
   name: string;
   dose: string;
   time: string; // HH:MM format

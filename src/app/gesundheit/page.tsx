@@ -10,12 +10,12 @@ import {
   getTodaySupplementLogs,
   upsertSupplementLog,
   updateSupplement,
-  getTodayKey,
 } from "@/lib/health";
+import { getTodayKey } from "@/lib/health-utils";
 import SupplementCalendar from "@/components/SupplementCalendar";
 import SupplementHistory from "@/components/SupplementHistory";
 import HealthNotificationManager from "@/components/HealthNotificationManager";
-import { LIFE_STAGE_LABELS, type LifeStage } from "@/lib/profile";
+import { LIFE_STAGE_LABELS, type LifeStage } from "@/lib/profile-types";
 
 interface SupplementItem {
   id: string; // "db-{id}"

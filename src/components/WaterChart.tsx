@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useLocale } from "@/context/LocaleContext";
 import { useAuth } from "@/context/AuthContext";
-import { getWaterHistory, getBodyMetrics, calculateWaterGoal, getTodayKey } from "@/lib/health";
+import { getWaterHistory, getBodyMetrics } from "@/lib/health";
+import { calculateWaterGoal, getTodayKey } from "@/lib/health-utils";
 
 const CHART_HEIGHT = 120;
 const BAR_WIDTH = 28;

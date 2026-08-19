@@ -1,4 +1,7 @@
-import { createClient } from "./supabase";
+"use server";
+
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export interface PregnancyShareData {
   share_token: string;
@@ -7,88 +10,72 @@ export interface PregnancyShareData {
   updated_at: string;
 }
 
-/** Create or update a pregnancy share link for a user. */
-export async function createPregnancyShare(
-  userId: string,
-  partnerName: string = ""
-): Promise<{ share_token: string; url: string } | null> {
-  const supabase = createClient();
-
-  // Upsert: if a share already exists, keep the token; otherwise generate new one
-  const { data, error } = await supabase
-    .from("pregnancy_shares")
-    .upsert(
-      {
-        user_id: userId,
-        partner_name: partnerName,
-      },
-      { onConflict: "user_id" }
-    )
-    .select("share_token")
-    .single();
-
-  if (error || !data) {
-    console.error("createPregnancyShare error:", error);
-    return null;
-  }
-
-  const token = data.share_token;
-  const url = `${window.location.origin}/schwangerschaft/partner/${token}`;
-
-  return { share_token: token, url };
+async function requireUserId(): Promise<string | null> {
+  const session = await auth();
+  return session?.user?.id ?? null;
 }
 
-/** Get existing share data for a user (or null if none). */
-export async function getPregnancyShare(
-  userId: string
-): Promise<PregnancyShareData | null> {
-  const supabase = createClient();
+/** Create or update a pregnancy share link for the logged-in user. */
+export async function createPregnancyShare(
+  _userId: string | undefined,
+  partnerName: string = ""
+): Promise<{ share_token: string } | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
 
-  const { data, error } = await supabase
-    .from("pregnancy_shares")
-    .select("share_token, partner_name, created_at, updated_at")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    console.error("getPregnancyShare error:", error);
+  try {
+    const row = await prisma.pregnancyShare.upsert({
+      where: { userId },
+      create: { userId, partnerName },
+      update: { partnerName },
+    });
+    return { share_token: row.shareToken };
+  } catch (err) {
+    console.error("createPregnancyShare error:", err);
     return null;
   }
+}
 
-  return data;
+/** Get existing share data for the logged-in user (or null if none). */
+export async function getPregnancyShare(_userId?: string): Promise<PregnancyShareData | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
+
+  const row = await prisma.pregnancyShare.findUnique({ where: { userId } });
+  if (!row) return null;
+
+  return {
+    share_token: row.shareToken,
+    partner_name: row.partnerName,
+    created_at: row.createdAt.toISOString(),
+    updated_at: row.updatedAt.toISOString(),
+  };
 }
 
 /** Regenerate the share token (invalidates old link). */
 export async function regeneratePregnancyShare(
-  userId: string,
+  _userId: string | undefined,
   partnerName?: string
-): Promise<{ share_token: string; url: string } | null> {
-  const supabase = createClient();
+): Promise<{ share_token: string } | null> {
+  const userId = await requireUserId();
+  if (!userId) return null;
 
-  const patch: Record<string, string> = {
-    share_token: crypto.randomUUID(),
-  };
-  if (partnerName !== undefined) {
-    patch.partner_name = partnerName;
-  }
-
-  const { data, error } = await supabase
-    .from("pregnancy_shares")
-    .update(patch)
-    .eq("user_id", userId)
-    .select("share_token")
-    .single();
-
-  if (error || !data) {
-    console.error("regeneratePregnancyShare error:", error);
+  try {
+    const row = await prisma.pregnancyShare.update({
+      where: { userId },
+      data: {
+        shareToken: crypto.randomUUID(),
+        ...(partnerName !== undefined ? { partnerName } : {}),
+      },
+    });
+    return { share_token: row.shareToken };
+  } catch (err) {
+    console.error("regeneratePregnancyShare error:", err);
     return null;
   }
-
-  const url = `${window.location.origin}/schwangerschaft/partner/${data.share_token}`;
-  return { share_token: data.share_token, url };
 }
 
-/** Fetch pregnancy data for a partner via share token (server-side). */
+/** Fetch pregnancy data for a partner via share token (public, no auth). */
 export async function getPregnancyDataByShareToken(
   shareToken: string
 ): Promise<{
@@ -97,43 +84,24 @@ export async function getPregnancyDataByShareToken(
   is_pregnant: boolean;
   mother_name: string;
 } | null> {
-  const supabase = createClient();
-
-  // 1. Look up the share token → user_id
-  const { data: share, error: shareError } = await supabase
-    .from("pregnancy_shares")
-    .select("user_id")
-    .eq("share_token", shareToken)
-    .maybeSingle();
-
-  if (shareError || !share) {
-    console.error("getPregnancyDataByShareToken: share not found", shareError);
+  const share = await prisma.pregnancyShare.findUnique({ where: { shareToken } });
+  if (!share) {
+    console.error("getPregnancyDataByShareToken: share not found");
     return null;
   }
 
-  // 2. Fetch pregnancy data
-  const { data: preg, error: pregError } = await supabase
-    .from("pregnancies")
-    .select("last_period_start, due_date, is_pregnant")
-    .eq("user_id", share.user_id)
-    .maybeSingle();
-
-  if (pregError || !preg) {
-    console.error("getPregnancyDataByShareToken: pregnancy not found", pregError);
+  const pregnancy = await prisma.pregnancy.findUnique({ where: { userId: share.userId } });
+  if (!pregnancy) {
+    console.error("getPregnancyDataByShareToken: pregnancy not found");
     return null;
   }
 
-  // 3. Fetch mother's name
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name")
-    .eq("id", share.user_id)
-    .maybeSingle();
+  const profile = await prisma.profile.findUnique({ where: { id: share.userId } });
 
   return {
-    last_period_start: preg.last_period_start,
-    due_date: preg.due_date,
-    is_pregnant: preg.is_pregnant ?? false,
+    last_period_start: pregnancy.lastPeriodStart ? pregnancy.lastPeriodStart.toISOString().split("T")[0] : null,
+    due_date: pregnancy.dueDate ? pregnancy.dueDate.toISOString().split("T")[0] : null,
+    is_pregnant: pregnancy.isPregnant ?? false,
     mother_name: profile?.name ?? "",
   };
 }

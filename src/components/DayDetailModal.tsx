@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CycleData } from "@/lib/cycle-calendar";
-import { createClient } from "@/lib/supabase";
+import { getDayDetail } from "@/lib/actions/user-data";
 import { useAuth } from "@/context/AuthContext";
 
 interface DayDetailModalProps {
@@ -46,7 +46,6 @@ function getPhaseLabel(phase: string): string {
 
 export default function DayDetailModal({ date, dayInfo, cycleData, onClose }: DayDetailModalProps) {
   const { user } = useAuth();
-  const supabase = createClient();
 
   const [waterLiters, setWaterLiters] = useState<number | null>(null);
   const [supplements, setSupplements] = useState<{ name: string; checked: boolean }[]>([]);
@@ -68,60 +67,15 @@ export default function DayDetailModal({ date, dayInfo, cycleData, onClose }: Da
       return;
     }
 
-    const uid = user.id;
-
-    async function loadData() {
-      try {
-        // Load water data
-        const { data: healthData } = await supabase
-          .from("user_daily_health")
-          .select("water_liters")
-          .eq("user_id", uid)
-          .eq("date", dateKey)
-          .maybeSingle();
-
-        if (healthData) {
-          setWaterLiters(healthData.water_liters ?? 0);
-        } else {
-          setWaterLiters(0);
-        }
-
-        // Load supplements
-        const { data: userSupps } = await supabase
-          .from("user_supplements")
-          .select("id, name")
-          .eq("user_id", uid);
-
-        if (userSupps && userSupps.length > 0) {
-          const suppIds = userSupps.map(s => s.id);
-          const { data: suppLogs } = await supabase
-            .from("user_supplement_log")
-            .select("supplement_id, checked")
-            .eq("user_id", uid)
-            .eq("date", dateKey)
-            .in("supplement_id", suppIds);
-
-          const checkedMap = new Map<number, boolean>();
-          if (suppLogs) {
-            suppLogs.forEach(log => checkedMap.set(log.supplement_id, log.checked));
-          }
-
-          const suppsWithStatus = userSupps.map(s => ({
-            name: s.name,
-            checked: checkedMap.get(s.id) ?? false,
-          }));
-          setSupplements(suppsWithStatus);
-        } else {
-          setSupplements([]);
-        }
-      } catch (err) {
+    getDayDetail(dateKey)
+      .then((data) => {
+        setWaterLiters(data.waterLiters);
+        setSupplements(data.supplements);
+      })
+      .catch((err) => {
         console.error("DayDetailModal load error:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
+      })
+      .finally(() => setLoading(false));
   }, [user, dateKey]);
 
   if (dayInfo.dayOfCycle <= 0) {

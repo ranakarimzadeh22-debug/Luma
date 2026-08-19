@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useLocale } from "@/context/LocaleContext";
 import { useAuth } from "@/context/AuthContext";
-import { getDailyHealth, upsertDailyHealth, getTodayKey } from "@/lib/health";
+import { getDailyHealth, upsertDailyHealth } from "@/lib/health";
+import { getTodayKey } from "@/lib/health-utils";
 
 interface Vitamin {
   name: string;

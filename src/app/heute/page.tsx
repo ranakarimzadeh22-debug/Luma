@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { createClient } from "@/lib/supabase";
+import { getHomeData } from "@/lib/actions/user-data";
 import { useLocale } from "@/context/LocaleContext";
 import { useProfile } from "@/context/ProfileContext";
 import { getPersonaConfig, EDUCATION_MODULES } from "@/lib/personas/persona-config";
@@ -22,10 +22,10 @@ import {
   getCurrentWeek,
   getPregnancyProgress,
   getDueDate,
-  getPregnancyWeekData,
   type PregnancyWeek,
 } from "@/lib/pregnancy";
-import { LIFE_STAGE_LABELS, type LifeStage } from "@/lib/profile";
+import { getPregnancyWeekData } from "@/lib/pregnancy-data";
+import { LIFE_STAGE_LABELS, type LifeStage } from "@/lib/profile-types";
 
 /* ─── Rose Design tokens ──────────────────────────────────────────────── */
 const C = {
@@ -186,7 +186,6 @@ function EducationModuleCard({ module, locale }: { module: EducationModule; loca
 export default function HeutePage() {
   const { user } = useAuth();
   const { locale } = useLocale();
-  const supabase = createClient();
 
   // Persona-aware config
   const { profile, preferences } = useProfile();
@@ -205,16 +204,7 @@ export default function HeutePage() {
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
-    async function load() {
-      const currentUser = user!;
-      
-      // Load cycle data
-      const { data: cycle } = await supabase
-        .from("user_cycles")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .single();
-
+    getHomeData().then(({ cycle, pregnancy: preg }) => {
       if (cycle) {
         setCycleData({
           lastPeriodStart: new Date(cycle.last_period_start),
@@ -223,21 +213,12 @@ export default function HeutePage() {
         });
       }
 
-      // Load pregnancy
-      const { data: preg } = await supabase
-        .from("pregnancies")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .single();
-
       if (preg) {
         setPregnancy(preg);
       }
 
       setLoading(false);
-    }
-
-    load();
+    });
   }, [user]);
 
   // ── Load week data (if pregnant) ────────────────────────────────────────
