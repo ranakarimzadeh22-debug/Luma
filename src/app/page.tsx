@@ -27,7 +27,7 @@ export default function Home() {
         </Link>
       </div>
 
-      <p className="text-xs mt-10 tracking-wide" style={{ color: "#b799e5" }}>Privat & sicher 🔒🔒</p>
+      <p className="text-xs mt-10 tracking-wide" style={{ color: "#b799e5" }}>Privat & sicher 🔒</p>
     </main>
   );
 }
