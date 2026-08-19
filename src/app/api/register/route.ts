@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generatePartnerCode } from "@/lib/partner";
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
   const partnerCode = generatePartnerCode(body.name);
   const supplements = body.supplements ?? [];
 
-  const user = await prisma.$transaction(async (tx) => {
+  const user = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const created = await tx.user.create({
       data: { email: body.email!, passwordHash },
     });

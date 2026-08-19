@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generatePartnerCode } from "@/lib/partner";
@@ -36,7 +37,7 @@ export async function saveOnboarding(data: {
   const userId = session.user.id;
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const partnerCode = generatePartnerCode(data.name || session.user.email || "Luma");
 
       await tx.profile.upsert({
