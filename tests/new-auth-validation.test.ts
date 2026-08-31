@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   normalizeNewAuthEmail,
+  normalizeNewAuthFirstName,
   validateNewLoginInput,
   validateNewRegistrationInput,
 // Node's built-in TypeScript test runner needs the explicit extension.
@@ -12,17 +13,38 @@ test("normalisiert eine gültige E-Mail-Adresse", () => {
   assert.equal(normalizeNewAuthEmail("  USER@Example.DE "), "user@example.de");
 });
 
+test("normalisiert einen Vornamen ohne kulturell enge Zeichenregeln", () => {
+  assert.equal(normalizeNewAuthFirstName("  Maryam   Noor  "), "Maryam Noor");
+  assert.equal(normalizeNewAuthFirstName("李"), "李");
+});
+
 test("akzeptiert eine vollständige Registrierung", () => {
+  const result = validateNewRegistrationInput({
+    firstName: "  Zara ",
+    email: "neu@example.de",
+    password: "sicher123",
+    passwordConfirmation: "sicher123",
+  });
+  assert.deepEqual(result, {
+    ok: true,
+    firstName: "Zara",
+    email: "neu@example.de",
+    password: "sicher123",
+  });
+});
+
+test("weist eine Registrierung ohne Vornamen zurück", () => {
   const result = validateNewRegistrationInput({
     email: "neu@example.de",
     password: "sicher123",
     passwordConfirmation: "sicher123",
   });
-  assert.deepEqual(result, { ok: true, email: "neu@example.de", password: "sicher123" });
+  assert.equal(result.ok, false);
 });
 
 test("weist ungleiche Passwörter zurück", () => {
   const result = validateNewRegistrationInput({
+    firstName: "Zara",
     email: "neu@example.de",
     password: "sicher123",
     passwordConfirmation: "anders123",
@@ -32,6 +54,6 @@ test("weist ungleiche Passwörter zurück", () => {
 });
 
 test("weist ungültige Registrierung und Anmeldung zurück", () => {
-  assert.equal(validateNewRegistrationInput({ email: "falsch", password: "kurz" }).ok, false);
+  assert.equal(validateNewRegistrationInput({ firstName: "Zara", email: "falsch", password: "kurz" }).ok, false);
   assert.equal(validateNewLoginInput({ email: "falsch", password: "kurz" }).ok, false);
 });

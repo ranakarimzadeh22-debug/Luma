@@ -30,7 +30,22 @@ async function inspect(label, connectionString) {
           (SELECT COUNT(*)::int FROM new_sessions) AS sessions,
           (SELECT COUNT(*)::int FROM new_auth_rate_limits) AS rate_limits
       `);
-      return { ...summary, rowCounts: counts.rows[0] };
+      const firstNameColumn = await client.query(`
+        SELECT is_nullable, character_maximum_length
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'new_users'
+          AND column_name = 'first_name'
+      `);
+      const migrations = await client.query(
+        "SELECT id FROM _luma_core_migrations ORDER BY id",
+      );
+      return {
+        ...summary,
+        rowCounts: counts.rows[0],
+        firstNameColumn: firstNameColumn.rows[0] ?? null,
+        migrations: migrations.rows.map((row) => row.id),
+      };
     }
     return summary;
   } finally {
@@ -48,6 +63,9 @@ if (result[0].database === result[1].database) {
 }
 if (result[0].newAuthTables.length !== 0 || result[1].newAuthTables.length !== 3) {
   throw new Error("Neue Auth-Tabellen sind nicht eindeutig von der alten Datenbank getrennt.");
+}
+if (!result[1].firstNameColumn || result[1].firstNameColumn.is_nullable !== "YES") {
+  throw new Error("Die optionale Vornamensspalte für bestehende Konten fehlt in luma_core.");
 }
 
 console.log(JSON.stringify(result));

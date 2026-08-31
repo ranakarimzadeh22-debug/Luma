@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const token = await registerNewAuthUser(input.email, input.password);
+    const token = await registerNewAuthUser(input.firstName, input.email, input.password);
     const response = NextResponse.json({ ok: true }, { status: 201 });
     setNewAuthSessionCookie(response, token);
     return response;

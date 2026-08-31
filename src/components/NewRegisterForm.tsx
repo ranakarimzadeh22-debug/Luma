@@ -26,6 +26,7 @@ export default function NewRegisterForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        firstName: formData.get("firstName"),
         email: formData.get("email"),
         password,
         passwordConfirmation,
@@ -45,6 +46,17 @@ export default function NewRegisterForm() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1.5 text-sm font-medium text-neutral-700">
+        Vorname
+        <input
+          name="firstName"
+          type="text"
+          autoComplete="given-name"
+          required
+          maxLength={50}
+          className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-neutral-950 outline-none focus:border-neutral-700"
+        />
+      </label>
       <label className="flex flex-col gap-1.5 text-sm font-medium text-neutral-700">
         E-Mail-Adresse
         <input

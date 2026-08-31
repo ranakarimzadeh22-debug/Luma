@@ -14,6 +14,7 @@ export class DuplicateNewAuthEmailError extends Error {}
 export interface NewAuthSession {
   userId: string;
   email: string;
+  firstName: string | null;
   expiresAt: Date;
 }
 
@@ -80,6 +81,7 @@ function newSessionToken(): { token: string; tokenHash: string; expiresAt: Date 
 }
 
 export async function registerNewAuthUser(
+  firstName: string,
   email: string,
   password: string,
 ): Promise<string> {
@@ -90,8 +92,8 @@ export async function registerNewAuthUser(
     await withLumaCoreTransaction(async (client) => {
       const userId = randomUUID();
       await client.query(
-        "INSERT INTO new_users (id, email, password_hash) VALUES ($1, $2, $3)",
-        [userId, email, passwordHash],
+        "INSERT INTO new_users (id, first_name, email, password_hash) VALUES ($1, $2, $3, $4)",
+        [userId, firstName, email, passwordHash],
       );
       await client.query(
         "INSERT INTO new_sessions (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)",
@@ -155,9 +157,10 @@ export async function getNewAuthSession(): Promise<NewAuthSession | null> {
   const result = await getLumaCorePool().query<{
     user_id: string;
     email: string;
+    first_name: string | null;
     expires_at: Date;
   }>(
-    `SELECT s.user_id, u.email, s.expires_at
+    `SELECT s.user_id, u.email, u.first_name, s.expires_at
      FROM new_sessions s
      JOIN new_users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()`,
@@ -166,7 +169,22 @@ export async function getNewAuthSession(): Promise<NewAuthSession | null> {
   const row = result.rows[0];
   if (!row) return null;
 
-  return { userId: row.user_id, email: row.email, expiresAt: row.expires_at };
+  return {
+    userId: row.user_id,
+    email: row.email,
+    firstName: row.first_name,
+    expiresAt: row.expires_at,
+  };
+}
+
+export async function setNewAuthFirstName(userId: string, firstName: string): Promise<boolean> {
+  const result = await getLumaCorePool().query(
+    `UPDATE new_users
+     SET first_name = $1, updated_at = NOW()
+     WHERE id = $2 AND first_name IS NULL`,
+    [firstName, userId],
+  );
+  return result.rowCount === 1;
 }
 
 export async function deleteNewAuthSession(token: string | undefined): Promise<void> {

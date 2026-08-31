@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
 import pg from "pg";
+import bcrypt from "bcryptjs";
 
 const { Client } = pg;
 const baseUrl = process.env.NEW_AUTH_TEST_BASE_URL || "http://localhost:3010";
@@ -8,6 +9,7 @@ const connectionString = process.env.LUMA_CORE_DATABASE_URL;
 if (!connectionString) throw new Error("LUMA_CORE_DATABASE_URL fehlt für den Integrationstest.");
 
 const email = `new-auth-${randomUUID()}@example.test`;
+const legacyEmail = `legacy-auth-${randomUUID()}@example.test`;
 const password = "Test-passwort-123";
 const rateLimitEmail = `rate-limit-${randomUUID()}@example.test`;
 
@@ -37,7 +39,15 @@ try {
   assert.equal(landing.status, 200);
   assert.match(await landing.text(), /Neues Konto erstellen/);
 
+  const missingFirstName = await post("/api/neu/auth/register", {
+    email,
+    password,
+    passwordConfirmation: password,
+  });
+  assert.equal(missingFirstName.status, 400);
+
   const registration = await post("/api/neu/auth/register", {
+    firstName: "  Zara  ",
     email,
     password,
     passwordConfirmation: password,
@@ -50,10 +60,11 @@ try {
   assert.match(registrationCookie, /^luma_new_session=/);
 
   const storedUser = await database.query(
-    "SELECT password_hash FROM new_users WHERE email = $1",
+    "SELECT first_name, password_hash FROM new_users WHERE email = $1",
     [email],
   );
   assert.equal(storedUser.rowCount, 1);
+  assert.equal(storedUser.rows[0].first_name, "Zara");
   assert.notEqual(storedUser.rows[0].password_hash, password);
   assert.match(storedUser.rows[0].password_hash, /^\$2[aby]\$12\$/);
 
@@ -62,10 +73,13 @@ try {
   });
   assert.equal(protectedPage.status, 200);
   const protectedHtml = await protectedPage.text();
-  assert.match(protectedHtml, /Sicher angemeldet/);
-  assert.match(protectedHtml, new RegExp(email));
+  assert.match(protectedHtml, /Herzlich willkommen bei Luma/);
+  assert.match(protectedHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
+  assert.doesNotMatch(protectedHtml, new RegExp(email));
+  assert.match(protectedHtml, /Meine Zyklusansicht einrichten/);
 
   const duplicate = await post("/api/neu/auth/register", {
+    firstName: "Zara",
     email,
     password,
     passwordConfirmation: password,
@@ -73,6 +87,7 @@ try {
   assert.equal(duplicate.status, 409);
 
   const mismatch = await post("/api/neu/auth/register", {
+    firstName: "Zara",
     email: `mismatch-${email}`,
     password,
     passwordConfirmation: "anderes-passwort",
@@ -96,6 +111,63 @@ try {
   assert.equal(login.status, 200);
   const loginCookie = cookieFrom(login);
   assert.match(loginCookie, /^luma_new_session=/);
+
+  const legacyUserId = randomUUID();
+  const legacyPasswordHash = await bcrypt.hash(password, 12);
+  await database.query(
+    "INSERT INTO new_users (id, email, password_hash) VALUES ($1, $2, $3)",
+    [legacyUserId, legacyEmail, legacyPasswordHash],
+  );
+
+  const legacyLogin = await post("/api/neu/auth/login", { email: legacyEmail, password });
+  assert.equal(legacyLogin.status, 200);
+  const legacyCookie = cookieFrom(legacyLogin);
+
+  const legacyPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: legacyCookie } });
+  assert.equal(legacyPage.status, 200);
+  const legacyHtml = await legacyPage.text();
+  assert.match(legacyHtml, /Wie dürfen wir dich nennen/);
+  assert.doesNotMatch(legacyHtml, /Hallo Zara/);
+
+  const unauthenticatedNameUpdate = await post("/api/neu/profile/name", {
+    firstName: "Mina",
+  });
+  assert.equal(unauthenticatedNameUpdate.status, 401);
+
+  const nameUpdate = await post(
+    "/api/neu/profile/name",
+    { firstName: "  Mina  " },
+    legacyCookie,
+  );
+  assert.equal(nameUpdate.status, 200);
+
+  const repeatedNameUpdate = await post(
+    "/api/neu/profile/name",
+    { firstName: "Anders" },
+    legacyCookie,
+  );
+  assert.equal(repeatedNameUpdate.status, 409);
+
+  const separatedUsers = await database.query(
+    "SELECT email, first_name FROM new_users WHERE email = ANY($1::text[]) ORDER BY email",
+    [[email, legacyEmail]],
+  );
+  assert.deepEqual(
+    Object.fromEntries(separatedUsers.rows.map((row) => [row.email, row.first_name])),
+    { [email]: "Zara", [legacyEmail]: "Mina" },
+  );
+
+  const personalizedLegacyPage = await fetch(`${baseUrl}/neu`, {
+    headers: { cookie: legacyCookie },
+  });
+  const personalizedLegacyHtml = await personalizedLegacyPage.text();
+  assert.match(personalizedLegacyHtml, /Hallo(?:\s|<!--.*?-->)*Mina/);
+  assert.doesNotMatch(personalizedLegacyHtml, /Zara/);
+
+  const namedUserPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: loginCookie } });
+  const namedUserHtml = await namedUserPage.text();
+  assert.match(namedUserHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
+  assert.doesNotMatch(namedUserHtml, /Mina/);
 
   const oldLogin = await fetch(`${baseUrl}/login`);
   const oldRegistration = await fetch(`${baseUrl}/register`);
@@ -124,10 +196,11 @@ try {
 
   console.log("OK: Registrierung, Sitzung, Abmeldung, Fehlerfälle und alte Auth-Routen geprüft.");
 } finally {
-  await database.query("DELETE FROM new_users WHERE email = $1", [email]);
+  await database.query("DELETE FROM new_users WHERE email = ANY($1::text[])", [[email, legacyEmail]]);
   const rateLimitKeys = [
     `unknown|register:${email}`,
     `unknown|login:${email}`,
+    `unknown|login:${legacyEmail}`,
     `unknown|login:${rateLimitEmail}`,
   ].map((value) => createHash("sha256").update(value).digest("hex"));
   await database.query(

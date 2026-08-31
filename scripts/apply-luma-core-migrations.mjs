@@ -1,17 +1,15 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import pg from "pg";
 
 const { Client } = pg;
-const migrationId = "202608261700_new_auth";
-const migrationPath = path.resolve(
+const migrationsDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
   "database",
   "luma-core",
   "migrations",
-  `${migrationId}.sql`,
 );
 
 const connectionString = process.env.LUMA_CORE_DATABASE_URL;
@@ -38,15 +36,22 @@ try {
     )
   `);
 
-  const existing = await client.query(
-    "SELECT 1 FROM _luma_core_migrations WHERE id = $1",
-    [migrationId],
-  );
-  if (existing.rowCount) {
-    console.log(`Migration bereits angewendet: ${migrationId}`);
-    process.exitCode = 0;
-  } else {
-    const sql = await readFile(migrationPath, "utf8");
+  const migrationFiles = (await readdir(migrationsDirectory))
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+
+  for (const migrationFile of migrationFiles) {
+    const migrationId = migrationFile.replace(/\.sql$/, "");
+    const existing = await client.query(
+      "SELECT 1 FROM _luma_core_migrations WHERE id = $1",
+      [migrationId],
+    );
+    if (existing.rowCount) {
+      console.log(`Migration bereits angewendet: ${migrationId}`);
+      continue;
+    }
+
+    const sql = await readFile(path.join(migrationsDirectory, migrationFile), "utf8");
     await client.query("BEGIN");
     try {
       await client.query(sql);
