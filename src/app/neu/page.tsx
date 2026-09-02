@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getNewAuthSession } from "@/lib/new-auth";
 import NewLogoutButton from "@/components/NewLogoutButton";
 import NewFirstNameForm from "@/components/NewFirstNameForm";
-import { getNewCycleProfile } from "@/lib/new-cycle-profile";
+import NewCycleExample from "@/components/NewCycleExample";
 
 export const dynamic = "force-dynamic";
 
@@ -56,27 +56,25 @@ export default async function NewAppPage() {
     );
   }
 
-  const cycleProfile = await getNewCycleProfile(session.userId);
-
   return (
-    <main className="grid min-h-screen place-items-center bg-neutral-50 px-6">
-      <section className="flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-neutral-500">Neue Luma</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">
-            Herzlich willkommen bei Luma
-          </h1>
-          <p className="text-lg text-neutral-700">Hallo {session.firstName}</p>
-        </div>
-        {cycleProfile && (
-          <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Deine Zyklus-Basisangaben sind gespeichert.
-          </p>
-        )}
-        <Link href="/neu/zyklusprofil" className="rounded-xl bg-neutral-900 px-5 py-3.5 text-center text-sm font-medium text-white hover:bg-neutral-700">
-          {cycleProfile ? "Zyklus-Basisangaben ändern" : "Meine Zyklusansicht einrichten"}
-        </Link>
-        <NewLogoutButton />
+    <main className="min-h-screen bg-neutral-50 px-4 py-6 sm:px-6">
+      <section className="mx-auto flex w-full max-w-md flex-col gap-7 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+        <header className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-neutral-500">Herzlich willkommen bei Luma</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">
+              Hallo {session.firstName}
+            </h1>
+          </div>
+          <div className="grid size-11 shrink-0 place-items-center rounded-full border border-neutral-200 bg-neutral-100 text-neutral-700" aria-label="Profil">
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="size-6 fill-none stroke-current" strokeWidth="1.8">
+              <circle cx="12" cy="8" r="3.5" />
+              <path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6" strokeLinecap="round" />
+            </svg>
+          </div>
+        </header>
+
+        <NewCycleExample />
       </section>
     </main>
   );

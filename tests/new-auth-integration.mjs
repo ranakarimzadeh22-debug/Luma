@@ -80,7 +80,12 @@ try {
   assert.match(protectedHtml, /Herzlich willkommen bei Luma/);
   assert.match(protectedHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
   assert.doesNotMatch(protectedHtml, new RegExp(email));
-  assert.match(protectedHtml, /Meine Zyklusansicht einrichten/);
+  assert.match(protectedHtml, /Nur Beispiel/);
+  assert.match(protectedHtml, /Zyklusübersicht/);
+  assert.match(protectedHtml, /Kalender/);
+  assert.match(protectedHtml, /Heute/);
+  assert.doesNotMatch(protectedHtml, /Meine Zyklusansicht einrichten/);
+  assert.doesNotMatch(protectedHtml, /Erster Tag der letzten Periode/);
 
   const unauthenticatedProfile = await request("PUT", "/api/neu/cycle-profile", {
     lastPeriodStart: null,
@@ -130,8 +135,8 @@ try {
 
   const storedHome = await fetch(`${baseUrl}/neu`, { headers: { cookie: registrationCookie } });
   const storedHomeHtml = await storedHome.text();
-  assert.match(storedHomeHtml, /Zyklus-Basisangaben sind gespeichert/);
-  assert.match(storedHomeHtml, /Zyklus-Basisangaben ändern/);
+  assert.match(storedHomeHtml, /Nur Beispiel/);
+  assert.doesNotMatch(storedHomeHtml, /Zyklus-Basisangaben ändern/);
 
   const duplicate = await post("/api/neu/auth/register", {
     firstName: "Zara",
@@ -250,7 +255,8 @@ try {
   const namedUserHtml = await namedUserPage.text();
   assert.match(namedUserHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
   assert.doesNotMatch(namedUserHtml, /Mina/);
-  assert.match(namedUserHtml, /Zyklus-Basisangaben ändern/);
+  assert.match(namedUserHtml, /Nur Beispiel/);
+  assert.doesNotMatch(namedUserHtml, /Zyklus-Basisangaben ändern/);
 
   const changedProfile = await request("PUT", "/api/neu/cycle-profile", {
     lastPeriodStart: null,
