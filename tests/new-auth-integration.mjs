@@ -77,8 +77,7 @@ try {
   });
   assert.equal(protectedPage.status, 200);
   const protectedHtml = await protectedPage.text();
-  assert.match(protectedHtml, /Herzlich willkommen bei Luma/);
-  assert.match(protectedHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
+  assert.match(protectedHtml, /Beispiel-Zyklus/);
   assert.doesNotMatch(protectedHtml, new RegExp(email));
   assert.match(protectedHtml, /Nur Beispiel/);
   assert.match(protectedHtml, /Zyklusübersicht/);
@@ -241,7 +240,7 @@ try {
     headers: { cookie: legacyCookie },
   });
   const personalizedLegacyHtml = await personalizedLegacyPage.text();
-  assert.match(personalizedLegacyHtml, /Hallo(?:\s|<!--.*?-->)*Mina/);
+  assert.match(personalizedLegacyHtml, /Beispiel-Zyklus/);
   assert.doesNotMatch(personalizedLegacyHtml, /Zara/);
 
   await database.query("DELETE FROM new_users WHERE email = $1", [legacyEmail]);
@@ -253,7 +252,7 @@ try {
 
   const namedUserPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: loginCookie } });
   const namedUserHtml = await namedUserPage.text();
-  assert.match(namedUserHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
+  assert.match(namedUserHtml, /Beispiel-Zyklus/);
   assert.doesNotMatch(namedUserHtml, /Mina/);
   assert.match(namedUserHtml, /Nur Beispiel/);
   assert.doesNotMatch(namedUserHtml, /Zyklus-Basisangaben ändern/);

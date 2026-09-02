@@ -1,13 +1,9 @@
-const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+"use client";
 
-function monthDetails(now: Date) {
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const leadingDays = (new Date(year, month, 1).getDay() + 6) % 7;
-  const monthName = new Intl.DateTimeFormat("de-DE", { month: "long" }).format(now);
-  return { daysInMonth, leadingDays, monthName };
-}
+import { useState } from "react";
+import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
+
+const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
   if (day >= 25 && day <= 27) return "period";
@@ -26,12 +22,21 @@ const phaseLetters = { period: "P", pms: "M", ovulation: "E" };
 const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
 
 export default function NewCycleExample() {
-  const now = new Date();
-  const today = now.getDate();
-  const { daysInMonth, leadingDays, monthName } = monthDetails(now);
-  const cells = Array.from({ length: leadingDays + daysInMonth }, (_, index) =>
-    index < leadingDays ? null : index - leadingDays + 1,
+  const [today] = useState(() => new Date());
+  const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
+  const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
+  const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
+  const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
+    new Date(displayedMonth.year, displayedMonth.month, 1),
   );
+  const isExampleMonth =
+    displayedMonth.year === exampleMonth.year && displayedMonth.month === exampleMonth.month;
+  const isCurrentMonth =
+    displayedMonth.year === today.getFullYear() && displayedMonth.month === today.getMonth();
+
+  function changeMonth(offset: number) {
+    setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
+  }
 
   return (
     <div className="space-y-9 sm:space-y-10">
@@ -86,16 +91,16 @@ export default function NewCycleExample() {
 
       <section aria-label="Beispielkalender" className="space-y-5">
         <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
-          <span aria-hidden="true" className="text-center text-3xl font-light text-[#d59aae]">‹</span>
+          <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
           <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">{monthName}</h2>
-          <span aria-hidden="true" className="text-center text-3xl font-light text-[#d59aae]">›</span>
+          <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
         </div>
 
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
           {weekdayLabels.map((label) => <div key={label} className="pb-1 text-sm font-medium text-[#4b3a44]">{label}</div>)}
           {cells.map((day, index) => {
-            const phase = day ? examplePhase(day) : null;
-            const isToday = day === today;
+            const phase = day && isExampleMonth ? examplePhase(day) : null;
+            const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
             return (
               <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
                 {day && (
