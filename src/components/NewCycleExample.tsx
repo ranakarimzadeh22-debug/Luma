@@ -5,22 +5,25 @@ function monthDetails(now: Date) {
   const month = now.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const leadingDays = (new Date(year, month, 1).getDay() + 6) % 7;
-  const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(now);
+  const monthName = new Intl.DateTimeFormat("de-DE", { month: "long" }).format(now);
   return { daysInMonth, leadingDays, monthName };
 }
 
-function examplePhase(day: number): "P" | "E" | "M" | null {
-  if (day >= 3 && day <= 6) return "P";
-  if (day === 14 || day === 15) return "E";
-  if (day >= 23 && day <= 26) return "M";
+function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
+  if (day >= 25 && day <= 27) return "period";
+  if (day >= 15 && day <= 18) return "pms";
+  if (day === 11 || day === 12) return "ovulation";
   return null;
 }
 
 const phaseStyles = {
-  P: "bg-rose-100 text-rose-800",
-  E: "bg-amber-100 text-amber-900",
-  M: "bg-violet-100 text-violet-800",
+  period: "bg-[#4a0738] text-white",
+  pms: "bg-[#f8c2d0] text-[#9f164f]",
+  ovulation: "bg-[#e0d0f5] text-[#5420a5]",
 };
+
+const phaseLetters = { period: "P", pms: "M", ovulation: "E" };
+const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
 
 export default function NewCycleExample() {
   const now = new Date();
@@ -31,58 +34,90 @@ export default function NewCycleExample() {
   );
 
   return (
-    <div className="space-y-7">
-      <section aria-labelledby="cycle-example-title" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 id="cycle-example-title" className="text-lg font-semibold text-neutral-950">
-            Zyklusübersicht
-          </h2>
-          <span className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs font-semibold text-neutral-700">
-            Nur Beispiel
-          </span>
-        </div>
+    <div className="space-y-9 sm:space-y-10">
+      <section aria-label="Beispielhafte Zyklusübersicht" className="space-y-3">
+        <p className="text-center text-lg text-[#28101f]">Beispiel-Zyklus</p>
 
-        <div className="relative mx-auto aspect-square w-full max-w-72 rounded-full bg-[conic-gradient(#fecdd3_0deg_82deg,#f5f5f5_82deg_142deg,#fde68a_142deg_190deg,#f5f5f5_190deg_245deg,#ddd6fe_245deg_318deg,#f5f5f5_318deg_360deg)] p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]">
-          <div className="relative grid h-full place-items-center rounded-full bg-white shadow-sm">
-            <div className="text-center">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-500">Beispielansicht</p>
-              <p className="mt-1 text-2xl font-semibold text-neutral-950">Ein Zyklus</p>
-            </div>
-            <span className="absolute left-1/2 top-1 -translate-x-1/2 rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-800">P · Periode</span>
-            <span className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">E · Eisprung</span>
-            <span className="absolute bottom-5 left-2 rounded-full bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-800">M · PMS</span>
-          </div>
+        <div className="relative mx-auto aspect-square w-full max-w-[22rem]">
+          <svg viewBox="0 0 320 320" role="img" aria-labelledby="cycle-ring-title cycle-ring-description" className="h-full w-full scale-[1.08] overflow-visible sm:scale-100">
+            <title id="cycle-ring-title">Zyklusübersicht – Nur Beispiel</title>
+            <desc id="cycle-ring-description">Drei beispielhafte Segmente für Periode, PMS und Eisprung sowie ein Heute-Marker.</desc>
+            <defs>
+              <filter id="ring-shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#7f315d" floodOpacity="0.12" />
+              </filter>
+              <linearGradient id="period-gradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#b52762" /><stop offset="1" stopColor="#8f184f" />
+              </linearGradient>
+              <linearGradient id="pms-gradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#ffd7df" /><stop offset="1" stopColor="#f3afc2" />
+              </linearGradient>
+              <linearGradient id="ovulation-gradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#eee6fa" /><stop offset="1" stopColor="#d4c0ef" />
+              </linearGradient>
+            </defs>
+
+            <circle cx="160" cy="160" r="125" fill="none" stroke="#fff" strokeWidth="42" opacity="0.9" />
+            <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
+              <path d="M64 80 A125 125 0 0 1 268 223" stroke="url(#period-gradient)" />
+              <path d="M258 237 A125 125 0 0 1 80 256" stroke="url(#ovulation-gradient)" />
+              <path d="M67 244 A125 125 0 0 1 54 94" stroke="url(#pms-gradient)" />
+            </g>
+
+            <text x="160" y="56" textAnchor="middle" fill="white" fontSize="17" fontWeight="600">Periode</text>
+            <text x="258" y="235" textAnchor="middle" fill="#5420a5" fontSize="15" fontWeight="600" transform="rotate(-43 258 235)">Eisprung</text>
+            <text x="65" y="205" textAnchor="middle" fill="#a51752" fontSize="15" fontWeight="600" transform="rotate(66 65 205)">PMS</text>
+
+            <circle cx="252" cy="84" r="14" fill="white" /><circle cx="252" cy="84" r="9" fill="#4a0738" /><circle cx="252" cy="84" r="4" fill="#df6b9a" />
+            <path d="M264 74 L277 59" stroke="#4a0738" strokeWidth="2" strokeLinecap="round" />
+            <rect x="270" y="39" width="47" height="23" rx="8" fill="#4a0738" />
+            <text x="293.5" y="55" textAnchor="middle" fill="white" fontSize="12" fontWeight="600">Heute</text>
+
+            <g textAnchor="middle">
+              <path d="M160 110 C151 122 153 132 160 135 C167 132 169 122 160 110Z" fill="#df6b9a" />
+              <text x="160" y="164" fill="#351127" fontFamily="Georgia, serif" fontSize="25" fontWeight="600">Zyklusansicht</text>
+              <rect x="116" y="178" width="88" height="25" rx="12" fill="#f8e4e9" />
+              <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">Nur Beispiel</text>
+              <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="18">keine Vorhersage</text>
+            </g>
+          </svg>
         </div>
       </section>
 
-      <section aria-labelledby="example-calendar-title" className="space-y-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 id="example-calendar-title" className="text-lg font-semibold text-neutral-950">Kalender</h2>
-          <p className="capitalize text-sm text-neutral-500">{monthName}</p>
+      <section aria-label="Beispielkalender" className="space-y-5">
+        <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
+          <span aria-hidden="true" className="text-center text-3xl font-light text-[#d59aae]">‹</span>
+          <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">{monthName}</h2>
+          <span aria-hidden="true" className="text-center text-3xl font-light text-[#d59aae]">›</span>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {weekdayLabels.map((label) => <div key={label} className="py-1 text-xs font-medium text-neutral-400">{label}</div>)}
+
+        <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
+          {weekdayLabels.map((label) => <div key={label} className="pb-1 text-sm font-medium text-[#4b3a44]">{label}</div>)}
           {cells.map((day, index) => {
             const phase = day ? examplePhase(day) : null;
             const isToday = day === today;
             return (
-              <div key={`${day ?? "empty"}-${index}`} className="relative min-h-11">
+              <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
                 {day && (
-                  <div className={`relative flex h-10 items-center justify-center rounded-lg text-sm ${isToday ? "ring-2 ring-neutral-900 ring-offset-1" : ""} ${phase ? phaseStyles[phase] : "text-neutral-700"}`}>
+                  <div className={`relative grid h-full place-items-center rounded-2xl text-base ${phase ? phaseStyles[phase] : "bg-white/55 text-[#281c24]"} ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`}>
                     <span>{day}</span>
-                    {phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phase === "P" ? "Periode" : phase === "E" ? "Eisprung" : "PMS"}>{phase}</span>}
-                    {isToday && <span className="absolute -bottom-3 text-[9px] font-bold text-neutral-950">Heute</span>}
+                    {phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
+                    {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
                   </div>
                 )}
               </div>
             );
           })}
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-neutral-700" aria-label="Legende">
-          <span><strong className="text-rose-700">P</strong> Periode</span>
-          <span><strong className="text-amber-700">E</strong> Eisprung</span>
-          <span><strong className="text-violet-700">M</strong> PMS</span>
-          <span><strong className="rounded border border-neutral-900 px-1 text-neutral-900">Heute</strong></span>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm text-[#382631]" aria-label="Legende">
+          <span className="inline-flex items-center gap-2"><strong className="grid size-5 place-items-center rounded-full bg-[#4a0738] text-[9px] text-white">P</strong>Periode</span>
+          <span className="inline-flex items-center gap-2"><strong className="grid size-5 place-items-center rounded-full bg-[#f3a9bd] text-[9px] text-[#831341]">M</strong>PMS</span>
+          <span className="inline-flex items-center gap-2"><strong className="grid size-5 place-items-center rounded-full bg-[#d2b9ef] text-[9px] text-[#4c2098]">E</strong>Eisprung</span>
+        </div>
+
+        <div className="flex justify-center pb-1">
+          <p className="rounded-full bg-[#f4e4e3] px-6 py-3 text-sm font-medium text-[#382631]"><span aria-hidden="true">✦ </span>Nur Beispiel</p>
         </div>
       </section>
     </div>

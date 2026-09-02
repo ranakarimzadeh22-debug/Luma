@@ -82,7 +82,7 @@ try {
   assert.doesNotMatch(protectedHtml, new RegExp(email));
   assert.match(protectedHtml, /Nur Beispiel/);
   assert.match(protectedHtml, /Zyklusübersicht/);
-  assert.match(protectedHtml, /Kalender/);
+  assert.match(protectedHtml, /Beispielkalender/);
   assert.match(protectedHtml, /Heute/);
   assert.doesNotMatch(protectedHtml, /Meine Zyklusansicht einrichten/);
   assert.doesNotMatch(protectedHtml, /Erster Tag der letzten Periode/);
