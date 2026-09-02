@@ -19,8 +19,12 @@ function cookieFrom(response) {
 }
 
 async function post(path, body, cookie = "") {
+  return request("POST", path, body, cookie);
+}
+
+async function request(method, path, body, cookie = "") {
   return fetch(`${baseUrl}${path}`, {
-    method: "POST",
+    method,
     headers: {
       "content-type": "application/json",
       origin: baseUrl,
@@ -77,6 +81,57 @@ try {
   assert.match(protectedHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
   assert.doesNotMatch(protectedHtml, new RegExp(email));
   assert.match(protectedHtml, /Meine Zyklusansicht einrichten/);
+
+  const unauthenticatedProfile = await request("PUT", "/api/neu/cycle-profile", {
+    lastPeriodStart: null,
+    bleedingDurationDays: null,
+    cycleLengthDays: null,
+    regularity: "unknown",
+  });
+  assert.equal(unauthenticatedProfile.status, 401);
+
+  const profilePage = await fetch(`${baseUrl}/neu/zyklusprofil`, {
+    headers: { cookie: registrationCookie },
+  });
+  assert.equal(profilePage.status, 200);
+  const profileHtml = await profilePage.text();
+  assert.match(profileHtml, /Erster Tag der letzten Periode/);
+  assert.match(profileHtml, /Ich weiß es nicht/);
+
+  const invalidProfile = await request("PUT", "/api/neu/cycle-profile", {
+    lastPeriodStart: "2999-01-01",
+    bleedingDurationDays: 0,
+    cycleLengthDays: 28,
+    regularity: "regular",
+  }, registrationCookie);
+  assert.equal(invalidProfile.status, 400);
+
+  const savedProfile = await request("PUT", "/api/neu/cycle-profile", {
+    lastPeriodStart: "2026-08-20",
+    bleedingDurationDays: null,
+    cycleLengthDays: 29,
+    regularity: "unknown",
+  }, registrationCookie);
+  assert.equal(savedProfile.status, 200);
+
+  const storedProfile = await database.query(
+    `SELECT p.last_period_start::text, p.bleeding_duration_days, p.cycle_length_days, p.regularity
+     FROM new_cycle_baseline_profiles p
+     JOIN new_users u ON u.id = p.user_id
+     WHERE u.email = $1`,
+    [email],
+  );
+  assert.deepEqual(storedProfile.rows[0], {
+    last_period_start: "2026-08-20",
+    bleeding_duration_days: null,
+    cycle_length_days: 29,
+    regularity: "unknown",
+  });
+
+  const storedHome = await fetch(`${baseUrl}/neu`, { headers: { cookie: registrationCookie } });
+  const storedHomeHtml = await storedHome.text();
+  assert.match(storedHomeHtml, /Zyklus-Basisangaben sind gespeichert/);
+  assert.match(storedHomeHtml, /Zyklus-Basisangaben ändern/);
 
   const duplicate = await post("/api/neu/auth/register", {
     firstName: "Zara",
@@ -152,6 +207,26 @@ try {
     "SELECT email, first_name FROM new_users WHERE email = ANY($1::text[]) ORDER BY email",
     [[email, legacyEmail]],
   );
+
+  const secondAccountProfile = await request("PUT", "/api/neu/cycle-profile", {
+    lastPeriodStart: null,
+    bleedingDurationDays: 6,
+    cycleLengthDays: null,
+    regularity: "irregular",
+  }, legacyCookie);
+  assert.equal(secondAccountProfile.status, 200);
+
+  const separatedProfiles = await database.query(
+    `SELECT u.email, p.last_period_start::text, p.bleeding_duration_days, p.cycle_length_days, p.regularity
+     FROM new_cycle_baseline_profiles p
+     JOIN new_users u ON u.id = p.user_id
+     WHERE u.email = ANY($1::text[])
+     ORDER BY u.email`,
+    [[email, legacyEmail]],
+  );
+  assert.equal(separatedProfiles.rowCount, 2);
+  assert.notDeepEqual(separatedProfiles.rows[0], separatedProfiles.rows[1]);
+
   assert.deepEqual(
     Object.fromEntries(separatedUsers.rows.map((row) => [row.email, row.first_name])),
     { [email]: "Zara", [legacyEmail]: "Mina" },
@@ -164,10 +239,39 @@ try {
   assert.match(personalizedLegacyHtml, /Hallo(?:\s|<!--.*?-->)*Mina/);
   assert.doesNotMatch(personalizedLegacyHtml, /Zara/);
 
+  await database.query("DELETE FROM new_users WHERE email = $1", [legacyEmail]);
+  const deletedProfile = await database.query(
+    "SELECT 1 FROM new_cycle_baseline_profiles WHERE user_id = $1",
+    [legacyUserId],
+  );
+  assert.equal(deletedProfile.rowCount, 0);
+
   const namedUserPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: loginCookie } });
   const namedUserHtml = await namedUserPage.text();
   assert.match(namedUserHtml, /Hallo(?:\s|<!--.*?-->)*Zara/);
   assert.doesNotMatch(namedUserHtml, /Mina/);
+  assert.match(namedUserHtml, /Zyklus-Basisangaben ändern/);
+
+  const changedProfile = await request("PUT", "/api/neu/cycle-profile", {
+    lastPeriodStart: null,
+    bleedingDurationDays: 7,
+    cycleLengthDays: null,
+    regularity: "irregular",
+  }, loginCookie);
+  assert.equal(changedProfile.status, 200);
+  const changedStoredProfile = await database.query(
+    `SELECT p.last_period_start::text, p.bleeding_duration_days, p.cycle_length_days, p.regularity
+     FROM new_cycle_baseline_profiles p
+     JOIN new_users u ON u.id = p.user_id
+     WHERE u.email = $1`,
+    [email],
+  );
+  assert.deepEqual(changedStoredProfile.rows[0], {
+    last_period_start: null,
+    bleeding_duration_days: 7,
+    cycle_length_days: null,
+    regularity: "irregular",
+  });
 
   const oldLogin = await fetch(`${baseUrl}/login`);
   const oldRegistration = await fetch(`${baseUrl}/register`);

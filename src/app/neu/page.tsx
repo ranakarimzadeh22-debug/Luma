@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getNewAuthSession } from "@/lib/new-auth";
 import NewLogoutButton from "@/components/NewLogoutButton";
 import NewFirstNameForm from "@/components/NewFirstNameForm";
+import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export default async function NewAppPage() {
     );
   }
 
+  const cycleProfile = await getNewCycleProfile(session.userId);
+
   return (
     <main className="grid min-h-screen place-items-center bg-neutral-50 px-6">
       <section className="flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
@@ -65,13 +68,14 @@ export default async function NewAppPage() {
           </h1>
           <p className="text-lg text-neutral-700">Hallo {session.firstName}</p>
         </div>
-        <button
-          type="button"
-          disabled
-          className="rounded-xl bg-neutral-900 px-5 py-3.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          Meine Zyklusansicht einrichten
-        </button>
+        {cycleProfile && (
+          <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Deine Zyklus-Basisangaben sind gespeichert.
+          </p>
+        )}
+        <Link href="/neu/zyklusprofil" className="rounded-xl bg-neutral-900 px-5 py-3.5 text-center text-sm font-medium text-white hover:bg-neutral-700">
+          {cycleProfile ? "Zyklus-Basisangaben ändern" : "Meine Zyklusansicht einrichten"}
+        </Link>
         <NewLogoutButton />
       </section>
     </main>
