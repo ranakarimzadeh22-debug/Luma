@@ -4,6 +4,8 @@ import NewLogoutButton from "@/components/NewLogoutButton";
 import NewFirstNameForm from "@/components/NewFirstNameForm";
 import NewCycleExample from "@/components/NewCycleExample";
 import { getNewPeriodEntries } from "@/lib/new-periods";
+import { getNewCycleProfile } from "@/lib/new-cycle-profile";
+import { predictCycle } from "@/lib/new-cycle-prediction";
 
 export const dynamic = "force-dynamic";
 
@@ -57,12 +59,16 @@ export default async function NewAppPage() {
     );
   }
 
-  const periodEntries = await getNewPeriodEntries(session.userId);
+  const [periodEntries, profile] = await Promise.all([
+    getNewPeriodEntries(session.userId),
+    getNewCycleProfile(session.userId),
+  ]);
+  const prediction = predictCycle(periodEntries, profile);
 
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_15%_12%,rgba(250,220,225,0.58),transparent_34%),radial-gradient(circle_at_88%_44%,rgba(238,219,244,0.46),transparent_32%),#fff9f8] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-7">
       <section className="mx-auto flex w-full max-w-[27rem] flex-col gap-8">
-        <NewCycleExample initialPeriods={periodEntries} />
+        <NewCycleExample initialPeriods={periodEntries} prediction={prediction} />
       </section>
     </main>
   );

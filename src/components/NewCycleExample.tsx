@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
+import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
+import { buildRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -12,6 +14,21 @@ function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
   if (day === 11 || day === 12) return "ovulation";
   return null;
 }
+
+function predictedPhaseForCalendarDay(
+  date: string,
+  prediction: CyclePrediction,
+): "period" | "pms" | "ovulation" | null {
+  const phase = phaseForDate(date, prediction);
+  if (phase === "fertile") return null;
+  return phase;
+}
+
+const predictionSourceLabels: Record<CyclePrediction["source"], string> = {
+  history: "Basierend auf deinen gespeicherten Perioden",
+  profile: "Basierend auf deinen Angaben beim Start",
+  default: "Geschätzt mit einem durchschnittlichen Zyklus (28 Tage)",
+};
 
 const phaseStyles = {
   period: "bg-[#4a0738] text-white",
@@ -42,6 +59,7 @@ interface PhaseLegendItemProps {
 
 interface NewCycleExampleProps {
   initialPeriods: NewPeriodEntry[];
+  prediction: CyclePrediction | null;
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -117,7 +135,7 @@ function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItem
   );
 }
 
-export default function NewCycleExample({ initialPeriods }: NewCycleExampleProps) {
+export default function NewCycleExample({ initialPeriods, prediction }: NewCycleExampleProps) {
   const [today] = useState(() => new Date());
   const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
@@ -137,6 +155,8 @@ export default function NewCycleExample({ initialPeriods }: NewCycleExampleProps
     displayedMonth.year === exampleMonth.year && displayedMonth.month === exampleMonth.month;
   const isCurrentMonth =
     displayedMonth.year === today.getFullYear() && displayedMonth.month === today.getMonth();
+  const todayKey = todayDateOnly(today);
+  const ringGeometry = prediction ? buildRingGeometry(prediction, todayKey) : null;
 
   function changeMonth(offset: number) {
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
@@ -219,13 +239,17 @@ export default function NewCycleExample({ initialPeriods }: NewCycleExampleProps
 
   return (
     <div className="space-y-9 sm:space-y-10">
-      <section aria-label="Beispielhafte Zyklusübersicht" className="space-y-3">
-        <p className="text-center text-lg text-[#28101f]">Beispiel-Zyklus</p>
+      <section aria-label={prediction ? "Deine Zyklusübersicht" : "Beispielhafte Zyklusübersicht"} className="space-y-3">
+        <p className="text-center text-lg text-[#28101f]">{prediction ? "Dein Zyklus" : "Beispiel-Zyklus"}</p>
 
         <div className="relative mx-auto aspect-square w-full max-w-[22rem]">
           <svg viewBox="0 0 320 320" role="img" aria-labelledby="cycle-ring-title cycle-ring-description" className="h-full w-full scale-[1.08] overflow-visible sm:scale-100">
-            <title id="cycle-ring-title">Zyklusübersicht – Nur Beispiel</title>
-            <desc id="cycle-ring-description">Drei beispielhafte Segmente für Periode, PMS und Eisprung sowie ein Heute-Marker.</desc>
+            <title id="cycle-ring-title">{prediction ? "Zyklusübersicht – deine Vorhersage" : "Zyklusübersicht – Nur Beispiel"}</title>
+            <desc id="cycle-ring-description">
+              {prediction
+                ? "Segmente für Periode, fruchtbare Tage und PMS basierend auf deinen Daten sowie ein Heute-Marker."
+                : "Drei beispielhafte Segmente für Periode, PMS und Eisprung sowie ein Heute-Marker."}
+            </desc>
             <defs>
               <filter id="ring-shadow" x="-20%" y="-20%" width="140%" height="140%">
                 <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#7f315d" floodOpacity="0.12" />
@@ -242,30 +266,99 @@ export default function NewCycleExample({ initialPeriods }: NewCycleExampleProps
             </defs>
 
             <circle cx="160" cy="160" r="125" fill="none" stroke="#fff" strokeWidth="42" opacity="0.9" />
-            <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
-              <path d="M64 80 A125 125 0 0 1 268 223" stroke="url(#period-gradient)" />
-              <path d="M258 237 A125 125 0 0 1 80 256" stroke="url(#ovulation-gradient)" />
-              <path d="M67 244 A125 125 0 0 1 54 94" stroke="url(#pms-gradient)" />
-            </g>
 
-            <text x="160" y="56" textAnchor="middle" fill="white" fontSize="17" fontWeight="600">Periode</text>
-            <text x="258" y="235" textAnchor="middle" fill="#5420a5" fontSize="15" fontWeight="600" transform="rotate(-43 258 235)">Eisprung</text>
-            <text x="65" y="205" textAnchor="middle" fill="#a51752" fontSize="15" fontWeight="600" transform="rotate(66 65 205)">PMS</text>
-
-            <circle cx="252" cy="84" r="14" fill="white" /><circle cx="252" cy="84" r="9" fill="#4a0738" /><circle cx="252" cy="84" r="4" fill="#df6b9a" />
-            <path d="M264 74 L277 59" stroke="#4a0738" strokeWidth="2" strokeLinecap="round" />
-            <rect x="270" y="39" width="47" height="23" rx="8" fill="#4a0738" />
-            <text x="293.5" y="55" textAnchor="middle" fill="white" fontSize="12" fontWeight="600">Heute</text>
+            {ringGeometry && prediction ? (
+              <>
+                <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
+                  {ringGeometry.segments.map((segment) => (
+                    <path
+                      key={segment.key}
+                      d={segment.path}
+                      stroke={
+                        segment.key === "period"
+                          ? "url(#period-gradient)"
+                          : segment.key === "fertile"
+                            ? "url(#ovulation-gradient)"
+                            : "url(#pms-gradient)"
+                      }
+                    />
+                  ))}
+                </g>
+                {ringGeometry.segments.map((segment) => {
+                  const point = ringPointAt(segment.labelAngle);
+                  const label =
+                    segment.key === "period" ? "Periode" : segment.key === "fertile" ? "Eisprung" : "PMS";
+                  const fill = segment.key === "fertile" ? "#5420a5" : segment.key === "pms" ? "#a51752" : "white";
+                  return (
+                    <text
+                      key={segment.key}
+                      x={point.x}
+                      y={point.y}
+                      textAnchor="middle"
+                      fill={fill}
+                      fontSize="14"
+                      fontWeight="600"
+                    >
+                      {label}
+                    </text>
+                  );
+                })}
+                {(() => {
+                  const marker = ringPointAt(ringGeometry.todayAngle);
+                  return (
+                    <>
+                      <circle cx={marker.x} cy={marker.y} r="14" fill="white" />
+                      <circle cx={marker.x} cy={marker.y} r="9" fill="#4a0738" />
+                      <circle cx={marker.x} cy={marker.y} r="4" fill="#df6b9a" />
+                    </>
+                  );
+                })()}
+              </>
+            ) : (
+              <>
+                <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
+                  <path d="M64 80 A125 125 0 0 1 268 223" stroke="url(#period-gradient)" />
+                  <path d="M258 237 A125 125 0 0 1 80 256" stroke="url(#ovulation-gradient)" />
+                  <path d="M67 244 A125 125 0 0 1 54 94" stroke="url(#pms-gradient)" />
+                </g>
+                <text x="160" y="56" textAnchor="middle" fill="white" fontSize="17" fontWeight="600">Periode</text>
+                <text x="258" y="235" textAnchor="middle" fill="#5420a5" fontSize="15" fontWeight="600" transform="rotate(-43 258 235)">Eisprung</text>
+                <text x="65" y="205" textAnchor="middle" fill="#a51752" fontSize="15" fontWeight="600" transform="rotate(66 65 205)">PMS</text>
+                <circle cx="252" cy="84" r="14" fill="white" /><circle cx="252" cy="84" r="9" fill="#4a0738" /><circle cx="252" cy="84" r="4" fill="#df6b9a" />
+                <path d="M264 74 L277 59" stroke="#4a0738" strokeWidth="2" strokeLinecap="round" />
+                <rect x="270" y="39" width="47" height="23" rx="8" fill="#4a0738" />
+                <text x="293.5" y="55" textAnchor="middle" fill="white" fontSize="12" fontWeight="600">Heute</text>
+              </>
+            )}
 
             <g textAnchor="middle">
               <path d="M160 110 C151 122 153 132 160 135 C167 132 169 122 160 110Z" fill="#df6b9a" />
               <text x="160" y="164" fill="#351127" fontFamily="Georgia, serif" fontSize="25" fontWeight="600">Zyklusansicht</text>
-              <rect x="116" y="178" width="88" height="25" rx="12" fill="#f8e4e9" />
-              <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">Nur Beispiel</text>
-              <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="18">keine Vorhersage</text>
+              {prediction ? (
+                <>
+                  <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
+                  <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
+                    Nächste Periode: {formatPeriodDate(prediction.nextPeriodStart)}
+                  </text>
+                  <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">
+                    {predictionSourceLabels[prediction.source]}
+                  </text>
+                </>
+              ) : (
+                <>
+                  <rect x="116" y="178" width="88" height="25" rx="12" fill="#f8e4e9" />
+                  <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">Nur Beispiel</text>
+                  <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="18">keine Vorhersage</text>
+                </>
+              )}
             </g>
           </svg>
         </div>
+        {!prediction && (
+          <p className="mx-auto max-w-xs text-center text-sm text-[#6b5560]">
+            Trage mindestens eine vergangene Periode ein, damit Luma deinen Zyklus vorhersagen kann.
+          </p>
+        )}
       </section>
 
       <section aria-label="Beispielkalender" className="space-y-5">
@@ -289,11 +382,17 @@ export default function NewCycleExample({ initialPeriods }: NewCycleExampleProps
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
           {weekdayLabels.map((label) => <div key={label} className="pb-1 text-sm font-medium text-[#4b3a44]">{label}</div>)}
           {cells.map((day, index) => {
-            const phase = day && isExampleMonth ? examplePhase(day) : null;
-            const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
             const date = day
               ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day)
               : null;
+            const phase = day
+              ? prediction
+                ? predictedPhaseForCalendarDay(date as string, prediction)
+                : isExampleMonth
+                  ? examplePhase(day)
+                  : null
+              : null;
+            const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
             const isSelectable = Boolean(date && date <= todayDateOnly(today));
             const storedPeriod = date
               ? periods.find((entry) => entry.startDate <= date && entry.endDate >= date)
