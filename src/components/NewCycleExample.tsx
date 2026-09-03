@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -20,11 +20,93 @@ const phaseStyles = {
 
 const phaseLetters = { period: "P", pms: "M", ovulation: "E" };
 const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
+const phaseLegendStyles = {
+  period: "bg-[#4a0738] text-white",
+  pms: "bg-[#f3a9bd] text-[#831341]",
+  ovulation: "bg-[#d2b9ef] text-[#4c2098]",
+};
+const phaseExplanations = {
+  period: "Die Tage, an denen du deine Monatsblutung hast.",
+  pms: "Beschwerden, die vor der Periode auftreten können, zum Beispiel Müdigkeit oder Stimmungsschwankungen.",
+  ovulation: "Die Zeit, in der eine Eizelle freigesetzt wird.",
+};
+
+type Phase = keyof typeof phaseLabels;
+
+interface PhaseLegendItemProps {
+  phase: Phase;
+  activePhase: Phase | null;
+  setActivePhase: (phase: Phase | null) => void;
+}
+
+function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItemProps) {
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasFocus = useRef(false);
+  const isActive = activePhase === phase;
+  const tooltipId = `phase-explanation-${phase}`;
+
+  function stopLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={`${phaseLetters[phase]} – ${phaseLabels[phase]}: Erklärung anzeigen`}
+      aria-describedby={isActive ? tooltipId : undefined}
+      onMouseEnter={() => setActivePhase(phase)}
+      onMouseLeave={() => {
+        if (!hasFocus.current) setActivePhase(null);
+      }}
+      onFocus={() => {
+        hasFocus.current = true;
+        setActivePhase(phase);
+      }}
+      onBlur={() => {
+        hasFocus.current = false;
+        setActivePhase(null);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          setActivePhase(null);
+          event.currentTarget.blur();
+        }
+      }}
+      onPointerDown={(event) => {
+        if (event.pointerType !== "touch") return;
+        event.preventDefault();
+        stopLongPress();
+        longPressTimer.current = setTimeout(() => setActivePhase(phase), 450);
+      }}
+      onPointerUp={(event) => {
+        if (event.pointerType !== "touch") return;
+        stopLongPress();
+        setActivePhase(null);
+      }}
+      onPointerCancel={() => {
+        stopLongPress();
+        setActivePhase(null);
+      }}
+      onContextMenu={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
+      className="inline-flex select-none items-center gap-2 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] [-webkit-touch-callout:none]"
+    >
+      <strong className={`grid size-5 place-items-center rounded-full text-[9px] ${phaseLegendStyles[phase]}`}>
+        {phaseLetters[phase]}
+      </strong>
+      {phaseLabels[phase]}
+    </button>
+  );
+}
 
 export default function NewCycleExample() {
   const [today] = useState(() => new Date());
   const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
+  const [activePhase, setActivePhase] = useState<Phase | null>(null);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -115,10 +197,26 @@ export default function NewCycleExample() {
           })}
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm text-[#382631]" aria-label="Legende">
-          <span className="inline-flex items-center gap-2"><strong className="grid size-5 place-items-center rounded-full bg-[#4a0738] text-[9px] text-white">P</strong>Periode</span>
-          <span className="inline-flex items-center gap-2"><strong className="grid size-5 place-items-center rounded-full bg-[#f3a9bd] text-[9px] text-[#831341]">M</strong>PMS</span>
-          <span className="inline-flex items-center gap-2"><strong className="grid size-5 place-items-center rounded-full bg-[#d2b9ef] text-[9px] text-[#4c2098]">E</strong>Eisprung</span>
+        <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+            {(["period", "pms", "ovulation"] as const).map((phase) => (
+              <PhaseLegendItem
+                key={phase}
+                phase={phase}
+                activePhase={activePhase}
+                setActivePhase={setActivePhase}
+              />
+            ))}
+          </div>
+          {activePhase && (
+            <p
+              id={`phase-explanation-${activePhase}`}
+              role="tooltip"
+              className="mx-auto max-w-sm rounded-2xl border border-[#efd5dc] bg-white/95 px-4 py-3 text-center leading-relaxed shadow-[0_8px_24px_rgba(91,31,62,0.12)]"
+            >
+              {phaseExplanations[activePhase]}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-center pb-1">
