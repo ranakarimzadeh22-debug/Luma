@@ -86,6 +86,62 @@ try {
   assert.doesNotMatch(protectedHtml, /Meine Zyklusansicht einrichten/);
   assert.doesNotMatch(protectedHtml, /Erster Tag der letzten Periode/);
 
+  const unauthenticatedPeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2026-06-02",
+    endDate: "2026-06-06",
+  });
+  assert.equal(unauthenticatedPeriod.status, 401);
+
+  const firstPeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2026-06-02",
+    endDate: "2026-06-06",
+  }, registrationCookie);
+  assert.equal(firstPeriod.status, 201);
+  const firstPeriodId = (await firstPeriod.json()).entry.id;
+
+  const secondPeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2026-07-03",
+    endDate: "2026-07-07",
+  }, registrationCookie);
+  assert.equal(secondPeriod.status, 201);
+  const secondPeriodId = (await secondPeriod.json()).entry.id;
+
+  const reversedPeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2026-08-08",
+    endDate: "2026-08-03",
+  }, registrationCookie);
+  assert.equal(reversedPeriod.status, 400);
+
+  const futurePeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2999-01-01",
+    endDate: "2999-01-05",
+  }, registrationCookie);
+  assert.equal(futurePeriod.status, 400);
+
+  const overlappingPeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2026-06-05",
+    endDate: "2026-06-09",
+  }, registrationCookie);
+  assert.equal(overlappingPeriod.status, 409);
+
+  const invalidPeriodId = await request("PUT", "/api/neu/periods/kein-gueltiger-eintrag", {
+    startDate: "2026-04-01",
+    endDate: "2026-04-04",
+  }, registrationCookie);
+  assert.equal(invalidPeriodId.status, 404);
+
+  const storedPeriods = await fetch(`${baseUrl}/api/neu/periods`, {
+    headers: { cookie: registrationCookie },
+  });
+  assert.equal(storedPeriods.status, 200);
+  assert.equal((await storedPeriods.json()).entries.length, 2);
+
+  const updatedPeriod = await request("PUT", `/api/neu/periods/${firstPeriodId}`, {
+    startDate: "2026-06-01",
+    endDate: "2026-06-05",
+  }, registrationCookie);
+  assert.equal(updatedPeriod.status, 200);
+
   const unauthenticatedProfile = await request("PUT", "/api/neu/cycle-profile", {
     lastPeriodStart: null,
     bleedingDurationDays: null,
@@ -170,6 +226,17 @@ try {
   assert.equal(login.status, 200);
   const loginCookie = cookieFrom(login);
   assert.match(loginCookie, /^luma_new_session=/);
+  const periodsAfterLogin = await fetch(`${baseUrl}/api/neu/periods`, {
+    headers: { cookie: loginCookie },
+  });
+  assert.equal(periodsAfterLogin.status, 200);
+  assert.deepEqual(
+    (await periodsAfterLogin.json()).entries.map(({ startDate, endDate }) => ({ startDate, endDate })),
+    [
+      { startDate: "2026-07-03", endDate: "2026-07-07" },
+      { startDate: "2026-06-01", endDate: "2026-06-05" },
+    ],
+  );
 
   const legacyUserId = randomUUID();
   const legacyPasswordHash = await bcrypt.hash(password, 12);
@@ -181,6 +248,14 @@ try {
   const legacyLogin = await post("/api/neu/auth/login", { email: legacyEmail, password });
   assert.equal(legacyLogin.status, 200);
   const legacyCookie = cookieFrom(legacyLogin);
+
+  const crossAccountUpdate = await request("PUT", `/api/neu/periods/${firstPeriodId}`, {
+    startDate: "2026-06-01",
+    endDate: "2026-06-04",
+  }, legacyCookie);
+  assert.equal(crossAccountUpdate.status, 404);
+  const crossAccountDelete = await request("DELETE", `/api/neu/periods/${firstPeriodId}`, {}, legacyCookie);
+  assert.equal(crossAccountDelete.status, 404);
 
   const legacyPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: legacyCookie } });
   assert.equal(legacyPage.status, 200);
@@ -199,6 +274,13 @@ try {
     legacyCookie,
   );
   assert.equal(nameUpdate.status, 200);
+
+  const legacyPeriod = await request("POST", "/api/neu/periods", {
+    startDate: "2026-05-10",
+    endDate: "2026-05-13",
+  }, legacyCookie);
+  assert.equal(legacyPeriod.status, 201);
+  const legacyPeriodId = (await legacyPeriod.json()).entry.id;
 
   const repeatedNameUpdate = await post(
     "/api/neu/profile/name",
@@ -243,12 +325,24 @@ try {
   assert.match(personalizedLegacyHtml, /Beispiel-Zyklus/);
   assert.doesNotMatch(personalizedLegacyHtml, /Zara/);
 
+  const deletedPeriod = await request("DELETE", `/api/neu/periods/${secondPeriodId}`, {}, loginCookie);
+  assert.equal(deletedPeriod.status, 200);
+  const periodsAfterDelete = await fetch(`${baseUrl}/api/neu/periods`, {
+    headers: { cookie: loginCookie },
+  });
+  assert.equal((await periodsAfterDelete.json()).entries.length, 1);
+
   await database.query("DELETE FROM new_users WHERE email = $1", [legacyEmail]);
   const deletedProfile = await database.query(
     "SELECT 1 FROM new_cycle_baseline_profiles WHERE user_id = $1",
     [legacyUserId],
   );
   assert.equal(deletedProfile.rowCount, 0);
+  const deletedPeriods = await database.query(
+    "SELECT 1 FROM new_period_entries WHERE id = $1",
+    [legacyPeriodId],
+  );
+  assert.equal(deletedPeriods.rowCount, 0);
 
   const namedUserPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: loginCookie } });
   const namedUserHtml = await namedUserPage.text();
