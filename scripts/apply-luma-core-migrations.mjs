@@ -20,6 +20,27 @@ if (configuredDatabase !== "luma_core") {
   throw new Error("Migration gestoppt: Ziel muss luma_core sein.");
 }
 
+async function ensureDatabaseExists() {
+  const adminUrl = new URL(connectionString);
+  adminUrl.pathname = "/postgres";
+  const adminClient = new Client({ connectionString: adminUrl.toString() });
+  await adminClient.connect();
+  try {
+    const existing = await adminClient.query(
+      "SELECT 1 FROM pg_database WHERE datname = $1",
+      ["luma_core"],
+    );
+    if (existing.rowCount === 0) {
+      await adminClient.query("CREATE DATABASE luma_core");
+      console.log("Datenbank luma_core angelegt.");
+    }
+  } finally {
+    await adminClient.end();
+  }
+}
+
+await ensureDatabaseExists();
+
 const client = new Client({ connectionString });
 await client.connect();
 
