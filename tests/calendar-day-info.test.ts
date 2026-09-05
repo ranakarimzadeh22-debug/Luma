@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 // Node's built-in TypeScript test runner needs the explicit extension.
 // @ts-expect-error TS5097: noEmit is used; the runtime requires the .ts suffix here.
-import { applyPeriodDayAction, canUsePeriodActions, getCalendarDayInfo } from "../src/lib/calendar-day-info.ts";
+import { applyPeriodDayAction, getCalendarDayInfo } from "../src/lib/calendar-day-info.ts";
 
 test("ein Zukunftstag zeigt nur eine Schätzung und bleibt für Perioden gesperrt", () => {
   assert.deepEqual(
@@ -10,9 +10,10 @@ test("ein Zukunftstag zeigt nur eine Schätzung und bleibt für Perioden gesperr
       date: "2026-09-12",
       today: "2026-09-05",
       hasStoredPeriod: false,
+      hasPlannedPeriod: false,
       phase: "pms",
     }),
-    { canSelectPeriod: false, status: "estimate", phase: "pms" },
+    { isFuture: true, status: "estimate", phase: "pms" },
   );
 });
 
@@ -22,9 +23,10 @@ test("ein gespeicherter vergangener Periodentag ist bestätigt und auswählbar",
       date: "2026-09-02",
       today: "2026-09-05",
       hasStoredPeriod: true,
+      hasPlannedPeriod: false,
       phase: null,
     }),
-    { canSelectPeriod: true, status: "confirmed", phase: "period" },
+    { isFuture: false, status: "confirmed", phase: "period" },
   );
 });
 
@@ -34,9 +36,10 @@ test("ein neutraler Tag erhält keine erfundene Phase", () => {
       date: "2026-09-08",
       today: "2026-09-05",
       hasStoredPeriod: false,
+      hasPlannedPeriod: false,
       phase: null,
     }),
-    { canSelectPeriod: false, status: "neutral", phase: null },
+    { isFuture: true, status: "neutral", phase: null },
   );
 });
 
@@ -44,7 +47,6 @@ test("Beginn und Ende bilden einen Zeitraum für den bestehenden Prüfweg", () =
   const start = applyPeriodDayAction({
     action: "start",
     date: "2026-09-02",
-    today: "2026-09-05",
     selectedStart: null,
   });
   assert.deepEqual(start, { ok: true, selectedStart: "2026-09-02", selectedEnd: null });
@@ -52,7 +54,6 @@ test("Beginn und Ende bilden einen Zeitraum für den bestehenden Prüfweg", () =
   const end = applyPeriodDayAction({
     action: "end",
     date: "2026-09-05",
-    today: "2026-09-05",
     selectedStart: start.ok ? start.selectedStart : null,
   });
   assert.deepEqual(end, {
@@ -62,34 +63,27 @@ test("Beginn und Ende bilden einen Zeitraum für den bestehenden Prüfweg", () =
   });
 });
 
-test("eine Periodenaktion für einen Zukunftstag wird technisch abgewiesen", () => {
+test("eine Periodenaktion kann einen Zukunftstag für die getrennte Planung auswählen", () => {
   assert.deepEqual(
     applyPeriodDayAction({
       action: "start",
       date: "2026-09-06",
-      today: "2026-09-05",
       selectedStart: null,
     }),
-    {
-      ok: false,
-      error: "Zukünftige Tage können nicht als tatsächliche Periode gespeichert werden.",
-    },
+    { ok: true, selectedStart: "2026-09-06", selectedEnd: null },
   );
 });
 
-test("Periodenaktionen hängen nur vom Datum und nicht vom Tagesstatus ab", () => {
+test("Tagesstatus verändert die Datumsinformation nicht", () => {
   const today = "2026-09-05";
   for (const phase of ["period", "pms", "ovulation", null] as const) {
     const info = getCalendarDayInfo({
       date: "2026-09-04",
       today,
       hasStoredPeriod: false,
+      hasPlannedPeriod: false,
       phase,
     });
-    assert.equal(canUsePeriodActions("2026-09-04", today), true);
-    assert.equal(info.canSelectPeriod, true);
+    assert.equal(info.isFuture, false);
   }
-
-  assert.equal(canUsePeriodActions(today, today), true);
-  assert.equal(canUsePeriodActions("2026-09-06", today), false);
 });

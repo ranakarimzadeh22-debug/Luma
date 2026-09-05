@@ -118,6 +118,30 @@ try {
   }, registrationCookie);
   assert.equal(futurePeriod.status, 400);
 
+  const futurePlan = await request("POST", "/api/neu/period-plans", {
+    startDate: "2999-01-01",
+    endDate: "2999-01-05",
+  }, registrationCookie);
+  assert.equal(futurePlan.status, 201);
+  const futurePlanId = (await futurePlan.json()).entry.id;
+
+  const storedPlans = await fetch(`${baseUrl}/api/neu/period-plans`, {
+    headers: { cookie: registrationCookie },
+  });
+  assert.equal(storedPlans.status, 200);
+  assert.deepEqual(
+    (await storedPlans.json()).entries.map(({ startDate, endDate }) => ({ startDate, endDate })),
+    [{ startDate: "2999-01-01", endDate: "2999-01-05" }],
+  );
+
+  const prematureConfirmation = await request(
+    "POST",
+    `/api/neu/period-plans/${futurePlanId}/confirm`,
+    {},
+    registrationCookie,
+  );
+  assert.equal(prematureConfirmation.status, 400);
+
   const overlappingPeriod = await request("POST", "/api/neu/periods", {
     startDate: "2026-06-05",
     endDate: "2026-06-09",
@@ -190,7 +214,10 @@ try {
 
   const storedHome = await fetch(`${baseUrl}/neu`, { headers: { cookie: registrationCookie } });
   const storedHomeHtml = await storedHome.text();
-  assert.match(storedHomeHtml, /Nur Beispiel/);
+  assert.match(storedHomeHtml, /Dein Zyklus/);
+  assert.match(storedHomeHtml, /Basierend auf deinen gespeicherten Perioden/);
+  assert.match(storedHomeHtml, /Geplante Perioden/);
+  assert.match(storedHomeHtml, /Nur Planung – nicht für deine Zyklusberechnung verwendet/);
   assert.doesNotMatch(storedHomeHtml, /Zyklus-Basisangaben ändern/);
 
   const duplicate = await post("/api/neu/auth/register", {
@@ -256,6 +283,8 @@ try {
   assert.equal(crossAccountUpdate.status, 404);
   const crossAccountDelete = await request("DELETE", `/api/neu/periods/${firstPeriodId}`, {}, legacyCookie);
   assert.equal(crossAccountDelete.status, 404);
+  const crossAccountPlanDelete = await request("DELETE", `/api/neu/period-plans/${futurePlanId}`, {}, legacyCookie);
+  assert.equal(crossAccountPlanDelete.status, 404);
 
   const legacyPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: legacyCookie } });
   assert.equal(legacyPage.status, 200);
@@ -322,7 +351,7 @@ try {
     headers: { cookie: legacyCookie },
   });
   const personalizedLegacyHtml = await personalizedLegacyPage.text();
-  assert.match(personalizedLegacyHtml, /Beispiel-Zyklus/);
+  assert.match(personalizedLegacyHtml, /Dein Zyklus/);
   assert.doesNotMatch(personalizedLegacyHtml, /Zara/);
 
   const deletedPeriod = await request("DELETE", `/api/neu/periods/${secondPeriodId}`, {}, loginCookie);
@@ -343,6 +372,27 @@ try {
     [legacyPeriodId],
   );
   assert.equal(deletedPeriods.rowCount, 0);
+
+  const elapsedPlanId = randomUUID();
+  await database.query(
+    `INSERT INTO new_period_plans (id, user_id, start_date, end_date)
+     SELECT $1, id, '2026-04-01', '2026-04-04' FROM new_users WHERE email = $2`,
+    [elapsedPlanId, email],
+  );
+  const confirmedPlan = await request(
+    "POST",
+    `/api/neu/period-plans/${elapsedPlanId}/confirm`,
+    {},
+    loginCookie,
+  );
+  assert.equal(confirmedPlan.status, 200);
+  const confirmedPlanEntry = await confirmedPlan.json();
+  assert.deepEqual(
+    { startDate: confirmedPlanEntry.entry.startDate, endDate: confirmedPlanEntry.entry.endDate },
+    { startDate: "2026-04-01", endDate: "2026-04-04" },
+  );
+  const removedPlan = await database.query("SELECT 1 FROM new_period_plans WHERE id = $1", [elapsedPlanId]);
+  assert.equal(removedPlan.rowCount, 0);
 
   const namedUserPage = await fetch(`${baseUrl}/neu`, { headers: { cookie: loginCookie } });
   const namedUserHtml = await namedUserPage.text();

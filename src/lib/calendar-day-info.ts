@@ -4,12 +4,13 @@ interface CalendarDayInfoInput {
   date: string;
   today: string;
   hasStoredPeriod: boolean;
+  hasPlannedPeriod: boolean;
   phase: CalendarDayPhase;
 }
 
 export interface CalendarDayInfo {
-  canSelectPeriod: boolean;
-  status: "confirmed" | "estimate" | "neutral";
+  isFuture: boolean;
+  status: "confirmed" | "estimate" | "neutral" | "planned";
   phase: CalendarDayPhase;
 }
 
@@ -18,7 +19,6 @@ export type PeriodDayAction = "start" | "end";
 interface ApplyPeriodDayActionInput {
   action: PeriodDayAction;
   date: string;
-  today: string;
   selectedStart: string | null;
 }
 
@@ -26,22 +26,22 @@ export type PeriodDayActionResult =
   | { ok: true; selectedStart: string; selectedEnd: string | null }
   | { ok: false; error: string };
 
-export function canUsePeriodActions(date: string, today: string): boolean {
-  return date <= today;
-}
-
 export function getCalendarDayInfo({
   date,
   today,
   hasStoredPeriod,
+  hasPlannedPeriod,
   phase,
 }: CalendarDayInfoInput): CalendarDayInfo {
   if (hasStoredPeriod) {
-    return { canSelectPeriod: canUsePeriodActions(date, today), status: "confirmed", phase: "period" };
+    return { isFuture: date > today, status: "confirmed", phase: "period" };
+  }
+  if (hasPlannedPeriod) {
+    return { isFuture: date > today, status: "planned", phase: null };
   }
 
   return {
-    canSelectPeriod: canUsePeriodActions(date, today),
+    isFuture: date > today,
     status: phase ? "estimate" : "neutral",
     phase,
   };
@@ -50,19 +50,14 @@ export function getCalendarDayInfo({
 export function applyPeriodDayAction({
   action,
   date,
-  today,
   selectedStart,
 }: ApplyPeriodDayActionInput): PeriodDayActionResult {
-  if (!canUsePeriodActions(date, today)) {
-    return { ok: false, error: "Zukünftige Tage können nicht als tatsächliche Periode gespeichert werden." };
-  }
-
   if (action === "start") {
     return { ok: true, selectedStart: date, selectedEnd: null };
   }
 
   if (!selectedStart) {
-    return { ok: false, error: "Wähle zuerst den tatsächlichen ersten Periodentag." };
+    return { ok: false, error: "Wähle zuerst den ersten Periodentag." };
   }
 
   if (date < selectedStart) {
