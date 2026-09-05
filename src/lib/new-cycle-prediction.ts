@@ -1,5 +1,15 @@
 import type { NewPeriodEntry } from "@/lib/new-period-validation";
 
+export interface PredictedCycle {
+  periodStart: string;
+  periodEnd: string;
+  ovulationDate: string;
+  fertileWindowStart: string;
+  fertileWindowEnd: string;
+  pmsStart: string;
+  pmsEnd: string;
+}
+
 export interface CyclePrediction {
   cycleLengthDays: number;
   periodLengthDays: number;
@@ -11,6 +21,7 @@ export interface CyclePrediction {
   fertileWindowEnd: string;
   pmsStart: string;
   pmsEnd: string;
+  futureCycles: PredictedCycle[];
 }
 
 const DEFAULT_CYCLE_LENGTH = 28;
@@ -18,6 +29,7 @@ const DEFAULT_PERIOD_LENGTH = 5;
 const MIN_CYCLE_LENGTH = 21;
 const MAX_CYCLE_LENGTH = 45;
 const PMS_LEAD_DAYS = 5;
+const FUTURE_CYCLES_TO_PREDICT = 12;
 
 function addDays(date: string, days: number): string {
   const [year, month, day] = date.split("-").map(Number);
@@ -91,30 +103,46 @@ export function predictCycle(
     return null;
   }
 
+  function cycleForPeriodStart(periodStart: string): PredictedCycle {
+    const ovulationDate = addDays(periodStart, -14);
+    return {
+      periodStart,
+      periodEnd: addDays(periodStart, periodLengthDays - 1),
+      ovulationDate,
+      fertileWindowStart: addDays(ovulationDate, -5),
+      fertileWindowEnd: addDays(ovulationDate, 1),
+      pmsStart: addDays(periodStart, -PMS_LEAD_DAYS),
+      pmsEnd: addDays(periodStart, -1),
+    };
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   let nextPeriodStart = anchorStart;
   while (nextPeriodStart <= today) {
     nextPeriodStart = addDays(nextPeriodStart, cycleLengthDays);
   }
 
-  const nextPeriodEnd = addDays(nextPeriodStart, periodLengthDays - 1);
-  const ovulationDate = addDays(nextPeriodStart, -14);
-  const fertileWindowStart = addDays(ovulationDate, -5);
-  const fertileWindowEnd = addDays(ovulationDate, 1);
-  const pmsStart = addDays(nextPeriodStart, -PMS_LEAD_DAYS);
-  const pmsEnd = addDays(nextPeriodStart, -1);
+  const futureCycles: PredictedCycle[] = [];
+  let cursor = nextPeriodStart;
+  for (let i = 0; i < FUTURE_CYCLES_TO_PREDICT; i++) {
+    futureCycles.push(cycleForPeriodStart(cursor));
+    cursor = addDays(cursor, cycleLengthDays);
+  }
+
+  const first = futureCycles[0];
 
   return {
     cycleLengthDays,
     periodLengthDays,
     source,
-    nextPeriodStart,
-    nextPeriodEnd,
-    ovulationDate,
-    fertileWindowStart,
-    fertileWindowEnd,
-    pmsStart,
-    pmsEnd,
+    nextPeriodStart: first.periodStart,
+    nextPeriodEnd: first.periodEnd,
+    ovulationDate: first.ovulationDate,
+    fertileWindowStart: first.fertileWindowStart,
+    fertileWindowEnd: first.fertileWindowEnd,
+    pmsStart: first.pmsStart,
+    pmsEnd: first.pmsEnd,
+    futureCycles,
   };
 }
 
@@ -122,9 +150,11 @@ export function phaseForDate(
   date: string,
   prediction: CyclePrediction,
 ): "period" | "pms" | "ovulation" | "fertile" | null {
-  if (date >= prediction.nextPeriodStart && date <= prediction.nextPeriodEnd) return "period";
-  if (date === prediction.ovulationDate) return "ovulation";
-  if (date >= prediction.fertileWindowStart && date <= prediction.fertileWindowEnd) return "fertile";
-  if (date >= prediction.pmsStart && date <= prediction.pmsEnd) return "pms";
+  for (const cycle of prediction.futureCycles) {
+    if (date >= cycle.periodStart && date <= cycle.periodEnd) return "period";
+    if (date === cycle.ovulationDate) return "ovulation";
+    if (date >= cycle.fertileWindowStart && date <= cycle.fertileWindowEnd) return "fertile";
+    if (date >= cycle.pmsStart && date <= cycle.pmsEnd) return "pms";
+  }
   return null;
 }
