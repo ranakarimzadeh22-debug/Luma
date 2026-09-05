@@ -15,6 +15,7 @@ export interface NewAuthSession {
   userId: string;
   email: string;
   firstName: string | null;
+  periodHistoryOnboardingSkipped: boolean;
   expiresAt: Date;
 }
 
@@ -158,9 +159,10 @@ export async function getNewAuthSession(): Promise<NewAuthSession | null> {
     user_id: string;
     email: string;
     first_name: string | null;
+    period_history_onboarding_skipped: boolean;
     expires_at: Date;
   }>(
-    `SELECT s.user_id, u.email, u.first_name, s.expires_at
+    `SELECT s.user_id, u.email, u.first_name, u.period_history_onboarding_skipped, s.expires_at
      FROM new_sessions s
      JOIN new_users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()`,
@@ -173,8 +175,16 @@ export async function getNewAuthSession(): Promise<NewAuthSession | null> {
     userId: row.user_id,
     email: row.email,
     firstName: row.first_name,
+    periodHistoryOnboardingSkipped: row.period_history_onboarding_skipped,
     expiresAt: row.expires_at,
   };
+}
+
+export async function setNewAuthPeriodHistoryOnboardingSkipped(userId: string): Promise<void> {
+  await getLumaCorePool().query(
+    `UPDATE new_users SET period_history_onboarding_skipped = TRUE, updated_at = NOW() WHERE id = $1`,
+    [userId],
+  );
 }
 
 export async function setNewAuthFirstName(userId: string, firstName: string): Promise<boolean> {

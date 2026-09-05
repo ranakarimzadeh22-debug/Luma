@@ -3,6 +3,7 @@ import { getNewAuthSession } from "@/lib/new-auth";
 import NewLogoutButton from "@/components/NewLogoutButton";
 import NewFirstNameForm from "@/components/NewFirstNameForm";
 import NewCycleExample from "@/components/NewCycleExample";
+import NewPeriodHistoryOnboarding from "@/components/NewPeriodHistoryOnboarding";
 import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { predictCycle } from "@/lib/new-cycle-prediction";
@@ -65,6 +66,15 @@ export default async function NewAppPage() {
     getNewPeriodPlans(session.userId),
     getNewCycleProfile(session.userId),
   ]);
+
+  if (periodEntries.length === 0 && !session.periodHistoryOnboardingSkipped) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-neutral-50 px-6 py-10">
+        <NewPeriodHistoryOnboarding />
+      </main>
+    );
+  }
+
   const prediction = predictCycle(periodEntries, profile);
 
   return (
