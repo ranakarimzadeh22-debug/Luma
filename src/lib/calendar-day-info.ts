@@ -26,6 +26,10 @@ export type PeriodDayActionResult =
   | { ok: true; selectedStart: string; selectedEnd: string | null }
   | { ok: false; error: string };
 
+export function canUsePeriodActions(date: string, today: string): boolean {
+  return date <= today;
+}
+
 export function getCalendarDayInfo({
   date,
   today,
@@ -33,11 +37,11 @@ export function getCalendarDayInfo({
   phase,
 }: CalendarDayInfoInput): CalendarDayInfo {
   if (hasStoredPeriod) {
-    return { canSelectPeriod: date <= today, status: "confirmed", phase: "period" };
+    return { canSelectPeriod: canUsePeriodActions(date, today), status: "confirmed", phase: "period" };
   }
 
   return {
-    canSelectPeriod: date <= today,
+    canSelectPeriod: canUsePeriodActions(date, today),
     status: phase ? "estimate" : "neutral",
     phase,
   };
@@ -49,7 +53,7 @@ export function applyPeriodDayAction({
   today,
   selectedStart,
 }: ApplyPeriodDayActionInput): PeriodDayActionResult {
-  if (date > today) {
+  if (!canUsePeriodActions(date, today)) {
     return { ok: false, error: "Zukünftige Tage können nicht als tatsächliche Periode gespeichert werden." };
   }
 

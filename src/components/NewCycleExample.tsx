@@ -5,7 +5,7 @@ import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { buildRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
-import { applyPeriodDayAction, getCalendarDayInfo, type PeriodDayAction } from "@/lib/calendar-day-info";
+import { applyPeriodDayAction, canUsePeriodActions, getCalendarDayInfo, type PeriodDayAction } from "@/lib/calendar-day-info";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -433,6 +433,7 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
             hasStoredPeriod: Boolean(storedPeriod),
             phase,
           });
+          const showPeriodActions = canUsePeriodActions(activeCalendarDay, todayKey);
           return (
             <div className="rounded-2xl border border-[#d8afbd] bg-white/90 px-4 py-3 text-center text-sm text-[#382631] shadow-sm" aria-live="polite">
               <p className="font-semibold">{formatPeriodDate(activeCalendarDay)}</p>
@@ -443,10 +444,10 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                   <p className="mt-1">Persönliche Schätzung – kann abweichen</p>
                 </>
               )}
-              {!dayInfo.canSelectPeriod && (
+              {!showPeriodActions && (
                 <p className="mt-1 text-[#6b5560]">Dieser zukünftige Tag kann nicht als tatsächliche Periode gespeichert werden.</p>
               )}
-              {dayInfo.canSelectPeriod && (
+              {showPeriodActions && (
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <button
                     type="button"
