@@ -5,7 +5,7 @@ import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { buildRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
-import { getCalendarDayInfo } from "@/lib/calendar-day-info";
+import { applyPeriodDayAction, getCalendarDayInfo, type PeriodDayAction } from "@/lib/calendar-day-info";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -133,24 +133,20 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
   }
 
-  function selectPeriodDay(date: string) {
+  function applyCalendarDayToPeriod(action: PeriodDayAction, date: string) {
     setPeriodMessage(null);
     setDeletingId(null);
-    if (!selectedStart || selectedEnd) {
-      setSelectedStart(date);
-      setSelectedEnd(null);
+    const result = applyPeriodDayAction({ action, date, today: todayKey, selectedStart });
+    if (!result.ok) {
+      setPeriodMessage(result.error);
       return;
     }
-    if (date < selectedStart) {
-      setPeriodMessage("Der letzte Periodentag darf nicht vor dem ersten liegen.");
-      return;
-    }
-    setSelectedEnd(date);
+    setSelectedStart(result.selectedStart);
+    setSelectedEnd(result.selectedEnd);
   }
 
-  function openCalendarDay(date: string, canSelectPeriod: boolean) {
+  function openCalendarDay(date: string) {
     setActiveCalendarDay(date);
-    if (canSelectPeriod) selectPeriodDay(date);
   }
 
   function clearSelection() {
@@ -396,7 +392,7 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                     type="button"
                     aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", gespeicherte Periode" : ""}${isStart ? ", Beginn der Auswahl" : ""}${isEnd ? ", Ende der Auswahl" : ""}${dayInfo?.canSelectPeriod ? ", für Periodeneingabe auswählbar" : ", nur Tagesinformation"}`}
                     aria-pressed={activeCalendarDay === date}
-                    onClick={() => openCalendarDay(date as string, Boolean(dayInfo?.canSelectPeriod))}
+                    onClick={() => openCalendarDay(date as string)}
                     className={`relative grid h-full w-full place-items-center rounded-2xl border text-base transition-[transform,box-shadow,background-color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] ${
                       isSelected
                         ? "bg-[#b52762] text-white ring-2 ring-[#6d2850] ring-offset-1"
@@ -438,15 +434,7 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
             phase,
           });
           return (
-            <div className="relative rounded-2xl border border-[#d8afbd] bg-white/90 px-4 py-3 text-center text-sm text-[#382631] shadow-sm" aria-live="polite">
-              <button
-                type="button"
-                aria-label="Tagesinformation schließen"
-                onClick={() => setActiveCalendarDay(null)}
-                className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-lg text-[#6d153f] focus-visible:outline-2 focus-visible:outline-[#6d2850]"
-              >
-                ×
-              </button>
+            <div className="rounded-2xl border border-[#d8afbd] bg-white/90 px-4 py-3 text-center text-sm text-[#382631] shadow-sm" aria-live="polite">
               <p className="font-semibold">{formatPeriodDate(activeCalendarDay)}</p>
               {dayInfo.status === "confirmed" && <p className="mt-1">Von dir bestätigt</p>}
               {dayInfo.status === "estimate" && dayInfo.phase && (
@@ -457,6 +445,24 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
               )}
               {!dayInfo.canSelectPeriod && (
                 <p className="mt-1 text-[#6b5560]">Dieser zukünftige Tag kann nicht als tatsächliche Periode gespeichert werden.</p>
+              )}
+              {dayInfo.canSelectPeriod && (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <button
+                    type="button"
+                    onClick={() => applyCalendarDayToPeriod("start", activeCalendarDay)}
+                    className="rounded-xl bg-[#6d153f] px-4 py-2 font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+                  >
+                    Periode hat begonnen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyCalendarDayToPeriod("end", activeCalendarDay)}
+                    className="rounded-xl border border-[#b97791] bg-white px-4 py-2 font-semibold text-[#6d153f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+                  >
+                    Periode ist beendet
+                  </button>
+                </div>
               )}
             </div>
           );
