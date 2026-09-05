@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
@@ -73,55 +73,23 @@ function formatPeriodDate(value: string): string {
 }
 
 function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItemProps) {
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasFocus = useRef(false);
   const isActive = activePhase === phase;
   const tooltipId = `phase-explanation-${phase}`;
-
-  function stopLongPress() {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }
 
   return (
     <button
       type="button"
-      aria-label={`${phaseLetters[phase]} – ${phaseLabels[phase]}: Erklärung anzeigen`}
+      aria-label={`${phaseLetters[phase]} – ${phaseLabels[phase]}: Erklärung ${isActive ? "ausblenden" : "anzeigen"}`}
+      aria-expanded={isActive}
+      aria-controls={tooltipId}
       aria-describedby={isActive ? tooltipId : undefined}
-      onMouseEnter={() => setActivePhase(phase)}
-      onMouseLeave={() => {
-        if (!hasFocus.current) setActivePhase(null);
-      }}
-      onFocus={() => {
-        hasFocus.current = true;
-        setActivePhase(phase);
-      }}
-      onBlur={() => {
-        hasFocus.current = false;
-        setActivePhase(null);
-      }}
+      onClick={() => setActivePhase(isActive ? null : phase)}
+      onBlur={() => setActivePhase(null)}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           setActivePhase(null);
           event.currentTarget.blur();
         }
-      }}
-      onPointerDown={(event) => {
-        if (event.pointerType !== "touch") return;
-        event.preventDefault();
-        stopLongPress();
-        longPressTimer.current = setTimeout(() => setActivePhase(phase), 450);
-      }}
-      onPointerUp={(event) => {
-        if (event.pointerType !== "touch") return;
-        stopLongPress();
-        setActivePhase(null);
-      }}
-      onPointerCancel={() => {
-        stopLongPress();
-        setActivePhase(null);
       }}
       onContextMenu={(event) => event.preventDefault()}
       onDragStart={(event) => event.preventDefault()}
@@ -145,6 +113,7 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
   const [selectedEnd, setSelectedEnd] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isPeriodHistoryOpen, setIsPeriodHistoryOpen] = useState(false);
   const [periodMessage, setPeriodMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
@@ -414,7 +383,7 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                     disabled={!isSelectable}
                     aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", gespeicherte Periode" : ""}${isStart ? ", Beginn der Auswahl" : ""}${isEnd ? ", Ende der Auswahl" : ""}`}
                     onClick={() => selectPeriodDay(date as string)}
-                    className={`relative grid h-full w-full place-items-center rounded-2xl text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] disabled:cursor-not-allowed disabled:opacity-45 ${
+                    className={`relative grid h-full w-full place-items-center rounded-2xl border text-base transition-[transform,box-shadow,background-color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] ${
                       isSelected
                         ? "bg-[#b52762] text-white ring-2 ring-[#6d2850] ring-offset-1"
                         : storedPeriod
@@ -422,6 +391,10 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                           : phase
                             ? phaseStyles[phase]
                             : "bg-white/55 text-[#281c24]"
+                    } ${
+                      isSelectable
+                        ? "cursor-pointer border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)] hover:-translate-y-0.5 hover:shadow-[0_5px_12px_rgba(91,31,62,0.24)] active:translate-y-0 active:scale-95"
+                        : "cursor-not-allowed border-transparent bg-[#f7edef]/55 text-[#9d8d96] opacity-55 shadow-none"
                     } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`}
                   >
                     <span>{day}</span>
@@ -457,24 +430,37 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
         {periodMessage && <p className="text-center text-sm font-medium text-[#6d153f]" role="status">{periodMessage}</p>}
 
         {periods.length > 0 && (
-          <div className="space-y-3" aria-label="Gespeicherte Perioden">
-            <h3 className="font-serif text-xl font-semibold text-[#28101f]">Gespeicherte Perioden</h3>
-            {periods.map((entry) => (
-              <div key={entry.id} className="rounded-2xl border border-[#efd5dc] bg-white/75 p-4 text-sm text-[#382631]">
-                <p className="font-semibold">{formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" disabled={isSaving} onClick={() => editPeriod(entry)} className="rounded-xl border border-[#b97791] bg-white px-3 py-2 font-semibold">Ändern</button>
-                  {deletingId === entry.id ? (
-                    <>
-                      <button type="button" disabled={isSaving} onClick={() => deletePeriod(entry.id)} className="rounded-xl bg-[#6d153f] px-3 py-2 font-semibold text-white">Löschen bestätigen</button>
-                      <button type="button" disabled={isSaving} onClick={() => setDeletingId(null)} className="rounded-xl border border-[#d8afbd] bg-white px-3 py-2 font-semibold">Abbrechen</button>
-                    </>
-                  ) : (
-                    <button type="button" disabled={isSaving} onClick={() => setDeletingId(entry.id)} className="rounded-xl border border-[#b97791] bg-white px-3 py-2 font-semibold">Löschen</button>
-                  )}
-                </div>
+          <div className="space-y-3">
+            <button
+              type="button"
+              aria-expanded={isPeriodHistoryOpen}
+              aria-controls="saved-periods-list"
+              onClick={() => setIsPeriodHistoryOpen((current) => !current)}
+              className="mx-auto flex items-center gap-2 rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            >
+              <span aria-hidden="true">{isPeriodHistoryOpen ? "▴" : "▾"}</span>
+              Gespeicherte Perioden
+            </button>
+            {isPeriodHistoryOpen && (
+              <div id="saved-periods-list" className="space-y-3" aria-label="Gespeicherte Perioden">
+                {periods.map((entry) => (
+                  <div key={entry.id} className="rounded-2xl border border-[#efd5dc] bg-white/75 p-4 text-sm text-[#382631]">
+                    <p className="font-semibold">{formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" disabled={isSaving} onClick={() => editPeriod(entry)} className="rounded-xl border border-[#b97791] bg-white px-3 py-2 font-semibold">Ändern</button>
+                      {deletingId === entry.id ? (
+                        <>
+                          <button type="button" disabled={isSaving} onClick={() => deletePeriod(entry.id)} className="rounded-xl bg-[#6d153f] px-3 py-2 font-semibold text-white">Löschen bestätigen</button>
+                          <button type="button" disabled={isSaving} onClick={() => setDeletingId(null)} className="rounded-xl border border-[#d8afbd] bg-white px-3 py-2 font-semibold">Abbrechen</button>
+                        </>
+                      ) : (
+                        <button type="button" disabled={isSaving} onClick={() => setDeletingId(entry.id)} className="rounded-xl border border-[#b97791] bg-white px-3 py-2 font-semibold">Löschen</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
