@@ -5,6 +5,7 @@ import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { buildRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
+import { getCalendarDayInfo } from "@/lib/calendar-day-info";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -114,6 +115,7 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isPeriodHistoryOpen, setIsPeriodHistoryOpen] = useState(false);
+  const [activeCalendarDay, setActiveCalendarDay] = useState<string | null>(null);
   const [periodMessage, setPeriodMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
@@ -144,6 +146,11 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
       return;
     }
     setSelectedEnd(date);
+  }
+
+  function openCalendarDay(date: string, canSelectPeriod: boolean) {
+    setActiveCalendarDay(date);
+    if (canSelectPeriod) selectPeriodDay(date);
   }
 
   function clearSelection() {
@@ -362,9 +369,16 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                   : null
               : null;
             const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
-            const isSelectable = Boolean(date && date <= todayDateOnly(today));
             const storedPeriod = date
               ? periods.find((entry) => entry.startDate <= date && entry.endDate >= date)
+              : null;
+            const dayInfo = date
+              ? getCalendarDayInfo({
+                  date,
+                  today: todayKey,
+                  hasStoredPeriod: Boolean(storedPeriod),
+                  phase: prediction ? predictedPhaseForCalendarDay(date, prediction) : null,
+                })
               : null;
             const isSelected = Boolean(
               date &&
@@ -380,9 +394,9 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                 {day && (
                   <button
                     type="button"
-                    disabled={!isSelectable}
-                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", gespeicherte Periode" : ""}${isStart ? ", Beginn der Auswahl" : ""}${isEnd ? ", Ende der Auswahl" : ""}`}
-                    onClick={() => selectPeriodDay(date as string)}
+                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", gespeicherte Periode" : ""}${isStart ? ", Beginn der Auswahl" : ""}${isEnd ? ", Ende der Auswahl" : ""}${dayInfo?.canSelectPeriod ? ", für Periodeneingabe auswählbar" : ", nur Tagesinformation"}`}
+                    aria-pressed={activeCalendarDay === date}
+                    onClick={() => openCalendarDay(date as string, Boolean(dayInfo?.canSelectPeriod))}
                     className={`relative grid h-full w-full place-items-center rounded-2xl border text-base transition-[transform,box-shadow,background-color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] ${
                       isSelected
                         ? "bg-[#b52762] text-white ring-2 ring-[#6d2850] ring-offset-1"
@@ -392,9 +406,9 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
                             ? phaseStyles[phase]
                             : "bg-white/55 text-[#281c24]"
                     } ${
-                      isSelectable
+                      dayInfo?.canSelectPeriod
                         ? "cursor-pointer border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)] hover:-translate-y-0.5 hover:shadow-[0_5px_12px_rgba(91,31,62,0.24)] active:translate-y-0 active:scale-95"
-                        : "cursor-not-allowed border-transparent bg-[#f7edef]/55 text-[#9d8d96] opacity-55 shadow-none"
+                        : "cursor-pointer border-dashed border-[#d8afbd] opacity-70 shadow-none hover:bg-white/75 active:scale-95"
                     } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`}
                   >
                     <span>{day}</span>
@@ -409,6 +423,44 @@ export default function NewCycleExample({ initialPeriods, prediction }: NewCycle
             );
           })}
         </div>
+
+        {activeCalendarDay && (() => {
+          const storedPeriod = periods.find(
+            (entry) => entry.startDate <= activeCalendarDay && entry.endDate >= activeCalendarDay,
+          );
+          const phase = prediction
+            ? predictedPhaseForCalendarDay(activeCalendarDay, prediction)
+            : null;
+          const dayInfo = getCalendarDayInfo({
+            date: activeCalendarDay,
+            today: todayKey,
+            hasStoredPeriod: Boolean(storedPeriod),
+            phase,
+          });
+          return (
+            <div className="relative rounded-2xl border border-[#d8afbd] bg-white/90 px-4 py-3 text-center text-sm text-[#382631] shadow-sm" aria-live="polite">
+              <button
+                type="button"
+                aria-label="Tagesinformation schließen"
+                onClick={() => setActiveCalendarDay(null)}
+                className="absolute right-2 top-2 grid size-7 place-items-center rounded-full text-lg text-[#6d153f] focus-visible:outline-2 focus-visible:outline-[#6d2850]"
+              >
+                ×
+              </button>
+              <p className="font-semibold">{formatPeriodDate(activeCalendarDay)}</p>
+              {dayInfo.status === "confirmed" && <p className="mt-1">Von dir bestätigt</p>}
+              {dayInfo.status === "estimate" && dayInfo.phase && (
+                <>
+                  <p className="mt-1 font-semibold">Möglicherweise {phaseLabels[dayInfo.phase]}</p>
+                  <p className="mt-1">Persönliche Schätzung – kann abweichen</p>
+                </>
+              )}
+              {!dayInfo.canSelectPeriod && (
+                <p className="mt-1 text-[#6b5560]">Dieser zukünftige Tag kann nicht als tatsächliche Periode gespeichert werden.</p>
+              )}
+            </div>
+          );
+        })()}
 
         {selectedStart && selectedEnd && (
           <div className="space-y-3 rounded-2xl border border-[#d8afbd] bg-white/90 p-4 text-sm text-[#382631]" aria-live="polite">
