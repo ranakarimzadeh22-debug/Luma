@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
@@ -557,6 +558,15 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         )}
 
         {periodMessage && <p className="text-center text-sm font-medium text-[#6d153f]" role="status">{periodMessage}</p>}
+
+        <div className="flex justify-center">
+          <Link
+            href="/neu/perioden-nachtragen"
+            className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+          >
+            Vergangene Perioden nachtragen
+          </Link>
+        </div>
 
         {periods.length > 0 && (
           <div className="space-y-3">
