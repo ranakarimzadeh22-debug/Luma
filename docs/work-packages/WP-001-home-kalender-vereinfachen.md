@@ -2,15 +2,14 @@
 id: WP-001
 title: "Home-Kalender vereinfachen und einen Eingabeweg schaffen"
 package_revision: 2
-status: on_hold
+status: review
 created: 2026-09-06
 updated: 2026-09-06
 owner_approved: yes
 executor: claude
 product_area: "Neuer Home-Screen /neu und vorhandener Zyklus-Startweg"
 brief_version: 1
-technical_brief: blocked
-blocker: "Entscheidung: eine letzte Periode oder drei bis sechs frühere Perioden im Startformular"
+technical_brief: complete
 ---
 
 # Aufgabe: Home-Kalender vereinfachen und einen Eingabeweg schaffen
@@ -99,7 +98,7 @@ blocker: "Entscheidung: eine letzte Periode oder drei bis sechs frühere Periode
 
 ### Stoppbedingungen
 
-- **Noch offen und blockierend:** `NewPeriodHistoryOnboarding` fordert aktuell drei bis sechs frühere Perioden. Vor der Umsetzung muss bestätigt werden, ob dieser Startweg auf genau eine letzte Periode reduziert wird oder drei bis sechs Einträge behalten soll.
+- Blocker aufgelöst durch Owner-Entscheidung (6. September 2026): `NewPeriodHistoryOnboarding` wird auf genau eine letzte Periode reduziert.
 - Stoppe vor Datenmigration, Löschung vorhandener Daten oder einer Änderung der Vorhersagelogik.
 - Wenn die genannten Startpunkte nicht mehr stimmen, passende Stellen suchen und die Abweichung im Ist-Abschnitt dokumentieren.
 
@@ -114,11 +113,18 @@ blocker: "Entscheidung: eine letzte Periode oder drei bis sechs frühere Periode
 ## Ist – von Claude
 
 - umgesetzt:
-- nicht umgesetzt:
-- Tests:
+  - `src/components/NewCycleExample.tsx` neu geschrieben: Kalenderzellen sind reine Anzeige-`div`s ohne `onClick`, kein Tages-Auswahlzustand, kein Tages-Detail-Panel mehr.
+  - Entfernt aus dem Home-Screen: Hinweisbox „Periode eintragen oder planen“, Link „Vergangene Perioden nachtragen“, aufklappbare Liste „Gespeicherte Perioden“ (inkl. Ändern/Löschen), Bereich „Geplante Perioden“ (inkl. Ändern/Löschen/Bestätigen).
+  - Neuer, einziger Einstieg: Button „Meine Periode aktualisieren“ öffnet `UpdatePeriodModal` (neue Komponente in derselben Datei) mit dem geführten Weg Beginn wählen → Ende wählen → prüfen → ausdrücklich speichern; nutzt weiterhin `POST /api/neu/periods`.
+  - `src/components/NewPeriodHistoryOnboarding.tsx` auf ein einzelnes Beginn/Ende-Feld reduziert (vorher: bis zu sechs Zeilen mit Hinzufügen/Entfernen); Überspringen-Weg unverändert.
+  - `src/lib/calendar-day-info.ts`: `PeriodDayAction`, `applyPeriodDayAction` entfernt (durch Wegfall der Kalender-Tagesaktionen ungenutzt); `getCalendarDayInfo` unverändert für die reine Anzeige weiterverwendet.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen.
+- Tests: `npm run build` (Next.js 16, Turbopack) erfolgreich, TypeScript-Prüfung ohne Fehler, alle 28 Routen erzeugt. Keine automatisierten Auth-/Perioden-/Kalendertests im Repo gefunden, die anzupassen wären.
 - Abweichungen:
-- offene Punkte:
-- Commit:
+  - `src/app/neu/perioden-nachtragen/page.tsx` (bisheriger separater Nachtragungsweg) wurde nicht gelöscht, nur nicht mehr verlinkt — das Soll fordert das Verschwinden aus dem Home-Screen, nennt aber keine Routenlöschung; die Route ist damit funktional verwaist.
+  - Mobile Sichtprüfung im echten Browser wurde nicht durchgeführt (keine Browser-Automatisierung in dieser Umgebung verfügbar); die Layoutklassen (Grid/Flex, `max-w`) wurden unverändert aus der bisherigen, bereits mobil geprüften Struktur übernommen.
+- offene Punkte: Owner-Prüfschritt (Kalendertag antippen, dann „Meine Periode aktualisieren“ öffnen) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 

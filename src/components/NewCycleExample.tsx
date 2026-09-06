@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { buildRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
-import { applyPeriodDayAction, getCalendarDayInfo, type PeriodDayAction } from "@/lib/calendar-day-info";
+import { getCalendarDayInfo } from "@/lib/calendar-day-info";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -106,22 +105,125 @@ function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItem
   );
 }
 
+interface UpdatePeriodModalProps {
+  onClose: () => void;
+  onSaved: (entry: NewPeriodEntry) => void;
+  today: string;
+}
+
+function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [step, setStep] = useState<"form" | "review">("form");
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  function continueToReview() {
+    if (!startDate || !endDate) {
+      setError("Bitte wähle Beginn und Ende deiner Periode.");
+      return;
+    }
+    if (startDate > endDate) {
+      setError("Der letzte Periodentag darf nicht vor dem ersten liegen.");
+      return;
+    }
+    if (startDate > today || endDate > today) {
+      setError("Zukünftige Periodentage können nicht gespeichert werden.");
+      return;
+    }
+    setError("");
+    setStep("review");
+  }
+
+  async function save() {
+    setIsSaving(true);
+    setError("");
+    const response = await fetch("/api/neu/periods", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ startDate, endDate }),
+    });
+    const result = (await response.json().catch(() => null)) as
+      | { entry?: NewPeriodEntry; error?: string }
+      | null;
+    setIsSaving(false);
+    if (!response.ok || !result?.entry) {
+      setError(result?.error || "Die Periode konnte nicht gespeichert werden.");
+      return;
+    }
+    onSaved(result.entry);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="update-period-title">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">
+        <h2 id="update-period-title" className="text-lg font-semibold text-[#28101f]">
+          Meine Periode aktualisieren
+        </h2>
+
+        {step === "form" && (
+          <div className="mt-4 flex flex-col gap-4">
+            <label className="flex flex-col gap-1 text-sm font-medium text-[#382631]">
+              Erster Tag
+              <input
+                type="date"
+                max={today}
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-[#382631]">
+              Letzter Tag
+              <input
+                type="date"
+                max={today}
+                value={endDate}
+                onChange={(event) => setEndDate(event.target.value)}
+                className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm"
+              />
+            </label>
+            {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+            <div className="flex gap-3">
+              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]">
+                Abbrechen
+              </button>
+              <button type="button" onClick={continueToReview} className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white">
+                Weiter
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "review" && (
+          <div className="mt-4 flex flex-col gap-4">
+            <p className="text-sm text-[#382631]">
+              {formatPeriodDate(startDate)} bis {formatPeriodDate(endDate)}
+            </p>
+            {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+            <div className="flex gap-3">
+              <button type="button" disabled={isSaving} onClick={() => setStep("form")} className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631] disabled:opacity-50">
+                Zurück
+              </button>
+              <button type="button" disabled={isSaving} onClick={save} className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+                {isSaving ? "Wird gespeichert …" : "Speichern"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction }: NewCycleExampleProps) {
   const [today] = useState(() => new Date());
   const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
   const [activePhase, setActivePhase] = useState<Phase | null>(null);
   const [periods, setPeriods] = useState(initialPeriods);
-  const [periodPlans, setPeriodPlans] = useState(initialPeriodPlans);
-  const [selectedStart, setSelectedStart] = useState<string | null>(null);
-  const [selectedEnd, setSelectedEnd] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isPeriodHistoryOpen, setIsPeriodHistoryOpen] = useState(false);
-  const [activeCalendarDay, setActiveCalendarDay] = useState<string | null>(null);
-  const [periodMessage, setPeriodMessage] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [periodPlans] = useState(initialPeriodPlans);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -137,134 +239,13 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
   }
 
-  function applyCalendarDayToPeriod(action: PeriodDayAction, date: string) {
-    setPeriodMessage(null);
-    setDeletingId(null);
-    const result = applyPeriodDayAction({ action, date, selectedStart });
-    if (!result.ok) {
-      setPeriodMessage(result.error);
-      return;
-    }
-    setSelectedStart(result.selectedStart);
-    setSelectedEnd(result.selectedEnd);
-  }
-
-  function openCalendarDay(date: string) {
-    setActiveCalendarDay(date);
-  }
-
-  function clearSelection() {
-    setSelectedStart(null);
-    setSelectedEnd(null);
-    setEditingId(null);
-    setEditingPlanId(null);
-    setPeriodMessage(null);
-  }
-
-  async function savePeriod() {
-    if (!selectedStart || !selectedEnd) return;
-    setIsSaving(true);
-    setPeriodMessage(null);
-    const isPlan = Boolean(editingPlanId) || (!editingId && selectedEnd > todayKey);
-    const endpoint = isPlan
-      ? editingPlanId
-        ? `/api/neu/period-plans/${editingPlanId}`
-        : "/api/neu/period-plans"
-      : editingId
-        ? `/api/neu/periods/${editingId}`
-        : "/api/neu/periods";
-    const response = await fetch(endpoint, {
-      method: editingId || editingPlanId ? "PUT" : "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ startDate: selectedStart, endDate: selectedEnd }),
-    });
-    const result = (await response.json().catch(() => null)) as
-      | { entry?: NewPeriodEntry; error?: string }
-      | null;
-    setIsSaving(false);
-    if (!response.ok || !result?.entry) {
-      setPeriodMessage(result?.error || `${isPlan ? "Die Planung" : "Die Periode"} konnte nicht gespeichert werden.`);
-      return;
-    }
-    const updateEntries = (current: NewPeriodEntry[]) =>
-      [...current.filter((entry) => entry.id !== result.entry?.id), result.entry as NewPeriodEntry].sort(
-        (first, second) => second.startDate.localeCompare(first.startDate),
-      );
-    if (isPlan) setPeriodPlans(updateEntries);
-    else setPeriods(updateEntries);
-    clearSelection();
-    setPeriodMessage(isPlan ? "Die Planung wurde getrennt gespeichert." : "Die Periode wurde gespeichert.");
-  }
-
-  function editPeriod(entry: NewPeriodEntry) {
-    setEditingId(entry.id);
-    setEditingPlanId(null);
-    setSelectedStart(entry.startDate);
-    setSelectedEnd(entry.endDate);
-    setDeletingId(null);
-    setPeriodMessage(null);
-    const [year, month] = entry.startDate.split("-").map(Number);
-    setDisplayedMonth({ year, month: month - 1 });
-  }
-
-  function editPeriodPlan(entry: NewPeriodEntry) {
-    setEditingPlanId(entry.id);
-    setEditingId(null);
-    setSelectedStart(entry.startDate);
-    setSelectedEnd(entry.endDate);
-    setDeletingId(null);
-    setPeriodMessage(null);
-    const [year, month] = entry.startDate.split("-").map(Number);
-    setDisplayedMonth({ year, month: month - 1 });
-  }
-
-  async function deletePeriodPlan(entryId: string) {
-    setIsSaving(true);
-    setPeriodMessage(null);
-    const response = await fetch(`/api/neu/period-plans/${entryId}`, { method: "DELETE" });
-    const result = (await response.json().catch(() => null)) as { error?: string } | null;
-    setIsSaving(false);
-    if (!response.ok) {
-      setPeriodMessage(result?.error || "Die Planung konnte nicht gelöscht werden.");
-      return;
-    }
-    setPeriodPlans((current) => current.filter((entry) => entry.id !== entryId));
-    if (editingPlanId === entryId) clearSelection();
-    setDeletingId(null);
-    setPeriodMessage("Die Planung wurde gelöscht.");
-  }
-
-  async function confirmPeriodPlan(entryId: string) {
-    setIsSaving(true);
-    setPeriodMessage(null);
-    const response = await fetch(`/api/neu/period-plans/${entryId}/confirm`, { method: "POST" });
-    const result = (await response.json().catch(() => null)) as { entry?: NewPeriodEntry; error?: string } | null;
-    setIsSaving(false);
-    if (!response.ok || !result?.entry) {
-      setPeriodMessage(result?.error || "Die Planung konnte nicht bestätigt werden.");
-      return;
-    }
-    setPeriodPlans((current) => current.filter((entry) => entry.id !== entryId));
+  function handlePeriodSaved(entry: NewPeriodEntry) {
     setPeriods((current) =>
-      [...current, result.entry as NewPeriodEntry].sort((first, second) => second.startDate.localeCompare(first.startDate)),
+      [...current.filter((existing) => existing.id !== entry.id), entry].sort((first, second) =>
+        second.startDate.localeCompare(first.startDate),
+      ),
     );
-    setPeriodMessage("Die Planung wurde als tatsächliche Periode bestätigt.");
-  }
-
-  async function deletePeriod(entryId: string) {
-    setIsSaving(true);
-    setPeriodMessage(null);
-    const response = await fetch(`/api/neu/periods/${entryId}`, { method: "DELETE" });
-    const result = (await response.json().catch(() => null)) as { error?: string } | null;
-    setIsSaving(false);
-    if (!response.ok) {
-      setPeriodMessage(result?.error || "Die Periode konnte nicht gelöscht werden.");
-      return;
-    }
-    setPeriods((current) => current.filter((entry) => entry.id !== entryId));
-    if (editingId === entryId) clearSelection();
-    setDeletingId(null);
-    setPeriodMessage("Die Periode wurde gelöscht.");
+    setIsUpdateModalOpen(false);
   }
 
   return (
@@ -391,22 +372,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         )}
       </section>
 
-      <section aria-label="Beispielkalender" className="space-y-5">
+      <section aria-label="Kalender zur Orientierung" className="space-y-5">
         <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
           <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">{monthName}</h2>
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
-        </div>
-
-        <div className="rounded-2xl border border-[#efd5dc] bg-white/70 px-4 py-3 text-center text-sm text-[#382631]">
-          <p className="font-semibold">Periode eintragen oder planen</p>
-          <p className="mt-1">
-            {!selectedStart
-              ? "Wähle zuerst den tatsächlichen ersten Periodentag."
-              : selectedEnd
-                ? "Prüfe den Zeitraum vor dem Speichern."
-                : "Wähle jetzt den tatsächlichen letzten Periodentag."}
-          </p>
         </div>
 
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
@@ -438,199 +408,46 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   phase: prediction ? predictedPhaseForCalendarDay(date, prediction) : null,
                 })
               : null;
-            const isSelected = Boolean(
-              date &&
-                selectedStart &&
-                (selectedEnd
-                  ? selectedStart <= date && date <= selectedEnd
-                  : date === selectedStart),
-            );
-            const isStart = date === selectedStart;
-            const isEnd = date === selectedEnd;
             return (
               <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
                 {day && (
-                  <button
-                    type="button"
-                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isStart ? ", Beginn der Auswahl" : ""}${isEnd ? ", Ende der Auswahl" : ""}, für Periodenangabe auswählbar`}
-                    aria-pressed={activeCalendarDay === date}
-                    onClick={() => openCalendarDay(date as string)}
-                    className={`relative grid h-full w-full place-items-center rounded-2xl border text-base transition-[transform,box-shadow,background-color] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] ${
-                      isSelected
-                        ? "bg-[#b52762] text-white ring-2 ring-[#6d2850] ring-offset-1"
-                        : storedPeriod
-                          ? "bg-[#6d153f] text-white"
-                          : plannedPeriod
-                            ? "bg-[#fff3c9] text-[#6d4c00]"
+                  <div
+                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`}
+                    className={`relative grid h-full w-full place-items-center rounded-2xl border text-base ${
+                      storedPeriod
+                        ? "bg-[#6d153f] text-white"
+                        : plannedPeriod
+                          ? "bg-[#fff3c9] text-[#6d4c00]"
                           : phase
                             ? phaseStyles[phase]
                             : "bg-white/55 text-[#281c24]"
                     } ${
                       !dayInfo?.isFuture
-                        ? "cursor-pointer border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)] hover:-translate-y-0.5 hover:shadow-[0_5px_12px_rgba(91,31,62,0.24)] active:translate-y-0 active:scale-95"
-                        : "cursor-pointer border-dashed border-[#d8afbd] opacity-70 shadow-none hover:bg-white/75 active:scale-95"
+                        ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
+                        : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
                     } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`}
                   >
                     <span>{day}</span>
-                    {isStart && <span className="absolute left-1 top-0.5 text-[8px] font-bold">Start</span>}
-                    {isEnd && <span className="absolute right-1 top-0.5 text-[8px] font-bold">Ende</span>}
-                    {!isSelected && storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
-                    {!isSelected && !storedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
-                    {!isSelected && !storedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
+                    {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
+                    {!storedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
+                    {!storedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
                     {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
-                  </button>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        {activeCalendarDay && (() => {
-          const storedPeriod = periods.find(
-            (entry) => entry.startDate <= activeCalendarDay && entry.endDate >= activeCalendarDay,
-          );
-          const plannedPeriod = periodPlans.find(
-            (entry) => entry.startDate <= activeCalendarDay && entry.endDate >= activeCalendarDay,
-          );
-          const phase = prediction
-            ? predictedPhaseForCalendarDay(activeCalendarDay, prediction)
-            : null;
-          const dayInfo = getCalendarDayInfo({
-            date: activeCalendarDay,
-            today: todayKey,
-            hasStoredPeriod: Boolean(storedPeriod),
-            hasPlannedPeriod: Boolean(plannedPeriod),
-            phase,
-          });
-          return (
-            <div className="rounded-2xl border border-[#d8afbd] bg-white/90 px-4 py-3 text-center text-sm text-[#382631] shadow-sm" aria-live="polite">
-              <p className="font-semibold">{formatPeriodDate(activeCalendarDay)}</p>
-              {dayInfo.status === "confirmed" && <p className="mt-1">Von dir bestätigt</p>}
-              {dayInfo.status === "planned" && <p className="mt-1 font-semibold text-[#7a5700]">Als Planung gespeichert</p>}
-              {dayInfo.status === "estimate" && dayInfo.phase && (
-                <>
-                  <p className="mt-1 font-semibold">Möglicherweise {phaseLabels[dayInfo.phase]}</p>
-                  <p className="mt-1">Persönliche Schätzung – kann abweichen</p>
-                </>
-              )}
-              {dayInfo.isFuture && (
-                <p className="mt-1 text-[#6b5560]">Zukunftsangaben werden nur als Planung gespeichert.</p>
-              )}
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                  <button
-                    type="button"
-                    onClick={() => applyCalendarDayToPeriod("start", activeCalendarDay)}
-                    className="rounded-xl bg-[#6d153f] px-4 py-2 font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
-                  >
-                    Erster Tag der Periode
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyCalendarDayToPeriod("end", activeCalendarDay)}
-                    className="rounded-xl border border-[#b97791] bg-white px-4 py-2 font-semibold text-[#6d153f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
-                  >
-                    Ende der Periode
-                  </button>
-              </div>
-            </div>
-          );
-        })()}
-
-        {selectedStart && selectedEnd && (
-          <div className="space-y-3 rounded-2xl border border-[#d8afbd] bg-white/90 p-4 text-sm text-[#382631]" aria-live="polite">
-            <p className="font-semibold">{selectedEnd > todayKey ? "Planung prüfen" : "Zeitraum prüfen"}</p>
-            <p>
-              {formatPeriodDate(selectedStart)} bis {formatPeriodDate(selectedEnd)}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={isSaving} onClick={savePeriod} className="rounded-xl bg-[#6d153f] px-4 py-2 font-semibold text-white disabled:opacity-50">
-                {isSaving
-                  ? "Wird gespeichert …"
-                  : selectedEnd > todayKey || editingPlanId
-                    ? editingPlanId ? "Planung ändern" : "Planung speichern"
-                    : editingId ? "Änderung speichern" : "Zeitraum speichern"}
-              </button>
-              <button type="button" disabled={isSaving} onClick={clearSelection} className="rounded-xl border border-[#d8afbd] bg-white px-4 py-2 font-semibold">
-                Auswahl verwerfen
-              </button>
-            </div>
-          </div>
-        )}
-
-        {periodMessage && <p className="text-center text-sm font-medium text-[#6d153f]" role="status">{periodMessage}</p>}
-
         <div className="flex justify-center">
-          <Link
-            href="/neu/perioden-nachtragen"
-            className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+          <button
+            type="button"
+            onClick={() => setIsUpdateModalOpen(true)}
+            className="rounded-full bg-[#6d153f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
           >
-            Vergangene Perioden nachtragen
-          </Link>
+            Meine Periode aktualisieren
+          </button>
         </div>
-
-        {periods.length > 0 && (
-          <div className="space-y-3">
-            <button
-              type="button"
-              aria-expanded={isPeriodHistoryOpen}
-              aria-controls="saved-periods-list"
-              onClick={() => setIsPeriodHistoryOpen((current) => !current)}
-              className="mx-auto flex items-center gap-2 rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
-            >
-              <span aria-hidden="true">{isPeriodHistoryOpen ? "▴" : "▾"}</span>
-              Gespeicherte Perioden
-            </button>
-            {isPeriodHistoryOpen && (
-              <div id="saved-periods-list" className="space-y-3" aria-label="Gespeicherte Perioden">
-                {periods.map((entry) => (
-                  <div key={entry.id} className="rounded-2xl border border-[#efd5dc] bg-white/75 p-4 text-sm text-[#382631]">
-                    <p className="font-semibold">{formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button type="button" disabled={isSaving} onClick={() => editPeriod(entry)} className="rounded-xl border border-[#b97791] bg-white px-3 py-2 font-semibold">Ändern</button>
-                      {deletingId === entry.id ? (
-                        <>
-                          <button type="button" disabled={isSaving} onClick={() => deletePeriod(entry.id)} className="rounded-xl bg-[#6d153f] px-3 py-2 font-semibold text-white">Löschen bestätigen</button>
-                          <button type="button" disabled={isSaving} onClick={() => setDeletingId(null)} className="rounded-xl border border-[#d8afbd] bg-white px-3 py-2 font-semibold">Abbrechen</button>
-                        </>
-                      ) : (
-                        <button type="button" disabled={isSaving} onClick={() => setDeletingId(entry.id)} className="rounded-xl border border-[#b97791] bg-white px-3 py-2 font-semibold">Löschen</button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {periodPlans.length > 0 && (
-          <div className="space-y-3" aria-label="Geplante Perioden">
-            <h3 className="font-serif text-xl font-semibold text-[#28101f]">Geplante Perioden</h3>
-            <p className="text-sm text-[#6b5560]">Nur Planung – nicht für deine Zyklusberechnung verwendet.</p>
-            {periodPlans.map((entry) => (
-              <div key={entry.id} className="rounded-2xl border border-[#e7cf84] bg-[#fff9df] p-4 text-sm text-[#4d3b12]">
-                <p className="font-semibold">{formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}</p>
-                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[#8a6813]">Planung</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" disabled={isSaving} onClick={() => editPeriodPlan(entry)} className="rounded-xl border border-[#c5a84f] bg-white px-3 py-2 font-semibold">Ändern</button>
-                  {entry.endDate <= todayKey && (
-                    <button type="button" disabled={isSaving} onClick={() => confirmPeriodPlan(entry.id)} className="rounded-xl bg-[#6d153f] px-3 py-2 font-semibold text-white disabled:opacity-50">
-                      Als tatsächliche Periode bestätigen
-                    </button>
-                  )}
-                  {deletingId === entry.id ? (
-                    <>
-                      <button type="button" disabled={isSaving} onClick={() => deletePeriodPlan(entry.id)} className="rounded-xl bg-[#6d153f] px-3 py-2 font-semibold text-white">Löschen bestätigen</button>
-                      <button type="button" disabled={isSaving} onClick={() => setDeletingId(null)} className="rounded-xl border border-[#c5a84f] bg-white px-3 py-2 font-semibold">Abbrechen</button>
-                    </>
-                  ) : (
-                    <button type="button" disabled={isSaving} onClick={() => setDeletingId(entry.id)} className="rounded-xl border border-[#c5a84f] bg-white px-3 py-2 font-semibold">Löschen</button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
@@ -654,10 +471,20 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           )}
         </div>
 
-        <div className="flex justify-center pb-1">
-          <p className="rounded-full bg-[#f4e4e3] px-6 py-3 text-sm font-medium text-[#382631]"><span aria-hidden="true">✦ </span>Nur Beispiel</p>
-        </div>
+        {!prediction && (
+          <div className="flex justify-center pb-1">
+            <p className="rounded-full bg-[#f4e4e3] px-6 py-3 text-sm font-medium text-[#382631]"><span aria-hidden="true">✦ </span>Nur Beispiel</p>
+          </div>
+        )}
       </section>
+
+      {isUpdateModalOpen && (
+        <UpdatePeriodModal
+          today={todayKey}
+          onClose={() => setIsUpdateModalOpen(false)}
+          onSaved={handlePeriodSaved}
+        />
+      )}
     </div>
   );
 }
