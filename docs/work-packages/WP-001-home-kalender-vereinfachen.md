@@ -1,12 +1,14 @@
 ---
 id: WP-001
 title: "Home-Kalender vereinfachen und einen Eingabeweg schaffen"
-status: approved
+status: on_hold
 created: 2026-09-06
 updated: 2026-09-06
 owner_approved: yes
 executor: claude
 product_area: "Neuer Home-Screen /neu und vorhandener Zyklus-Startweg"
+brief_version: 1
+technical_brief: blocked
 ---
 
 # Aufgabe: Home-Kalender vereinfachen und einen Eingabeweg schaffen
@@ -49,6 +51,59 @@ product_area: "Neuer Home-Screen /neu und vorhandener Zyklus-Startweg"
   4. Der geführte Aktualisierungsweg verlangt Beginn und Ende, zeigt eine Prüfung und speichert erst nach ausdrücklicher Bestätigung.
   5. Mobile Ansicht bleibt ohne horizontalen Überlauf gut bedienbar.
 - **ein Prüfschritt für den Owner:** Auf `/neu` einen Kalendertag antippen und danach `Meine Periode aktualisieren` öffnen. Erwartet: Der Kalendertipp ändert nichts; nur der klare Einstieg startet den geführten Weg.
+
+## Technischer Auftrag für Claude
+
+### Bestätigte Ausgangslage im Code
+
+- `src/app/neu/page.tsx` lädt Periodeneinträge und Pläne, steuert den Onboarding-Redirect und rendert `NewCycleExample`.
+- `src/components/NewCycleExample.tsx` enthält Kalender, Tagesaktionen, `Periode eintragen oder planen`, `Vergangene Perioden nachtragen`, `Gespeicherte Perioden` und geplante Perioden.
+- `src/components/NewPeriodHistoryOnboarding.tsx` enthält den geführten Startweg für vergangene Perioden.
+- `src/app/neu/perioden-nachtragen/page.tsx` ist der vorhandene getrennte Nachtragungsweg.
+- Vorhandene Speicherung und Kontentrennung liegen unter `src/app/api/neu/periods/` und `src/lib/new-periods.ts`.
+
+### Technisches Ziel
+
+- Auf `/neu` wird `NewCycleExample` so vereinfacht, dass Kalender und Ring Orientierung bleiben und keine Periodenaktion durch einen Tagestipp startet.
+- Die konkurrierenden Eingabe- und Historienbereiche verschwinden nur aus dem Home-Screen.
+- Genau ein sichtbarer Einstieg `Meine Periode aktualisieren` führt in einen bestätigten geführten Beginn-Ende-Prüfen-Speichern-Weg.
+- Claude darf Komponenten aufteilen oder bestehende Komponenten wiederverwenden, solange Verhalten und Invarianten dieses Pakets eingehalten werden.
+
+### Invarianten – müssen unverändert bleiben
+
+- Vorhandene Periodeneinträge und Pläne dürfen nicht gelöscht oder still verändert werden.
+- Speicherung bleibt sitzungs- und kontogebunden in `luma_core`.
+- Authentifizierung, alte Luma, Zyklusring, Monatsnavigation und bestehende Vorhersagelogik bleiben fachlich unverändert.
+- Beispielwerte dürfen nicht als bestätigte persönliche Daten erscheinen.
+
+### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: keine Schemaänderung und keine Datenmigration vorgesehen.
+- betroffene API-Routen: vorhandene Perioden-API nur wiederverwenden; keine neue Route erwartet.
+- Migration nötig: nein.
+
+### Pflichtprüfungen
+
+- Kalendertipp auf `/neu` löst keine Periodenauswahl, Planung oder Speicherung aus.
+- Nur `Meine Periode aktualisieren` öffnet den geführten Weg.
+- Beginn, Ende, Prüfung und ausdrückliches Speichern funktionieren kontogebunden weiter.
+- Vorhandene Periodendaten bleiben nach Neuladen und erneuter Anmeldung erhalten.
+- Relevante vorhandene Auth-, Perioden- und Kalenderregressionstests anpassen und ausführen.
+- Mobile Sichtprüfung ohne horizontalen Überlauf durchführen.
+
+### Stoppbedingungen
+
+- **Noch offen und blockierend:** `NewPeriodHistoryOnboarding` fordert aktuell drei bis sechs frühere Perioden. Vor der Umsetzung muss bestätigt werden, ob dieser Startweg auf genau eine letzte Periode reduziert wird oder drei bis sechs Einträge behalten soll.
+- Stoppe vor Datenmigration, Löschung vorhandener Daten oder einer Änderung der Vorhersagelogik.
+- Wenn die genannten Startpunkte nicht mehr stimmen, passende Stellen suchen und die Abweichung im Ist-Abschnitt dokumentieren.
+
+### Abschluss durch Claude
+
+- `Ist` vollständig ergänzen und Abweichungen sichtbar nennen.
+- Status auf `review` setzen.
+- Entwicklungsledger ergänzen.
+- `node scripts/work-package-state.mjs mark-updated WP-001` ausführen.
+- `node scripts/work-package-state.mjs validate` muss bestehen.
 
 ## Ist – von Claude
 

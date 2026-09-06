@@ -30,7 +30,7 @@ function writeState() {
 
 function writePackage(sequence, status = 'approved') {
   const id = `WP-${String(sequence).padStart(3, '0')}`;
-  fs.writeFileSync(path.join(packageDir, `${id}-schattentest.md`), `---\nid: ${id}\ntitle: "Schattentest ${sequence}"\nstatus: ${status}\ncreated: 2026-09-06\nupdated: 2026-09-06\nowner_approved: yes\nexecutor: claude\nproduct_area: "Test"\n---\n`);
+  fs.writeFileSync(path.join(packageDir, `${id}-schattentest.md`), `---\nid: ${id}\ntitle: "Schattentest ${sequence}"\nstatus: ${status}\ncreated: 2026-09-06\nupdated: 2026-09-06\nowner_approved: yes\nexecutor: claude\nproduct_area: "Test"\nbrief_version: 1\ntechnical_brief: complete\n---\n\n## Owner-Ansicht – einfach erklärt\n\nTest\n\n## Entstehungsweg\n\nTest\n\n## Soll – von Codex\n\nTest\n\n## Technischer Auftrag für Claude\n\nTest\n\n## Ist – von Claude\n\nTest\n\n## Soll-Ist-Prüfung – von Codex\n\nTest\n`);
   return id;
 }
 

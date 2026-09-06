@@ -26,11 +26,27 @@
 
 ## Pflicht für Claude
 
-Claude bearbeitet nur ein freigegebenes Paket und erweitert den Umfang nicht still. Danach ergänzt Claude den Abschnitt `Ist`, setzt den Status auf `review`, aktualisiert das Entwicklungsledger und führt aus:
+Claude bearbeitet nur ein freigegebenes Paket mit `technical_brief: complete` und erweitert den Umfang nicht still. Danach ergänzt Claude den Abschnitt `Ist`, setzt den Status auf `review`, aktualisiert das Entwicklungsledger und führt aus:
 
 `node scripts/work-package-state.mjs mark-updated <WP-ID>`
 
 Anschließend muss `node scripts/work-package-state.mjs validate` bestehen.
+
+## Technischer Mindestbrief
+
+Vor der Freigabe prüft Codex nur die für das Paket relevanten Codebereiche und ergänzt im Paket:
+
+- bestätigte Ausgangslage und konkrete Code-Startpunkte,
+- gewünschtes technisches Verhalten,
+- vorhandene Logik, die wiederverwendet werden soll,
+- Invarianten, die unverändert bleiben müssen,
+- Wirkung auf Datenbank und API,
+- passende Pflichtprüfungen,
+- klare Stoppbedingungen.
+
+Das ist ein technischer Arbeitsvertrag, keine starre Bauanleitung. Claude darf bessere interne Lösungen und andere tatsächlich passende Dateien wählen. Fachliche Wirkung, ausgeschlossener Umfang und Invarianten darf Claude nicht selbst ändern.
+
+Ein Paket darf nur `approved`, `in_progress`, `review` oder `completed` sein, wenn `technical_brief: complete` gesetzt ist. Fehlt eine entscheidende Angabe, erhält es `status: on_hold` und `technical_brief: blocked`.
 
 ## Pflicht für Codex
 

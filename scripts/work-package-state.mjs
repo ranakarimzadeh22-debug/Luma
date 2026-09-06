@@ -7,6 +7,16 @@ const packageDir = path.join(root, 'docs', 'work-packages');
 const statePath = path.join(packageDir, 'STATE.json');
 const openStatuses = new Set(['approved', 'in_progress', 'on_hold', 'review']);
 const allowedStatuses = new Set(['draft', ...openStatuses, 'completed', 'parked']);
+const allowedTechnicalBriefs = new Set(['draft', 'blocked', 'complete']);
+const executableStatuses = new Set(['approved', 'in_progress', 'review', 'completed']);
+const requiredHeadings = [
+  '## Owner-Ansicht – einfach erklärt',
+  '## Entstehungsweg',
+  '## Soll – von Codex',
+  '## Technischer Auftrag für Claude',
+  '## Ist – von Claude',
+  '## Soll-Ist-Prüfung – von Codex',
+];
 
 function readState() {
   return JSON.parse(fs.readFileSync(statePath, 'utf8'));
@@ -51,6 +61,17 @@ function validate(state, items) {
     if (ids.has(item.id)) errors.push(`${item.file}: ID doppelt`);
     ids.add(item.id);
     if (!allowedStatuses.has(item.status)) errors.push(`${item.file}: status ungültig`);
+    if (!allowedTechnicalBriefs.has(item.technical_brief)) errors.push(`${item.file}: technical_brief ungültig oder fehlt`);
+    if (item.status !== 'draft' && item.brief_version !== '1') errors.push(`${item.file}: brief_version muss 1 sein`);
+    if (executableStatuses.has(item.status) && item.technical_brief !== 'complete') {
+      errors.push(`${item.file}: ausführbarer Status braucht technical_brief=complete`);
+    }
+    const packageText = fs.readFileSync(path.join(packageDir, item.file), 'utf8');
+    if (item.status !== 'draft') {
+      for (const heading of requiredHeadings) {
+        if (!packageText.includes(heading)) errors.push(`${item.file}: Pflichtabschnitt fehlt: ${heading}`);
+      }
+    }
     if (item.status !== 'draft' && item.status !== 'parked' && item.owner_approved !== 'yes') errors.push(`${item.file}: offene oder abgeschlossene Aufgabe braucht Owner-Freigabe`);
   }
   const open = currentOpen(items);
