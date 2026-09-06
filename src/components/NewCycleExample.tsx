@@ -4,7 +4,8 @@ import { useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
-import { buildRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
+import type { PersonalCycleView } from "@/lib/personal-cycle-view";
+import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
 import { getCalendarDayInfo } from "@/lib/calendar-day-info";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -25,10 +26,10 @@ function predictedPhaseForCalendarDay(
   return phase;
 }
 
-const predictionSourceLabels: Record<CyclePrediction["source"], string> = {
-  history: "Basierend auf deinen gespeicherten Perioden",
-  profile: "Basierend auf deinen Angaben beim Start",
-  default: "Geschätzt mit einem durchschnittlichen Zyklus (28 Tage)",
+const personalPhaseLabel: Record<Exclude<PersonalCycleView["todayPhase"], null>, string> = {
+  period: "Periode",
+  ovulation: "Mögliche Eisprungphase",
+  pms: "Mögliche PMS-Phase",
 };
 
 const phaseStyles = {
@@ -62,6 +63,7 @@ interface NewCycleExampleProps {
   initialPeriods: NewPeriodEntry[];
   initialPeriodPlans: NewPeriodEntry[];
   prediction: CyclePrediction | null;
+  personalCycleView: PersonalCycleView;
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -216,7 +218,7 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
   );
 }
 
-export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction }: NewCycleExampleProps) {
+export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView }: NewCycleExampleProps) {
   const [today] = useState(() => new Date());
   const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
@@ -233,7 +235,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const isCurrentMonth =
     displayedMonth.year === today.getFullYear() && displayedMonth.month === today.getMonth();
   const todayKey = todayDateOnly(today);
-  const ringGeometry = prediction ? buildRingGeometry(prediction, todayKey) : null;
+  const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, todayKey);
+  const hasPersonalCircle = personalCycleView.status !== "no_data";
 
   function changeMonth(offset: number) {
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
@@ -250,16 +253,18 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
 
   return (
     <div className="space-y-9 sm:space-y-10">
-      <section aria-label={prediction ? "Deine Zyklusübersicht" : "Beispielhafte Zyklusübersicht"} className="space-y-3">
-        <p className="text-center text-lg text-[#28101f]">{prediction ? "Dein Zyklus" : "Beispiel-Zyklus"}</p>
+      <section aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"} className="space-y-3">
+        <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
         <div className="relative mx-auto aspect-square w-full max-w-[22rem]">
           <svg viewBox="0 0 320 320" role="img" aria-labelledby="cycle-ring-title cycle-ring-description" className="h-full w-full scale-[1.08] overflow-visible sm:scale-100">
-            <title id="cycle-ring-title">{prediction ? "Zyklusübersicht – deine Vorhersage" : "Zyklusübersicht – Nur Beispiel"}</title>
+            <title id="cycle-ring-title">
+              {hasPersonalCircle ? "Zyklusübersicht – dein heutiger Stand" : "Zyklusübersicht – noch keine Daten"}
+            </title>
             <desc id="cycle-ring-description">
-              {prediction
-                ? "Segmente für Periode, fruchtbare Tage und PMS basierend auf deinen Daten sowie ein Heute-Marker."
-                : "Drei beispielhafte Segmente für Periode, PMS und Eisprung sowie ein Heute-Marker."}
+              {hasPersonalCircle
+                ? "Segmente für Periode, mögliche Eisprungphase und mögliche PMS-Phase sowie ein Heute-Marker."
+                : "Neutraler Kreis ohne persönliche Phase, solange keine ausreichenden Daten vorliegen."}
             </desc>
             <defs>
               <filter id="ring-shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -278,10 +283,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
 
             <circle cx="160" cy="160" r="125" fill="none" stroke="#fff" strokeWidth="42" opacity="0.9" />
 
-            {ringGeometry && prediction ? (
+            {personalRingGeometry ? (
               <>
                 <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
-                  {ringGeometry.segments.map((segment) => (
+                  {personalRingGeometry.segments.map((segment) => (
                     <path
                       key={segment.key}
                       d={segment.path}
@@ -295,7 +300,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                     />
                   ))}
                 </g>
-                {ringGeometry.segments.map((segment) => {
+                {personalRingGeometry.segments.map((segment) => {
                   const point = ringPointAt(segment.labelAngle);
                   const label =
                     segment.key === "period" ? "Periode" : segment.key === "fertile" ? "Eisprung" : "PMS";
@@ -315,7 +320,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   );
                 })}
                 {(() => {
-                  const marker = ringPointAt(ringGeometry.todayAngle);
+                  const marker = ringPointAt(personalRingGeometry.todayAngle);
                   return (
                     <>
                       <circle cx={marker.x} cy={marker.y} r="14" fill="white" />
@@ -326,48 +331,50 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 })()}
               </>
             ) : (
-              <>
-                <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
-                  <path d="M64 80 A125 125 0 0 1 268 223" stroke="url(#period-gradient)" />
-                  <path d="M258 237 A125 125 0 0 1 80 256" stroke="url(#ovulation-gradient)" />
-                  <path d="M67 244 A125 125 0 0 1 54 94" stroke="url(#pms-gradient)" />
-                </g>
-                <text x="160" y="56" textAnchor="middle" fill="white" fontSize="17" fontWeight="600">Periode</text>
-                <text x="258" y="235" textAnchor="middle" fill="#5420a5" fontSize="15" fontWeight="600" transform="rotate(-43 258 235)">Eisprung</text>
-                <text x="65" y="205" textAnchor="middle" fill="#a51752" fontSize="15" fontWeight="600" transform="rotate(66 65 205)">PMS</text>
-                <circle cx="252" cy="84" r="14" fill="white" /><circle cx="252" cy="84" r="9" fill="#4a0738" /><circle cx="252" cy="84" r="4" fill="#df6b9a" />
-                <path d="M264 74 L277 59" stroke="#4a0738" strokeWidth="2" strokeLinecap="round" />
-                <rect x="270" y="39" width="47" height="23" rx="8" fill="#4a0738" />
-                <text x="293.5" y="55" textAnchor="middle" fill="white" fontSize="12" fontWeight="600">Heute</text>
-              </>
+              <circle cx="160" cy="160" r="125" fill="none" stroke="#e7d3da" strokeWidth="38" strokeDasharray="2 14" strokeLinecap="round" />
             )}
 
             <g textAnchor="middle">
               <path d="M160 110 C151 122 153 132 160 135 C167 132 169 122 160 110Z" fill="#df6b9a" />
               <text x="160" y="164" fill="#351127" fontFamily="Georgia, serif" fontSize="25" fontWeight="600">Zyklusansicht</text>
-              {prediction ? (
+              {personalCycleView.status === "personal" && (
                 <>
                   <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
                   <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
-                    Nächste Periode: {formatPeriodDate(prediction.nextPeriodStart)}
+                    {personalCycleView.todayPhase
+                      ? `Heute: ${personalPhaseLabel[personalCycleView.todayPhase]}`
+                      : "Heute: neutrale Phase"}
                   </text>
                   <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">
-                    {predictionSourceLabels[prediction.source]}
+                    Zyklus: {personalCycleView.cycleLengthDays} Tage
                   </text>
                 </>
-              ) : (
+              )}
+              {personalCycleView.status === "profile_estimate" && (
                 <>
-                  <rect x="116" y="178" width="88" height="25" rx="12" fill="#f8e4e9" />
-                  <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">Nur Beispiel</text>
-                  <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="18">keine Vorhersage</text>
+                  <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
+                  <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
+                    {personalCycleView.todayPhase
+                      ? `Heute vielleicht: ${personalPhaseLabel[personalCycleView.todayPhase]}`
+                      : "Erste Orientierung"}
+                  </text>
+                  <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">Kann abweichen</text>
+                </>
+              )}
+              {personalCycleView.status === "no_data" && (
+                <>
+                  <rect x="66" y="178" width="188" height="40" rx="14" fill="#f8e4e9" />
+                  <text x="160" y="194" fill="#a52b5d" fontSize="11" fontWeight="600">Noch nicht genügend Daten</text>
+                  <text x="160" y="209" fill="#a52b5d" fontSize="11" fontWeight="600">für deine persönliche Zyklusansicht</text>
                 </>
               )}
             </g>
           </svg>
         </div>
-        {!prediction && (
+        {personalCycleView.status === "no_data" && (
           <p className="mx-auto max-w-xs text-center text-sm text-[#6b5560]">
-            Trage mindestens eine vergangene Periode ein, damit Luma deinen Zyklus vorhersagen kann.
+            Trage deine letzte Periode ein oder ergänze eine ungefähre Zykluslänge, damit Luma dir eine
+            erste Orientierung zeigen kann.
           </p>
         )}
       </section>

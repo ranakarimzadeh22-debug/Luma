@@ -1,7 +1,7 @@
 ---
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
-status: approved
+status: review
 created: 2026-09-06
 updated: 2026-09-06
 owner_approved: yes
@@ -119,11 +119,20 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 ## Ist – von Claude
 
 - umgesetzt:
-- nicht umgesetzt:
-- Tests:
+  - Neues `src/lib/personal-cycle-view.ts`: `computePersonalCycleView` berechnet den Kreis-Zustand getrennt von der bestehenden Kalendervorhersage. Ein persönlicher Median wird erst ab vier echten Periodenanfängen berechnet (mindestens drei gültige Abstände zwischen 21 und 45 Tagen); mit weniger echten Daten wird niemals ein fester 28-Tage-Default als persönliche Aussage verwendet.
+  - Drei Zustände: `no_data` (neutral, keine Phase, kein Marker), `profile_estimate` (nur freiwillige Zykluslänge vorhanden, als „Kann abweichen“ markiert) und `personal` (Median aus echten Daten, zeigt `Zyklus: X Tage`).
+  - Heute-Phase: bestätigte Periodentage haben Vorrang; sonst mögliche Eisprungphase = 3 Tage rund um den geschätzten Eisprung (Tag −1 bis +1), mögliche PMS-Phase = letzte 5 Tage vor der geschätzten Periode.
+  - Neues `buildPersonalRingGeometry` in `src/lib/cycle-ring-geometry.ts`: Ring-Segmente ausgehend vom *aktuellen* Zyklusfenster (aus dem letzten bestätigten Periodenanfang), nicht von der nächsten Periode – der Kreis macht keine Aussage zur nächsten Periode mehr.
+  - `src/components/NewCycleExample.tsx`: Kreis nutzt jetzt `personalCycleView`/`buildPersonalRingGeometry` statt der bisherigen `prediction`-Anzeige; zeigt je Zustand neutralen Text, „Kann abweichen“-Hinweis oder `Zyklus: X Tage`. Die bestehende `prediction`-Vorhersage (`predictCycle`, `phaseForDate`) bleibt unverändert für den Kalender darunter erhalten (Markierungen, Monatsnavigation).
+  - `src/app/neu/page.tsx`: berechnet zusätzlich `personalCycleView` und reicht es an `NewCycleExample` durch, ohne die bestehende `prediction`-Berechnung zu verändern.
+  - `src/components/NewPeriodHistoryOnboarding.tsx` erweitert um zwei freiwillige Folgeschritte nach der letzten Periode: bis zu drei frühere Perioden ergänzen (jede einzeln optional, kein Zwang) und eine ungefähre Zykluslänge mit „Ich weiß es nicht“-Option, gespeichert über die vorhandene `/api/neu/cycle-profile`-Route. „Überspringen“ auf dem ersten Schritt funktioniert weiterhin unverändert.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen.
+- Tests: `npm run build` (Next.js 16, Turbopack) erfolgreich, TypeScript-Prüfung ohne Fehler, alle 28 Routen erzeugt. Manuelle Berechnungsprobe bestätigt: mit drei echten Perioden bleibt der persönliche Median `null`, ab vier echten Perioden wird er berechnet. Keine automatisierten Unit-Tests im Repo gefunden, die die geforderten Pflichtprüfungen bereits abdecken; neue Unit-Tests wurden nicht ergänzt, da kein Testframework im Projekt eingerichtet ist.
 - Abweichungen:
-- offene Punkte:
-- Commit:
+  - Keine neuen Unit-Tests (Pflichtprüfungen nennen konkrete Testfälle) – das Projekt hat kein eingerichtetes Testframework (kein `test`-Script, keine Testbibliothek in `package.json`); stattdessen wurden die geforderten Fälle manuell mit einer eigenständigen Node-Berechnung verifiziert.
+  - Mobile Sichtprüfung im echten Browser nicht durchgeführt (keine Browser-Automatisierung in dieser Umgebung verfügbar).
+- offene Punkte: Owner-Prüfschritt (ohne Daten neutralen Kreis sehen, dann freiwillige Zykluslänge eintragen und „Kann abweichen“ sehen) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 

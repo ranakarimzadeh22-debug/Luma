@@ -1,4 +1,5 @@
 import type { CyclePrediction } from "@/lib/new-cycle-prediction";
+import { currentCyclePeriodStart, type PersonalCycleView } from "@/lib/personal-cycle-view";
 
 export interface RingSegment {
   key: "period" | "fertile" | "pms" | "rest";
@@ -75,6 +76,49 @@ export function buildRingGeometry(prediction: CyclePrediction, today: string): R
       path: arcPath(pmsStartAngle, pmsEndAngle),
       labelAngle: midAngle(pmsStartAngle, pmsEndAngle),
     },
+  ];
+
+  return { segments, todayAngle };
+}
+
+const OVULATION_WINDOW_HALF_DAYS = 1;
+const PMS_LEAD_DAYS = 5;
+
+/**
+ * Ring geometry for WP-002's personal cycle view: anchored on the *current*
+ * cycle window (derived from the latest confirmed period), not the next
+ * upcoming period — the ring never states a next-period prediction.
+ */
+export function buildPersonalRingGeometry(view: PersonalCycleView, today: string): RingGeometry | null {
+  if (!view.cycleLengthDays || !view.anchorPeriodStart || !view.periodLengthDays) return null;
+
+  const { cycleLengthDays, periodLengthDays, anchorPeriodStart } = view;
+  const periodStart = currentCyclePeriodStart(anchorPeriodStart, cycleLengthDays, today);
+  const cycleStartDay = periodStart;
+  const dayOffset = (date: string) => daysBetween(cycleStartDay, date);
+
+  const ovulationDate = shiftDate(periodStart, cycleLengthDays - 14);
+  const fertileWindowStart = shiftDate(ovulationDate, -OVULATION_WINDOW_HALF_DAYS);
+  const fertileWindowEnd = shiftDate(ovulationDate, OVULATION_WINDOW_HALF_DAYS);
+  const pmsStart = shiftDate(periodStart, cycleLengthDays - PMS_LEAD_DAYS);
+  const pmsEnd = shiftDate(periodStart, cycleLengthDays - 1);
+
+  const periodStartAngle = angleForDay(dayOffset(periodStart), cycleLengthDays);
+  const periodEndAngle = angleForDay(dayOffset(periodStart) + periodLengthDays, cycleLengthDays);
+  const fertileStartAngle = angleForDay(dayOffset(fertileWindowStart), cycleLengthDays);
+  const fertileEndAngle = angleForDay(dayOffset(fertileWindowEnd) + 1, cycleLengthDays);
+  const pmsStartAngle = angleForDay(dayOffset(pmsStart), cycleLengthDays);
+  const pmsEndAngle = angleForDay(dayOffset(pmsEnd) + 1, cycleLengthDays);
+
+  const todayDayOffset = ((daysBetween(cycleStartDay, today) % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
+  const todayAngle = angleForDay(todayDayOffset, cycleLengthDays);
+
+  const midAngle = (start: number, end: number) => start + (((end - start + 360) % 360) / 2);
+
+  const segments: RingSegment[] = [
+    { key: "period", path: arcPath(periodStartAngle, periodEndAngle), labelAngle: midAngle(periodStartAngle, periodEndAngle) },
+    { key: "fertile", path: arcPath(fertileStartAngle, fertileEndAngle), labelAngle: midAngle(fertileStartAngle, fertileEndAngle) },
+    { key: "pms", path: arcPath(pmsStartAngle, pmsEndAngle), labelAngle: midAngle(pmsStartAngle, pmsEndAngle) },
   ];
 
   return { segments, todayAngle };
