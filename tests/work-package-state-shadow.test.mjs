@@ -29,8 +29,8 @@ function writeState() {
 }
 
 function writePackage(sequence, status = 'approved') {
-  const id = `WP-20260906-${String(sequence).padStart(3, '0')}-schattentest-${sequence}`;
-  fs.writeFileSync(path.join(packageDir, `${id}.md`), `---\nid: ${id}\ntitle: "Schattentest ${sequence}"\nstatus: ${status}\ncreated: 2026-09-06\nupdated: 2026-09-06\nowner_approved: yes\nexecutor: claude\nproduct_area: "Test"\n---\n`);
+  const id = `WP-${String(sequence).padStart(3, '0')}`;
+  fs.writeFileSync(path.join(packageDir, `${id}-schattentest.md`), `---\nid: ${id}\ntitle: "Schattentest ${sequence}"\nstatus: ${status}\ncreated: 2026-09-06\nupdated: 2026-09-06\nowner_approved: yes\nexecutor: claude\nproduct_area: "Test"\n---\n`);
   return id;
 }
 

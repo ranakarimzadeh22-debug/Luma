@@ -5,6 +5,7 @@
 3. Ergänze danach im selben Paket den Ist-Stand und setze `status: review`.
 4. Führe `node scripts/work-package-state.mjs mark-updated <WP-ID>` und danach `node scripts/work-package-state.mjs validate` aus.
 5. Erweitere den Umfang nicht still und verändere die Product-Map nicht selbst; den Soll-Ist-Abgleich und die Product-Map pflegt Codex.
+6. Erkläre bei Fragen wie „Was war WP-001?“ zuerst die einfache `Owner-Ansicht` dieses Pakets. Erfinde kein Warum und lies nicht unnötig andere Pakete.
 
 Die vollständigen Repository-Regeln gelten zusätzlich:
 

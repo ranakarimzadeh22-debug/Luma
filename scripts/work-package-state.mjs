@@ -46,13 +46,16 @@ function validate(state, items) {
   if (state.openLimit !== 3) errors.push('STATE: openLimit muss 3 sein');
   const ids = new Set();
   for (const item of items) {
-    if (!/^WP-\d{8}-\d{3}-[a-z0-9-]+$/.test(item.id || '')) errors.push(`${item.file}: ID ungültig`);
+    if (!/^WP-\d{3}$/.test(item.id || '')) errors.push(`${item.file}: ID ungültig`);
+    if (item.id && !item.file.startsWith(`${item.id}-`)) errors.push(`${item.file}: Dateiname muss mit ${item.id}- beginnen`);
     if (ids.has(item.id)) errors.push(`${item.file}: ID doppelt`);
     ids.add(item.id);
     if (!allowedStatuses.has(item.status)) errors.push(`${item.file}: status ungültig`);
     if (item.status !== 'draft' && item.status !== 'parked' && item.owner_approved !== 'yes') errors.push(`${item.file}: offene oder abgeschlossene Aufgabe braucht Owner-Freigabe`);
   }
   const open = currentOpen(items);
+  const numbers = items.map((item) => Number((item.id || '').slice(3))).filter(Number.isInteger).sort((a, b) => a - b);
+  if (numbers.some((number, index) => index > 0 && number === numbers[index - 1])) errors.push('Arbeitspaket-Nummer doppelt');
   if (open.length > 3) errors.push(`Zu viele offene Aufgaben: ${open.length}/3`);
   if (JSON.stringify(open) !== JSON.stringify([...(state.openPackages || [])].sort())) errors.push('STATE: openPackages nicht aktuell');
   if (state.openCount !== open.length) errors.push('STATE: openCount nicht aktuell');
@@ -100,4 +103,3 @@ if (command === 'status') {
 } else {
   console.log(`OK: Work-Package-State gültig, offen ${checkedState.openCount}/3`);
 }
-

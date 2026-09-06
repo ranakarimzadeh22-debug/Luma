@@ -4,7 +4,9 @@
   "reviewedRevision": 0,
   "updatedAt": "2026-09-06",
   "changedPackages": [],
-  "openPackages": [],
-  "openCount": 0,
+  "openPackages": [
+    "WP-001"
+  ],
+  "openCount": 1,
   "openLimit": 3
 }
