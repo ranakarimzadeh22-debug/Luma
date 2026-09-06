@@ -1,6 +1,7 @@
 ---
 id: WP-001
 title: "Home-Kalender vereinfachen und einen Eingabeweg schaffen"
+package_revision: 2
 status: on_hold
 created: 2026-09-06
 updated: 2026-09-06
@@ -9,9 +10,14 @@ executor: claude
 product_area: "Neuer Home-Screen /neu und vorhandener Zyklus-Startweg"
 brief_version: 1
 technical_brief: blocked
+blocker: "Entscheidung: eine letzte Periode oder drei bis sechs frühere Perioden im Startformular"
 ---
 
 # Aufgabe: Home-Kalender vereinfachen und einen Eingabeweg schaffen
+
+## Versionshinweis
+
+**Version 2 – 6. September 2026:** Owner-Ansicht und technischer Auftrag ergänzt. Das Paket ist bewusst pausiert, bis die eine offene Entscheidung zum Startformular bestätigt ist.
 
 ## Owner-Ansicht – einfach erklärt
 
