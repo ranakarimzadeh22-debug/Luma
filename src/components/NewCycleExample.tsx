@@ -311,7 +311,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               </linearGradient>
             </defs>
 
-            <circle cx="160" cy="160" r="125" fill="none" stroke="#fff" strokeWidth="42" opacity="0.9" />
+            <circle cx="160" cy="160" r="125" fill="none" stroke="#f1dfe6" strokeWidth="38" />
 
             {personalRingGeometry ? (
               <>
