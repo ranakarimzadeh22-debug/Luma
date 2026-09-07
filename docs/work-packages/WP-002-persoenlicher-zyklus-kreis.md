@@ -1,8 +1,8 @@
 ---
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
-package_revision: 5
-status: review
+package_revision: 6
+status: approved
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -16,7 +16,7 @@ technical_brief: complete
 
 ## Versionshinweis
 
-**Version 5 – 7. September 2026:** Die drei Phasen sind als deutliche farbliche Dreiteilung präzisiert. Diese Nachschärfung ist freigegeben und wartet auf Claude.
+**Version 6 – 7. September 2026:** Nach einer einzigen tatsächlichen Periode muss die freiwillige ungefähre Zykluslänge direkt vom neutralen Kreis aus erreichbar sein. Diese Nachschärfung ist freigegeben und wartet auf Claude.
 
 ## Owner-Ansicht – einfach erklärt
 
@@ -201,3 +201,34 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichung: Keine fachliche Abweichung. Das Projekt nutzt weiterhin kein dauerhaftes Testframework; das eigenständige Prüfskript ist dafür der bestätigte, wiederholbare Nachweis.
 - Owner-Abnahme offen: Die Nutzerin prüft auf `/neu` den neutralen Kreis ohne Daten, die Profil-Orientierung mit `Kann abweichen` und die persönliche Ansicht nach echten Periodendaten.
 - Product-Map aktualisiert: ja
+
+## Version 6 – Freigegebene Nachschärfung
+
+### Owner-Ansicht – einfach erklärt
+
+- **Problem:** Nach einer gespeicherten Periode bleibt der Kreis bei `Noch nicht genügend Daten`, obwohl die Nutzerin eine freiwillige ungefähre Zykluslänge ergänzen möchte.
+- **Lösung:** Im neutralen Kreis erscheint bei mindestens einer tatsächlichen gespeicherten Periode ein klarer kleiner Einstieg `Zykluslänge ergänzen`.
+- **Danach:** Die Nutzerin gibt zum Beispiel freiwillig `28 Tage` ein. Der Kreis zeigt danach ihre erste Orientierung mit `Kann abweichen`.
+- **Wichtig:** Ohne diese freiwillige Angabe bleibt der Kreis neutral. Luma erfindet keine Zykluslänge und keine Phase.
+
+### Technischer Auftrag für Claude
+
+- Prüfe in `src/app/neu/page.tsx`, `src/components/NewCycleExample.tsx`, `src/lib/new-cycle-profile.ts` und der vorhandenen Route `/api/neu/cycle-profile`, wie die aktuelle Profilangabe sicher ergänzt werden kann.
+- Zeige den Einstieg nur, wenn mindestens ein tatsächlicher Periodeneintrag vorhanden ist und `personalCycleView.status === "no_data"`. Der erste Onboarding-Weg ohne Periode bleibt unverändert.
+- Der Einstieg soll eine kurze, fokussierte Eingabe öffnen: ungefähre Zykluslänge in Tagen, `Ich weiß es nicht`, Speichern und Abbrechen. Die Nutzerin darf nicht durch den vollständigen Vier-Fragen-Zyklusprofil-Assistenten geführt werden.
+- Nutze die vorhandene, kontogebundene Profil-API. Da die aktuelle Route ein vollständiges Profil erwartet, müssen bereits gespeicherte Profilwerte sicher erhalten bleiben. Tatsächliche Periodeneinträge dürfen nie überschrieben, gelöscht oder synthetisch ergänzt werden.
+- Nach erfolgreichem Speichern aktualisiert sich `/neu`; `computePersonalCycleView` muss dann den Zustand `profile_estimate` mit `Kann abweichen` liefern.
+- Keine neue Migration, keine neue sensible Datenart, keine Kalenderänderung, keine automatische 28-Tage-Annahme und keine Änderung an alter Luma.
+
+### Pflichtprüfungen für Version 6
+
+1. Mit genau einer echten Periode und ohne ungefähre Länge ist `Zykluslänge ergänzen` sichtbar und erreichbar.
+2. Mit genau einer echten Periode und freiwillig gespeicherten 28 Tagen zeigt der Kreis `profile_estimate` und `Kann abweichen`.
+3. `Ich weiß es nicht` speichert keine Zahl; der Kreis bleibt neutral.
+4. Vorhandene Profilfelder und Periodeneinträge bleiben nach Speichern unverändert.
+5. Kontotrennung, Authentifizierung, TypeScript, gezielter Test, Build und Ledger-Validierung bestehen.
+
+### Stoppbedingungen für Version 6
+
+- Stoppe, wenn die vorhandene API die übrigen Profilwerte nicht sicher erhalten kann.
+- Stoppe bei einer benötigten Migration oder bei einer Änderung der tatsächlichen Periodendaten.
