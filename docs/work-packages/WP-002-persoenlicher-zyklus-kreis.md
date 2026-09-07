@@ -2,7 +2,7 @@
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
 package_revision: 5
-status: approved
+status: review
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -170,6 +170,17 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
 - Abweichungen: keine.
 - offene Punkte: Owner-Prüfschritt (roter Punkt gut sichtbar bei Periode, möglicher Eisprungphase und möglicher PMS-Phase) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Version 5 – Nachschärfung (7. September 2026)
+
+- umgesetzt:
+  - Ring-Farbverläufe in `NewCycleExample.tsx` verstärkt für klare Dreiteilung: Menstruationsphase dunkles Beerenrot (`#9c1550` → `#6d0f3a`, vorher heller `#b52762` → `#8f184f`), PMS-Phase warmes, kräftigeres Rosa (`#f8a8c1` → `#ef82a5`, vorher blasses `#ffd7df` → `#f3afc2`), mögliche Ovulationsphase deutlicheres Lavendel (`#c9b3ea` → `#a988da`, vorher sehr helles `#eee6fa` → `#d4c0ef`). PMS und Ovulation waren zuvor beide pastellig hell und schwer unterscheidbar; jetzt liegen alle drei Farbfamilien (Rot/Rosa/Lila) deutlich auseinander.
+  - Ring-Beschriftungen („Periode“, „Eisprung“, „PMS“) einheitlich auf weißen Text mit dunkler Kontur (`paintOrder="stroke"`, `stroke="rgba(40,16,31,0.35)"`) umgestellt, damit sie über allen drei jetzt kräftigeren Segmentfarben zuverlässig lesbar bleiben, statt einzeln gepflegter Segmentfarben.
+  - Heute-Marker bekommt einen zugänglichen Namen `Heute, Zyklustag X` (vorher nur „Heute“) über ein neues Feld `todayCycleDay` in `PersonalCycleView` (`src/lib/personal-cycle-view.ts`): berechnet den aktuellen Zyklustag ab dem Beginn des laufenden Zyklusfensters (`currentCyclePeriodStart` + Tagesdifferenz + 1). Bei `no_data` bleibt `todayCycleDay: null` und der Marker existiert ohnehin nicht.
+- Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen). Eigenständige Berechnungsprobe bestätigt `todayCycleDay`: Tag 1 am Zyklusstart, Tag 28 am Ende eines 28-Tage-Zyklus, Rücksprung auf Tag 1 zu Beginn des nächsten Zyklus.
+- Abweichungen: Die ausführlicheren Soll-Begriffe „Menstruationsphase“/„mögliche Ovulationsphase“ wurden nicht wörtlich als Ring-Beschriftung übernommen (Platz auf dem Ring reicht nur für kurze Wörter); stattdessen bleiben die bereits vorhandenen kurzen Labels „Periode“/„Eisprung“/„PMS“, jetzt aber mit klar unterscheidbaren Hintergrundfarben. Die ausführlichen Phasennamen stehen weiterhin in der Legende darunter (`PhaseLegendItem`) und in der Mitte des Kreises (`Heute vielleicht: Mögliche Eisprungphase` usw.).
+- offene Punkte: Owner-Prüfschritt (drei Phasen klar farblich unterscheidbar, Heute-Marker mit Zyklustag-Namen) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex

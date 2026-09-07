@@ -9,6 +9,7 @@ export interface PersonalCycleView {
   isEstimate: boolean;
   periodLengthDays: number | null;
   anchorPeriodStart: string | null;
+  todayCycleDay: number | null;
 }
 
 const MIN_REAL_PERIODS_FOR_MEDIAN = 4;
@@ -86,6 +87,7 @@ export function computePersonalCycleView(
       isEstimate: !confirmedToday,
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
+      todayCycleDay: todayCycleDay(latestPeriodStart, personalCycleLength, today),
     };
   }
 
@@ -97,6 +99,7 @@ export function computePersonalCycleView(
       isEstimate: true,
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
+      todayCycleDay: todayCycleDay(latestPeriodStart, profile.cycleLengthDays, today),
     };
   }
 
@@ -108,6 +111,7 @@ export function computePersonalCycleView(
       isEstimate: false,
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
+      todayCycleDay: null,
     };
   }
 
@@ -118,7 +122,13 @@ export function computePersonalCycleView(
     isEstimate: false,
     periodLengthDays: null,
     anchorPeriodStart: null,
+    todayCycleDay: null,
   };
+}
+
+function todayCycleDay(anchorStart: string, cycleLengthDays: number, today: string): number {
+  const periodStart = currentCyclePeriodStart(anchorStart, cycleLengthDays, today);
+  return daysBetween(periodStart, today) + 1;
 }
 
 function estimatedPhase(anchorStart: string, cycleLengthDays: number, today: string): PersonalCyclePhase {

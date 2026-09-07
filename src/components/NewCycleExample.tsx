@@ -301,13 +301,13 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#7f315d" floodOpacity="0.12" />
               </filter>
               <linearGradient id="period-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#b52762" /><stop offset="1" stopColor="#8f184f" />
+                <stop offset="0" stopColor="#9c1550" /><stop offset="1" stopColor="#6d0f3a" />
               </linearGradient>
               <linearGradient id="pms-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#ffd7df" /><stop offset="1" stopColor="#f3afc2" />
+                <stop offset="0" stopColor="#f8a8c1" /><stop offset="1" stopColor="#ef82a5" />
               </linearGradient>
               <linearGradient id="ovulation-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#eee6fa" /><stop offset="1" stopColor="#d4c0ef" />
+                <stop offset="0" stopColor="#c9b3ea" /><stop offset="1" stopColor="#a988da" />
               </linearGradient>
             </defs>
 
@@ -334,7 +334,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   const point = ringPointAt(segment.labelAngle);
                   const label =
                     segment.key === "period" ? "Periode" : segment.key === "fertile" ? "Eisprung" : "PMS";
-                  const fill = segment.key === "fertile" ? "#5420a5" : segment.key === "pms" ? "#a51752" : "white";
+                  const fill = "white";
                   return (
                     <text
                       key={segment.key}
@@ -343,7 +343,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                       textAnchor="middle"
                       fill={fill}
                       fontSize="14"
-                      fontWeight="600"
+                      fontWeight="700"
+                      stroke="rgba(40,16,31,0.35)"
+                      strokeWidth="2.5"
+                      paintOrder="stroke"
                     >
                       {label}
                     </text>
@@ -351,9 +354,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 })}
                 {(() => {
                   const marker = ringPointAt(personalRingGeometry.todayAngle);
+                  const markerName = personalCycleView.todayCycleDay
+                    ? `Heute, Zyklustag ${personalCycleView.todayCycleDay}`
+                    : "Heute";
                   return (
                     <circle cx={marker.x} cy={marker.y} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">
-                      <title>Heute</title>
+                      <title>{markerName}</title>
                     </circle>
                   );
                 })()}
