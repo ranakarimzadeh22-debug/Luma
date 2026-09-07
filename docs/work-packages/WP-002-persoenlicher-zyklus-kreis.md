@@ -2,7 +2,7 @@
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
 package_revision: 2
-status: approved
+status: review
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -140,7 +140,15 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichungen:
   - Keine neuen Unit-Tests (Pflichtprüfungen nennen konkrete Testfälle) – das Projekt hat kein eingerichtetes Testframework (kein `test`-Script, keine Testbibliothek in `package.json`); stattdessen wurden die geforderten Fälle manuell mit einer eigenständigen Node-Berechnung verifiziert.
   - Mobile Sichtprüfung im echten Browser nicht durchgeführt (keine Browser-Automatisierung in dieser Umgebung verfügbar).
-- offene Punkte: Version 2: schließbare Sechs-Sekunden-Benachrichtigung bei fehlender Datenbasis umsetzen und prüfen. Danach steht der Owner-Prüfschritt für neutralen Kreis und freiwillige Zykluslänge an.
+- offene Punkte: Owner-Prüfschritt (neutraler Kreis ohne Daten inkl. Benachrichtigung, danach freiwillige Zykluslänge mit „Kann abweichen“) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Version 2 – Nachschärfung (7. September 2026)
+
+- umgesetzt: Der bisherige dauerhafte Hinweistext unter dem Kreis bei fehlender Datenbasis (`personalCycleView.status === "no_data"`) ist entfernt. Stattdessen rendert `NewCycleExample.tsx` eine neue `NoDataToast`-Komponente: fixierte Benachrichtigung am unteren Bildschirmrand mit dem vorgegebenen Text, sichtbarem Schließen-Button (`×`, mit `aria-label`) und `useEffect`-Timer, der sie nach 6000 ms automatisch ausblendet. Sichtbarkeit wird einmalig beim ersten Rendern aus `personalCycleView.status === "no_data"` initialisiert (`useState`-Initialwert), erscheint also genau einmal pro Seitenaufruf/Home-Screen-Besuch und nicht erneut bei Zustandsänderungen innerhalb desselben Besuchs.
+- Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
+- Abweichungen: keine.
+- offene Punkte: Owner-Prüfschritt für die Benachrichtigung (Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden, kein erneutes Erscheinen im selben Besuch) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex

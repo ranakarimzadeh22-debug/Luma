@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
@@ -218,6 +218,35 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
   );
 }
 
+const NO_DATA_TOAST_MESSAGE =
+  "Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.";
+const NO_DATA_TOAST_DURATION_MS = 6000;
+
+function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, NO_DATA_TOAST_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-4 bottom-6 z-40 mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#d8afbd] bg-white p-4 text-sm text-[#382631] shadow-lg"
+    >
+      <p className="flex-1">{NO_DATA_TOAST_MESSAGE}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Hinweis schließen"
+        className="rounded-full px-2 py-1 text-lg leading-none text-[#6b5560] hover:bg-[#f4e4e3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView }: NewCycleExampleProps) {
   const [today] = useState(() => new Date());
   const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
@@ -226,6 +255,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -371,12 +401,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             </g>
           </svg>
         </div>
-        {personalCycleView.status === "no_data" && (
-          <p className="mx-auto max-w-xs text-center text-sm text-[#6b5560]">
-            Trage deine letzte Periode ein oder ergänze eine ungefähre Zykluslänge, damit Luma dir eine
-            erste Orientierung zeigen kann.
-          </p>
-        )}
       </section>
 
       <section aria-label="Kalender zur Orientierung" className="space-y-5">
@@ -492,6 +516,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           onSaved={handlePeriodSaved}
         />
       )}
+
+      {isNoDataToastVisible && <NoDataToast onDismiss={() => setIsNoDataToastVisible(false)} />}
     </div>
   );
 }
