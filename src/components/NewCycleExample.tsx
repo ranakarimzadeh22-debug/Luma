@@ -230,9 +230,63 @@ interface MyPeriodsModalProps {
   onClose: () => void;
   onEdit: (entry: NewPeriodEntry) => void;
   onAddNew: () => void;
+  onDeleted: (entryId: string) => void;
 }
 
-function MyPeriodsModal({ periods, onClose, onEdit, onAddNew }: MyPeriodsModalProps) {
+function MyPeriodsModal({ periods, onClose, onEdit, onAddNew, onDeleted }: MyPeriodsModalProps) {
+  const [pendingDelete, setPendingDelete] = useState<NewPeriodEntry | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState("");
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
+    setError("");
+    const response = await fetch(`/api/neu/periods/${pendingDelete.id}`, { method: "DELETE" }).catch(() => null);
+    setIsDeleting(false);
+    if (!response?.ok) {
+      const body = await response?.json().catch(() => null);
+      setError(body?.error || "Die Periode konnte nicht gelöscht werden.");
+      return;
+    }
+    onDeleted(pendingDelete.id);
+    setPendingDelete(null);
+  }
+
+  if (pendingDelete) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="delete-period-title">
+        <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">
+          <h2 id="delete-period-title" className="text-lg font-semibold text-[#28101f]">
+            Periode endgültig löschen?
+          </h2>
+          <p className="mt-4 text-sm text-[#382631]">
+            {formatPeriodDate(pendingDelete.startDate)} bis {formatPeriodDate(pendingDelete.endDate)}
+          </p>
+          {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+          <div className="mt-4 flex gap-3">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => { setPendingDelete(null); setError(""); }}
+              className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631] disabled:opacity-50"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={confirmDelete}
+              className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {isDeleting ? "Wird gelöscht …" : "Endgültig löschen"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="my-periods-title">
       <div className="flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl bg-white p-6 shadow-lg">
@@ -245,17 +299,26 @@ function MyPeriodsModal({ periods, onClose, onEdit, onAddNew }: MyPeriodsModalPr
             <p className="text-sm text-[#6b5560]">Noch keine Periode gespeichert.</p>
           )}
           {periods.map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3">
+            <div key={entry.id} className="flex items-center justify-between gap-2 rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3">
               <p className="text-sm text-[#382631]">
                 {formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}
               </p>
-              <button
-                type="button"
-                onClick={() => onEdit(entry)}
-                className="shrink-0 rounded-xl border border-[#b97791] bg-white px-3 py-1.5 text-sm font-semibold text-[#6d153f]"
-              >
-                Ändern
-              </button>
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onEdit(entry)}
+                  className="rounded-xl border border-[#b97791] bg-white px-3 py-1.5 text-sm font-semibold text-[#6d153f]"
+                >
+                  Ändern
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingDelete(entry)}
+                  className="rounded-xl border border-[#b97791] bg-white px-3 py-1.5 text-sm font-semibold text-[#6d153f]"
+                >
+                  Löschen
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -419,6 +482,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     );
     setPeriodFormMode("closed");
     setIsMyPeriodsModalOpen(false);
+    router.refresh();
+  }
+
+  function handlePeriodDeleted(entryId: string) {
+    setPeriods((current) => current.filter((entry) => entry.id !== entryId));
+    router.refresh();
   }
 
   function openMyPeriods() {
@@ -694,6 +763,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           onClose={() => setIsMyPeriodsModalOpen(false)}
           onEdit={startEditingPeriod}
           onAddNew={startNewPeriod}
+          onDeleted={handlePeriodDeleted}
         />
       )}
 

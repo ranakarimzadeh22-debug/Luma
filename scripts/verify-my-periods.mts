@@ -80,6 +80,11 @@ async function updateEntry(userId: string, entryId: string, startDate: string, e
   return { ok: true, entry: { id: row.id, startDate: row.start_date, endDate: row.end_date } };
 }
 
+async function deleteEntry(userId: string, entryId: string): Promise<boolean> {
+  const result = await client.query("DELETE FROM new_period_entries WHERE id = $1 AND user_id = $2", [entryId, userId]);
+  return result.rowCount === 1;
+}
+
 async function createTestUser(email: string): Promise<string> {
   const id = randomUUID();
   await client.query(
@@ -149,6 +154,37 @@ try {
   console.log("\n== Nicht vorhandene ID wird abgelehnt ==");
   const missingIdAttempt = await updateEntry(userA, randomUUID(), "2026-01-01", "2026-01-02");
   assert(!missingIdAttempt.ok && missingIdAttempt.reason === "not_found", "nicht vorhandene ID liefert not_found");
+
+  console.log("\n== Löschen: fremde ID kann nicht gelöscht werden ==");
+  const foreignDelete = await deleteEntry(userB, entryOne.id);
+  assert(!foreignDelete, "fremdes Konto kann den Eintrag nicht löschen");
+  const stillThereAfterForeignDelete = await getEntries(userA);
+  assert(
+    stillThereAfterForeignDelete.some((entry) => entry.id === entryOne.id),
+    "Eintrag bleibt nach fremdem Löschversuch vorhanden",
+  );
+
+  console.log("\n== Löschen: ungültige/nicht vorhandene ID kann nicht gelöscht werden ==");
+  const missingDelete = await deleteEntry(userA, randomUUID());
+  assert(!missingDelete, "nicht vorhandene ID liefert beim Löschen false");
+
+  console.log("\n== Löschen: 'Abbrechen' hat keine Datenwirkung, 'Endgültig löschen' entfernt genau diesen Eintrag ==");
+  const beforeDeleteAttempt = await getEntries(userA);
+  assertEqual(beforeDeleteAttempt.length, 2, "beide Einträge sind vor dem Löschversuch vorhanden (Abbrechen-Ausgangslage)");
+  // "Abbrechen" in der UI führt zu keinem DELETE-Request; die Simulation davon ist schlicht:
+  // kein Aufruf von deleteEntry. Die eigentliche Prüfung gilt der bestätigten Löschung.
+  const confirmedDelete = await deleteEntry(userA, entryTwo.id);
+  assert(confirmedDelete, "bestätigtes Löschen des zweiten Eintrags war erfolgreich");
+  const afterDelete = await getEntries(userA);
+  assertEqual(afterDelete.length, 1, "nach dem Löschen ist genau ein Eintrag übrig");
+  assert(
+    !afterDelete.some((entry) => entry.id === entryTwo.id),
+    "der gelöschte Eintrag ist nach dem Löschen nicht mehr vorhanden",
+  );
+  assert(
+    afterDelete.some((entry) => entry.id === entryOne.id),
+    "der nicht gelöschte Eintrag bleibt weiterhin vorhanden",
+  );
 } finally {
   await deleteTestUser(userA);
   await deleteTestUser(userB);

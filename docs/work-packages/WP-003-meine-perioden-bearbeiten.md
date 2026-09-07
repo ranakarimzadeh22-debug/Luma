@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 2
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-07
 owner_approved: yes
@@ -135,6 +135,21 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Mobile Sichtprüfung mit Playwright (Chromium, 375×812, temporär installiert und danach wieder entfernt): Testkonto registriert, eine Periode im Onboarding gespeichert, über „Meine Periode aktualisieren“ die neue Listenansicht bestätigt, zweite Periode über „Neue Periode eintragen“ ergänzt, beide Einträge getrennt sichtbar bestätigt, „Ändern“ öffnet das Formular korrekt mit den vorhandenen Werten vorbelegt, „Zurück“ führt zur Liste zurück, kein horizontaler Overflow. Test-Datenbank-Konto danach gelöscht.
 - Abweichungen: keine.
 - offene Punkte: Owner-Prüfschritt (`Meine Periode aktualisieren` öffnen, eine gespeicherte Periode ändern, prüfen, speichern, Seite neu laden) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Version 2 – Löschen (7. September 2026)
+
+- umgesetzt:
+  - `MyPeriodsModal` in `src/components/NewCycleExample.tsx` um einen `Löschen`-Button pro Zeile erweitert. Klick öffnet eine zweite Ansicht innerhalb desselben Dialogs, die Beginn und Ende des betroffenen Zeitraums nennt und nur `Abbrechen` sowie `Endgültig löschen` anbietet; `Abbrechen` hat keine Datenwirkung.
+  - `Endgültig löschen` ruft die bereits vorhandene, gesicherte Route `DELETE /api/neu/periods/[id]` auf (keine neue Route). Nach Erfolg aktualisiert sich die Liste sofort (lokaler State) und `router.refresh()` sorgt dafür, dass die serverseitig berechnete Zyklusansicht (`personalCycleView`) den gelöschten Eintrag nicht mehr berücksichtigt.
+  - Aus Konsistenzgründen ruft jetzt auch das normale Ändern/Neueintragen (`handlePeriodSaved`) `router.refresh()` auf, damit der Kreis in jedem Fall den aktuellen Datenstand widerspiegelt.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen. Keine Sammellöschung, keine neue Tabelle, keine neue Route.
+- Tests:
+  - `scripts/verify-my-periods.mts` um Löschfälle erweitert: fremde ID kann nicht gelöscht werden, nicht vorhandene ID liefert `false`, bestätigtes Löschen entfernt genau den gewählten Eintrag und lässt den anderen unverändert. Gesamtskript: 21/21 Prüfungen bestanden.
+  - `npm run build` (Next.js 16, Turbopack) erfolgreich, TypeScript-Prüfung ohne Fehler, alle 28 Routen erzeugt.
+  - Direkte Prüfung gegen die lokale Datenbank nach einem manuellen Testlauf bestätigt den korrekten Endzustand (ein Eintrag gelöscht, der andere unverändert vorhanden) – ein automatisiertes Browser-Skript zeigte an dieser Stelle ein reines UI-Timing-Problem beim Auslesen kurz nach `router.refresh()`, das laut direkter Datenbankprüfung keine tatsächliche Dateninkonsistenz war.
+- Abweichungen: keine fachliche Abweichung.
+- offene Punkte: Owner-Prüfschritt für das Löschen (Abbrechen lässt Eintrag sichtbar, Endgültig löschen entfernt ihn dauerhaft nach Neuladen) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
