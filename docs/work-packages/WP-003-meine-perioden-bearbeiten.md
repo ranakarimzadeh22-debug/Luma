@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten"
 package_revision: 1
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-07
 owner_approved: yes
@@ -112,11 +112,20 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 ## Ist – von Claude
 
 - umgesetzt:
-- nicht umgesetzt:
+  - `src/components/NewCycleExample.tsx`: Der bestehende Einstieg `Meine Periode aktualisieren` öffnet jetzt zuerst eine neue `MyPeriodsModal`-Ansicht statt direkt eines Eingabeformulars. Sie listet alle gespeicherten Perioden des Kontos (Beginn bis Ende, verständlich formatiert) mit je einem `Ändern`-Button, dazu `Neue Periode eintragen` und `Schließen`.
+  - Das bisherige `UpdatePeriodModal` wurde zu `PeriodFormModal` erweitert: nimmt optional einen `editingEntry`-Eintrag entgegen, ist damit vorbelegt, sendet beim Speichern `PUT /api/neu/periods/[id]` statt `POST /api/neu/periods` (neue Periode) und zeigt passend „Periode ändern“ bzw. „Neue Periode eintragen“ als Titel. Ein `Zurück`-Pfeil führt zur Liste zurück, wenn das Formular aus der Liste heraus geöffnet wurde; direkt aus der Liste geöffnete neue Einträge zeigen stattdessen `Abbrechen`.
+  - Beide vorhandenen, bereits gesicherten API-Routen (`GET /api/neu/periods`, `PUT /api/neu/periods/[id]`) werden unverändert weiterverwendet; keine neue Route, keine Schemaänderung.
+  - Die Prüfen-vor-Speichern-Zusammenfassung (Beginn bis Ende, dann erst „Speichern“) ist für beide Fälle (neu/ändern) unverändert erhalten.
+  - Kalenderzellen bleiben wie durch WP-001 festgelegt reine Anzeige ohne Bearbeitungsaktion; dieses Paket hat daran nichts geändert.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen. Kein Löschen, keine neuen Perioden-Filter, keine Vorhersageänderung.
 - Tests:
-- Abweichungen:
-- offene Punkte:
-- Commit:
+  - Neues `scripts/verify-my-periods.mts` (per `npx tsx`, `.mts` wegen Top-Level-await) prüft serverseitig gegen die echte lokale Datenbank: zwei Einträge anlegen und laden, einen ändern und bestätigen, dass nur dieser sich ändert; Überschneidung wird abgelehnt und lässt den Zieleintrag unverändert; ein fremdes Konto kann eine ID nicht ändern (`not_found`) und sieht die Einträge des anderen Kontos nicht; eine nicht vorhandene ID liefert `not_found`; ungültige Reihenfolge und Zukunft werden von `validateNewPeriodInput` abgelehnt. Die Kern-Query-Logik aus `src/lib/new-periods.ts` wurde im Skript bewusst nachgebildet (nicht importiert), weil die Originaldatei `import "server-only"` nutzt und sich daher nicht direkt per Node ausführen lässt — funktional identische Queries, siehe Kommentar im Skript. 15/15 Prüfungen bestanden.
+  - `scripts/verify-luma-core.mjs` erneut ausgeführt: Datenbanktrennung weiterhin bestätigt, keine Fehler.
+  - `npm run build` (Next.js 16, Turbopack) erfolgreich, TypeScript-Prüfung ohne Fehler, alle 28 Routen erzeugt.
+  - Mobile Sichtprüfung mit Playwright (Chromium, 375×812, temporär installiert und danach wieder entfernt): Testkonto registriert, eine Periode im Onboarding gespeichert, über „Meine Periode aktualisieren“ die neue Listenansicht bestätigt, zweite Periode über „Neue Periode eintragen“ ergänzt, beide Einträge getrennt sichtbar bestätigt, „Ändern“ öffnet das Formular korrekt mit den vorhandenen Werten vorbelegt, „Zurück“ führt zur Liste zurück, kein horizontaler Overflow. Test-Datenbank-Konto danach gelöscht.
+- Abweichungen: keine.
+- offene Punkte: Owner-Prüfschritt (`Meine Periode aktualisieren` öffnen, eine gespeicherte Periode ändern, prüfen, speichern, Seite neu laden) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 

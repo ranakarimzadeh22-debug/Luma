@@ -110,18 +110,21 @@ function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItem
   );
 }
 
-interface UpdatePeriodModalProps {
+interface PeriodFormModalProps {
   onClose: () => void;
+  onBack?: () => void;
   onSaved: (entry: NewPeriodEntry) => void;
   today: string;
+  editingEntry: NewPeriodEntry | null;
 }
 
-function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+function PeriodFormModal({ onClose, onBack, onSaved, today, editingEntry }: PeriodFormModalProps) {
+  const [startDate, setStartDate] = useState(editingEntry?.startDate ?? "");
+  const [endDate, setEndDate] = useState(editingEntry?.endDate ?? "");
   const [step, setStep] = useState<"form" | "review">("form");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const isEditing = Boolean(editingEntry);
 
   function continueToReview() {
     if (!startDate || !endDate) {
@@ -143,8 +146,9 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
   async function save() {
     setIsSaving(true);
     setError("");
-    const response = await fetch("/api/neu/periods", {
-      method: "POST",
+    const endpoint = editingEntry ? `/api/neu/periods/${editingEntry.id}` : "/api/neu/periods";
+    const response = await fetch(endpoint, {
+      method: editingEntry ? "PUT" : "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ startDate, endDate }),
     });
@@ -163,7 +167,7 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="update-period-title">
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">
         <h2 id="update-period-title" className="text-lg font-semibold text-[#28101f]">
-          Meine Periode aktualisieren
+          {isEditing ? "Periode ändern" : "Neue Periode eintragen"}
         </h2>
 
         {step === "form" && (
@@ -190,8 +194,8 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
             </label>
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
             <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]">
-                Abbrechen
+              <button type="button" onClick={onBack ?? onClose} className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]">
+                {onBack ? "Zurück" : "Abbrechen"}
               </button>
               <button type="button" onClick={continueToReview} className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white">
                 Weiter
@@ -216,6 +220,54 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+interface MyPeriodsModalProps {
+  periods: NewPeriodEntry[];
+  onClose: () => void;
+  onEdit: (entry: NewPeriodEntry) => void;
+  onAddNew: () => void;
+}
+
+function MyPeriodsModal({ periods, onClose, onEdit, onAddNew }: MyPeriodsModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="my-periods-title">
+      <div className="flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl bg-white p-6 shadow-lg">
+        <h2 id="my-periods-title" className="text-lg font-semibold text-[#28101f]">
+          Meine Perioden
+        </h2>
+
+        <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
+          {periods.length === 0 && (
+            <p className="text-sm text-[#6b5560]">Noch keine Periode gespeichert.</p>
+          )}
+          {periods.map((entry) => (
+            <div key={entry.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3">
+              <p className="text-sm text-[#382631]">
+                {formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}
+              </p>
+              <button
+                type="button"
+                onClick={() => onEdit(entry)}
+                className="shrink-0 rounded-xl border border-[#b97791] bg-white px-3 py-1.5 text-sm font-semibold text-[#6d153f]"
+              >
+                Ändern
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <button type="button" onClick={onAddNew} className="rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#6d153f]">
+            Neue Periode eintragen
+          </button>
+          <button type="button" onClick={onClose} className="rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white">
+            Schließen
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -339,7 +391,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [activePhase, setActivePhase] = useState<Phase | null>(null);
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
+  const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntry>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
@@ -364,7 +417,27 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         second.startDate.localeCompare(first.startDate),
       ),
     );
-    setIsUpdateModalOpen(false);
+    setPeriodFormMode("closed");
+    setIsMyPeriodsModalOpen(false);
+  }
+
+  function openMyPeriods() {
+    setIsMyPeriodsModalOpen(true);
+  }
+
+  function startEditingPeriod(entry: NewPeriodEntry) {
+    setIsMyPeriodsModalOpen(false);
+    setPeriodFormMode(entry);
+  }
+
+  function startNewPeriod() {
+    setIsMyPeriodsModalOpen(false);
+    setPeriodFormMode("new");
+  }
+
+  function backToMyPeriods() {
+    setPeriodFormMode("closed");
+    setIsMyPeriodsModalOpen(true);
   }
 
   function handleCycleLengthSaved() {
@@ -579,7 +652,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => setIsUpdateModalOpen(true)}
+            onClick={openMyPeriods}
             className="rounded-full bg-[#6d153f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
           >
             Meine Periode aktualisieren
@@ -615,10 +688,21 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         )}
       </section>
 
-      {isUpdateModalOpen && (
-        <UpdatePeriodModal
+      {isMyPeriodsModalOpen && (
+        <MyPeriodsModal
+          periods={periods}
+          onClose={() => setIsMyPeriodsModalOpen(false)}
+          onEdit={startEditingPeriod}
+          onAddNew={startNewPeriod}
+        />
+      )}
+
+      {periodFormMode !== "closed" && (
+        <PeriodFormModal
           today={todayKey}
-          onClose={() => setIsUpdateModalOpen(false)}
+          editingEntry={periodFormMode === "new" ? null : periodFormMode}
+          onClose={() => setPeriodFormMode("closed")}
+          onBack={backToMyPeriods}
           onSaved={handlePeriodSaved}
         />
       )}
