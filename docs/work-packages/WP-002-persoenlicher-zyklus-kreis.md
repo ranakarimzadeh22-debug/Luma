@@ -196,6 +196,8 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: ausstehend
-- Nachschärfung:
-- Product-Map aktualisiert: nein
+- Ergebnis: Soll und Ist stimmen im vereinbarten Umfang überein. Die persönliche Kreisansicht verwendet keine erfundenen Default-Daten, trennt bestätigte Periode von möglichen Phasen und zeigt den roten Heute-Marker auf einem auch an neutralen Tagen sichtbaren Ring. Die Benachrichtigung erscheint oben, ist schließbar und verschwindet nach sechs Sekunden.
+- Nachweise: Commit `487dcbf683716432213920bf4c0f447260fcff0e` ist auf `origin/main` bestätigt. Claude dokumentiert 30/30 Pflichtprüfungen, einen erfolgreichen Produktions-Build und eine mobile Sichtprüfung mit drei Zuständen ohne horizontalen Überlauf. Eine erneute lokale Ausführung des `tsx`-Prüfskripts durch Codex war wegen eines lokalen Node-Speicherfehlers (`ENOMEM`) nicht möglich; dies ist kein fachlicher Gegenbeweis.
+- Abweichung: Keine fachliche Abweichung. Das Projekt nutzt weiterhin kein dauerhaftes Testframework; das eigenständige Prüfskript ist dafür der bestätigte, wiederholbare Nachweis.
+- Owner-Abnahme offen: Die Nutzerin prüft auf `/neu` den neutralen Kreis ohne Daten, die Profil-Orientierung mit `Kann abweichen` und die persönliche Ansicht nach echten Periodendaten.
+- Product-Map aktualisiert: ja

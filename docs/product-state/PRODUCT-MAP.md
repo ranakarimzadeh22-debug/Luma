@@ -1,6 +1,6 @@
 # Luma Product-Map
 
-Aktualisiert: 2026-09-06  
+Aktualisiert: 2026-09-07  
 Quelle: bestätigte Produktentscheidungen und Entwicklungsledger
 
 ## Aktiver Nutzerweg
@@ -14,10 +14,9 @@ Quelle: bestätigte Produktentscheidungen und Entwicklungsledger
 | App-Auswahl | alte und neue Luma trennen | vorhanden |
 | Registrierung | neues Konto mit Vorname, E-Mail und Passwort | vorhanden |
 | Anmeldung | Zugang zur neuen Luma | vorhanden |
-| Home `/neu` | Zyklusübersicht und Kalender | aktiv in Entwicklung |
+| Home `/neu` | Zyklusübersicht, persönlicher Zyklus-Kreis und Kalender | Zyklus-Kreis technisch umgesetzt; Owner-Prüfung offen |
 | Zyklusprofil | persönliche Basisangaben | vorhanden |
 
 ## Pflege
 
 Codex ergänzt diese Map erst nach einem Soll-Ist-Abgleich. Neue Ideen kommen zunächst in den Ideenpool und verändern die Product-Map noch nicht. Technische Einzelheiten gehören ins Entwicklungsledger, nicht hierher.
-
