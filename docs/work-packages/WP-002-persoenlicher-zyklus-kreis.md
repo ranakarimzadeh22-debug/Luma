@@ -1,8 +1,8 @@
 ---
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
-package_revision: 3
-status: review
+package_revision: 4
+status: approved
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -16,7 +16,7 @@ technical_brief: complete
 
 ## Versionshinweis
 
-**Version 3 – 7. September 2026:** Die kurze schließbare Benachrichtigung erscheint oben im Bildschirmbereich. Diese Nachschärfung ist freigegeben und wartet auf Claude.
+**Version 4 – 7. September 2026:** Der dynamische Heute-Marker im Kreis ist als kleiner roter Punkt festgelegt. Diese Nachschärfung ist freigegeben und wartet auf Claude.
 
 ## Owner-Ansicht – einfach erklärt
 
@@ -25,7 +25,7 @@ technical_brief: complete
 - **Woher kam die Idee?** Aus dem Gespräch zum Home-Screen und Zyklus-Kreis; die bestätigten Entscheidungen sind DEC-086 sowie DEC-089 bis DEC-094.
 - **Wo ist es in der App?** Im Startweg nach Anmeldung und oben auf dem neuen Home-Screen `/neu`.
 - **Was gehört ausdrücklich nicht dazu?** Kein KI-Modell, keine Diagnose, keine Schwangerschafts- oder Verhütungsaussage, kein Umbau des Kalenders und keine Änderung der alten Luma.
-- **Was kann die Nutzerin danach ausprobieren?** Sie sieht bei fehlenden Daten einmalig eine kurze Benachrichtigung, kann sie schließen und gibt bei Bedarf ihre letzte Periode oder eine ungefähre Zykluslänge an.
+- **Was kann die Nutzerin danach ausprobieren?** Sie sieht bei einer persönlichen Zyklusansicht einen kleinen roten Punkt an ihrer heutigen Position im Kreis. Bei fehlenden Daten sieht sie einmalig die kurze Benachrichtigung und kann sie schließen.
 
 ## Entstehungsweg
 
@@ -48,7 +48,7 @@ technical_brief: complete
   - Zusätzlich erscheint dann einmal pro Home-Screen-Besuch oben im Bildschirmbereich die Benachrichtigung `Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.` Sie hat einen sichtbaren Schließen-Button, verschwindet nach sechs Sekunden automatisch und ist kein dauerhafter Textbereich auf dem Home-Screen.
   - Mit einer ungefähren Zykluslänge zeigt der Kreis eine erste Orientierung mit `Kann abweichen`.
   - Ab vier echten Periodenanfängen berechnet Luma aus den drei oder mehr echten Start-Abständen einen Median und ersetzt die ungefähre Angabe damit.
-  - Im Kreis stehen nur: die drei Bereiche Periode, mögliche Eisprungphase und mögliche PMS-Phase, der Heute-Marker sowie klein `Zyklus: X Tage` bei verfügbarer Länge. Keine Anzeige der nächsten Periode im Kreis.
+  - Im Kreis stehen nur: die drei Bereiche Periode, mögliche Eisprungphase und mögliche PMS-Phase, ein kleiner roter Punkt als Heute-Marker sowie klein `Zyklus: X Tage` bei verfügbarer Länge. Keine Anzeige der nächsten Periode im Kreis.
   - Tatsächlich bestätigte Periodentage sind Periode. Die mögliche Eisprungphase umfasst drei Tage rund um den geschätzten Eisprung. Die mögliche PMS-Phase umfasst die letzten fünf Tage vor der geschätzten Periode. Eisprung und PMS tragen sichtbar `Kann abweichen`.
 - **nicht enthalten:** Kalender-Interaktion oder -Umbau, neue Kalender-Historie, geplante Perioden, KI, Diagnose, Verhütung, Schwangerschaft, Push-Erinnerungen, Änderungen an alter Luma.
 - **Abnahmekriterien:**
@@ -56,7 +56,7 @@ technical_brief: complete
   2. Ohne Datenbasis bleibt der Kreis neutral und erfindet keinen Marker, keine persönliche Phase und keine Länge.
   3. Mit freiwilliger ungefährer Länge wird die Orientierung sichtbar als unsicher markiert.
   4. Mit mindestens vier echten Periodenanfängen nutzt Luma den Median echter Abstände und zeigt die Länge im Kreiszentrum.
-  5. Der Heute-Marker folgt der bestätigten Phasenregel; nur bestätigte Einträge sind Periode.
+  5. Ein klar sichtbarer kleiner roter Punkt folgt der bestätigten Phasenregel und markiert den heutigen Zyklustag; nur bestätigte Einträge sind Periode.
   6. Der Kreis enthält keine Aussage zur nächsten Periode.
   7. Alle persönlichen Daten bleiben kontogebunden; bestehende Daten bleiben erhalten.
   8. Die Benachrichtigung ist schließbar, verschwindet automatisch nach sechs Sekunden und erscheint nicht dauerhaft auf dem Home-Screen.
@@ -81,7 +81,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Nutze die bestehende kontogebundene Profil-Schnittstelle oder einen gleichwertig sicheren vorhandenen Weg für die freiwillige ungefähre Zykluslänge. Keine Schemaänderung ist vorgesehen.
 - Passe `predictCycle` oder teile passende reine Berechnungslogik aus: Ein persönlicher Median darf erst ab mindestens vier tatsächlichen Periodenanfängen berechnet werden. Verwende echte positive Start-Abstände; ungewöhnliche echte Abstände dürfen nicht still durch einen festen 28-Tage-Wert ersetzt werden.
 - Eine freiwillige Profilangabe darf nur als Quelle `profile` bzw. erste Orientierung dienen. Der bisherige `default`-Fallback darf keinen persönlichen Kreis, Marker oder persönliche Phasen erzeugen.
-- Passe SVG-Kreis und seine zugänglichen Texte an: Heute-Marker, Phasen und `Zyklus: X Tage` nur bei zulässiger Datenbasis; keine nächste Periode im Kreis. Die bestehende Ringgeometrie darf wiederverwendet oder sauber angepasst werden.
+- Passe SVG-Kreis und seine zugänglichen Texte an: Ein kleiner roter Punkt markiert den heutigen Zyklustag; Phasen und `Zyklus: X Tage` erscheinen nur bei zulässiger Datenbasis; keine nächste Periode im Kreis. Der rote Punkt muss auf jedem Segment klar sichtbar bleiben und einen zugänglichen Namen wie `Heute, Zyklustag X` erhalten. Die bestehende Ringgeometrie darf wiederverwendet oder sauber angepasst werden.
 - Bei fehlender Datenbasis rendere den bestätigten Hinweis als zugängliche, nicht blockierende Benachrichtigung oben im Bildschirmbereich: sichtbarer Schließen-Button, automatische Ausblendung nach sechs Sekunden, höchstens einmal pro Home-Screen-Besuch. Er darf nicht als dauerhafter Bereich unter oder im Kreis stehen.
 - Für berechnete Phasen gilt: bestätigte Periodentage haben Vorrang; mögliche Eisprungphase = drei Tage rund um den geschätzten Eisprung; mögliche PMS-Phase = die letzten fünf Tage vor der geschätzten Periode. Sie müssen als Schätzung erkennbar sein.
 - Claude darf Komponenten und Berechnungslogik passend aufteilen, solange Verhalten und Invarianten bindend bleiben.
@@ -105,6 +105,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 - Reine Berechnungs-Unit-Tests: kein persönlicher Kreis aus dem Default; neutral ohne Daten; Profil-Orientierung klar unsicher; Median erst ab vier Periodenanfängen; Median mit variierenden echten Abständen; bestätigte Periodentage haben Vorrang.
 - Phasen-Unit-Tests: dreitägige mögliche Eisprungphase, fünf PMS-Tage und `Kann abweichen` für geschätzte Phasen.
+- Markerprüfung: Für einen dritten Periodentag, eine PMS-Phase und eine mögliche Eisprungphase liegt der rote Punkt jeweils auf der passenden Ringposition.
 - Bestehende Auth-, Profil-, Perioden- und Kontentrennungsregressionen ausführen und anpassen.
 - Sichtprüfung mobil: optionale Eingabe leicht verständlich, `Ich weiß es nicht`, neutraler Fallback, Profil-Orientierung, Median-Kreis und kein horizontaler Überlauf.
 - Benachrichtigungsprüfung: Text, Schließen-Button, automatisches Verschwinden nach sechs Sekunden und höchstens einmal pro Home-Screen-Besuch prüfen.
@@ -157,6 +158,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
 - Abweichungen: keine.
 - offene Punkte: Owner-Prüfschritt (Position oben, Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden, kein erneutes Erscheinen im selben Besuch) steht aus.
+- offene Punkte: Version 4: roten dynamischen Heute-Marker als Punkt umsetzen und für Periode, PMS und mögliche Eisprungphase prüfen. Danach Owner-Prüfschritt ergänzen.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
