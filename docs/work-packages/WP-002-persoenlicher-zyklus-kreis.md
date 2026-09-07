@@ -2,7 +2,7 @@
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
 package_revision: 6
-status: approved
+status: review
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -232,3 +232,21 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 - Stoppe, wenn die vorhandene API die übrigen Profilwerte nicht sicher erhalten kann.
 - Stoppe bei einer benötigten Migration oder bei einer Änderung der tatsächlichen Periodendaten.
+
+### Ist für Version 6 – von Claude
+
+- umgesetzt:
+  - Neue Komponente `AddCycleLengthModal` in `src/components/NewCycleExample.tsx`: kurzer, fokussierter Dialog mit nur einem Zahlenfeld „Mein Zyklus dauert ungefähr … Tage“, „Ich weiß es nicht“-Umschalter, Abbrechen/Speichern — kein Durchlaufen des vollständigen Vier-Fragen-`NewCycleProfileWizard`.
+  - Einstieg „Zykluslänge ergänzen“ erscheint direkt unter dem Kreis, ausschließlich wenn `personalCycleView.status === "no_data"` **und** `periods.length > 0` (mindestens ein tatsächlicher Periodeneintrag vorhanden). Ohne jede Periode bleibt nur die bestehende Benachrichtigung/der Startweg, kein zusätzlicher Button.
+  - Bestehende Profilwerte bleiben beim Speichern erhalten: `AddCycleLengthModal` erhält das aktuell geladene Profil als `existingProfile`-Prop (aus `src/app/neu/page.tsx`, dort bereits vorhandene `getNewCycleProfile`-Abfrage jetzt zusätzlich als `cycleProfile`-Prop an `NewCycleExample` durchgereicht) und sendet beim `PUT /api/neu/cycle-profile` `lastPeriodStart`, `bleedingDurationDays` und `regularity` unverändert aus dem bestehenden Profil mit, ändert nur `cycleLengthDays`. Die Route selbst und ihre Validierung (`validateNewCycleProfileInput`) blieben unverändert — kein Eingriff in die API nötig, da das vorhandene Verhalten (vollständiges Upsert) durch das clientseitige Mitschicken der unveränderten Felder sicher genutzt wird.
+  - „Ich weiß es nicht“ im neuen Dialog sendet `cycleLengthDays: null` statt einer Zahl; `computePersonalCycleView` bleibt dadurch weiterhin bei `no_data` (kein erfundener Wert).
+  - Nach erfolgreichem Speichern ruft die Komponente `router.refresh()` auf (`next/navigation`, neu importiert), wodurch `/neu` serverseitig neu lädt und `personalCycleView` den Zustand `profile_estimate` mit `Kann abweichen` liefert.
+  - Tatsächliche Periodeneinträge werden vom neuen Dialog nicht berührt — er schreibt ausschließlich in `new_cycle_baseline_profiles`, nie in `new_period_entries`.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen.
+- Tests:
+  - `scripts/verify-personal-cycle-view.ts` um drei neue Prüfblöcke für Version 6 ergänzt: Sichtbarkeitsbedingung (eine Periode ohne Profil bleibt `no_data`), Übergang nach Speichern von 28 Tagen (`profile_estimate` + `isEstimate: true`), „Ich weiß es nicht“ speichert `cycleLengthDays: null` und bleibt `no_data`. Gesamtskript: 45/45 Prüfungen bestanden.
+  - `npm run build` (Next.js 16, Turbopack) erfolgreich, TypeScript-Prüfung ohne Fehler, alle 28 Routen erzeugt.
+  - Mobile Sichtprüfung mit Playwright (Chromium, 375×812, temporär installiert und danach wieder entfernt): neues Testkonto registriert, im Startweg genau eine Periode eingetragen und dort „Ich weiß es nicht“ bei der Zykluslänge gewählt (damit `no_data` erreicht wird), auf `/neu` Button „Zykluslänge ergänzen“ bestätigt sichtbar, Modal geöffnet, 28 Tage gespeichert, danach „Kann abweichen“ sichtbar und Button korrekt verschwunden, kein horizontaler Overflow. Test-Datenbank-Konto danach gelöscht.
+- Abweichungen: keine.
+- offene Punkte: Owner-Prüfschritt für Version 6 (eine echte Periode ohne Länge → Button sichtbar → Zykluslänge speichern → „Kann abweichen“) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.

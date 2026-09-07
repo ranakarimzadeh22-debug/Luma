@@ -88,6 +88,7 @@ export default async function NewAppPage() {
           initialPeriodPlans={periodPlans}
           prediction={prediction}
           personalCycleView={personalCycleView}
+          cycleProfile={profile}
         />
       </section>
     </main>

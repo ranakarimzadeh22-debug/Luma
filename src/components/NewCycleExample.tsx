@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
 import { getCalendarDayInfo } from "@/lib/calendar-day-info";
+import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -64,6 +66,7 @@ interface NewCycleExampleProps {
   initialPeriodPlans: NewPeriodEntry[];
   prediction: CyclePrediction | null;
   personalCycleView: PersonalCycleView;
+  cycleProfile: NewCycleProfileInput | null;
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -218,6 +221,87 @@ function UpdatePeriodModal({ onClose, onSaved, today }: UpdatePeriodModalProps) 
   );
 }
 
+interface AddCycleLengthModalProps {
+  onClose: () => void;
+  onSaved: () => void;
+  existingProfile: NewCycleProfileInput | null;
+}
+
+function AddCycleLengthModal({ onClose, onSaved, existingProfile }: AddCycleLengthModalProps) {
+  const [cycleLengthDays, setCycleLengthDays] = useState("");
+  const [isUnknown, setIsUnknown] = useState(false);
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function save() {
+    if (!isUnknown && !cycleLengthDays) {
+      setError("Bitte gib eine ungefähre Zykluslänge an oder wähle „Ich weiß es nicht“.");
+      return;
+    }
+    setIsSaving(true);
+    setError("");
+    const response = await fetch("/api/neu/cycle-profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        lastPeriodStart: existingProfile?.lastPeriodStart ?? null,
+        bleedingDurationDays: existingProfile?.bleedingDurationDays ?? null,
+        cycleLengthDays: isUnknown ? null : Number(cycleLengthDays),
+        regularity: existingProfile?.regularity ?? "unknown",
+      }),
+    }).catch(() => null);
+
+    setIsSaving(false);
+    if (!response?.ok) {
+      const body = await response?.json().catch(() => null);
+      setError(body?.error || "Die Zykluslänge konnte nicht gespeichert werden.");
+      return;
+    }
+    onSaved();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-labelledby="add-cycle-length-title">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-lg">
+        <h2 id="add-cycle-length-title" className="text-lg font-semibold text-[#28101f]">
+          Zykluslänge ergänzen
+        </h2>
+        <div className="mt-4 flex flex-col gap-4">
+          <label className="flex flex-col gap-1 text-sm font-medium text-[#382631]">
+            Mein Zyklus dauert ungefähr … Tage
+            <input
+              type="number"
+              min="21"
+              max="45"
+              inputMode="numeric"
+              disabled={isUnknown}
+              value={cycleLengthDays}
+              onChange={(event) => { setCycleLengthDays(event.target.value); setIsUnknown(false); }}
+              className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm disabled:bg-neutral-100"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => { setCycleLengthDays(""); setIsUnknown(true); }}
+            className={`rounded-xl border px-4 py-2.5 text-sm font-medium ${isUnknown ? "border-[#6d153f] bg-[#f8e4e9]" : "border-[#d8afbd]"}`}
+          >
+            Ich weiß es nicht
+          </button>
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} disabled={isSaving} className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631] disabled:opacity-50">
+              Abbrechen
+            </button>
+            <button type="button" onClick={save} disabled={isSaving} className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+              {isSaving ? "Wird gespeichert …" : "Speichern"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const NO_DATA_TOAST_MESSAGE =
   "Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.";
 const NO_DATA_TOAST_DURATION_MS = 6000;
@@ -247,7 +331,8 @@ function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
-export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView }: NewCycleExampleProps) {
+export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
+  const router = useRouter();
   const [today] = useState(() => new Date());
   const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
@@ -255,6 +340,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
@@ -279,6 +365,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       ),
     );
     setIsUpdateModalOpen(false);
+  }
+
+  function handleCycleLengthSaved() {
+    setIsAddCycleLengthModalOpen(false);
+    router.refresh();
   }
 
   return (
@@ -405,6 +496,17 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             </g>
           </svg>
         </div>
+        {personalCycleView.status === "no_data" && periods.length > 0 && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => setIsAddCycleLengthModalOpen(true)}
+              className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            >
+              Zykluslänge ergänzen
+            </button>
+          </div>
+        )}
       </section>
 
       <section aria-label="Kalender zur Orientierung" className="space-y-5">
@@ -518,6 +620,14 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           today={todayKey}
           onClose={() => setIsUpdateModalOpen(false)}
           onSaved={handlePeriodSaved}
+        />
+      )}
+
+      {isAddCycleLengthModalOpen && (
+        <AddCycleLengthModal
+          existingProfile={cycleProfile}
+          onClose={() => setIsAddCycleLengthModalOpen(false)}
+          onSaved={handleCycleLengthSaved}
         />
       )}
 

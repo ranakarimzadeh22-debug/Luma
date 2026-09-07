@@ -280,6 +280,46 @@ console.log("\n== Sichtprüfung der Farben: drei Phasen klar unterscheidbar ==")
 }
 
 // ---------------------------------------------------------------------------
+// Version 6: "Zykluslänge ergänzen" – Sichtbarkeit und Übergang
+// ---------------------------------------------------------------------------
+
+console.log("\n== V6: Einstieg 'Zykluslänge ergänzen' nur mit genau einer Periode ohne Länge sichtbar ==");
+{
+  // Sichtbarkeitsregel aus NewCycleExample.tsx: personalCycleView.status === "no_data" && periods.length > 0
+  const onePeriodNoProfile = computePersonalCycleView(
+    [period("1", "2026-08-01", "2026-08-05")],
+    null,
+    "2026-08-20",
+  );
+  assertEqual(onePeriodNoProfile.status, "no_data", "eine Periode ohne Profil bleibt no_data (Button wäre sichtbar)");
+
+  const noPeriodsAtAll = computePersonalCycleView([], null, "2026-08-20");
+  assertEqual(noPeriodsAtAll.status, "no_data", "keine Perioden bleibt ebenfalls no_data, aber periods.length===0 -> Button bleibt unsichtbar (UI-Bedingung)");
+}
+
+console.log("\n== V6: nach Speichern von 28 Tagen -> profile_estimate mit 'Kann abweichen' ==");
+{
+  const view = computePersonalCycleView(
+    [period("1", "2026-08-01", "2026-08-05")],
+    { cycleLengthDays: 28 },
+    "2026-08-20",
+  );
+  assertEqual(view.status, "profile_estimate", "nach Speichern von 28 Tagen liefert profile_estimate");
+  assert(view.isEstimate === true, "isEstimate ist true (UI zeigt 'Kann abweichen')");
+}
+
+console.log("\n== V6: 'Ich weiß es nicht' speichert keine Zahl, Kreis bleibt neutral ==");
+{
+  // Modal sendet cycleLengthDays: null bei "Ich weiß es nicht" -> Profil-Fallback bleibt ohne Länge
+  const view = computePersonalCycleView(
+    [period("1", "2026-08-01", "2026-08-05")],
+    { cycleLengthDays: null },
+    "2026-08-20",
+  );
+  assertEqual(view.status, "no_data", "cycleLengthDays: null führt weiterhin zu no_data (kein erfundener Wert)");
+}
+
+// ---------------------------------------------------------------------------
 // Zusammenfassung
 // ---------------------------------------------------------------------------
 
