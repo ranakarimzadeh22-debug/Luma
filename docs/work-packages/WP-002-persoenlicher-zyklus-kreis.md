@@ -1,9 +1,10 @@
 ---
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
-status: review
+package_revision: 2
+status: approved
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-07
 owner_approved: yes
 executor: claude
 product_area: "Neuer Startweg und Home-Screen /neu"
@@ -13,6 +14,10 @@ technical_brief: complete
 
 # Aufgabe: Persönlichen Zyklus-Kreis aus echten Daten anzeigen
 
+## Versionshinweis
+
+**Version 2 – 7. September 2026:** Der Hinweis bei fehlender Datenbasis ist als kurze schließbare Benachrichtigung ergänzt. Diese Nachschärfung ist freigegeben und wartet auf Claude.
+
 ## Owner-Ansicht – einfach erklärt
 
 - **Kurz gesagt:** Luma zeigt im Kreis, wo du dich heute in deinem persönlichen Zyklus befindest.
@@ -20,7 +25,7 @@ technical_brief: complete
 - **Woher kam die Idee?** Aus dem Gespräch zum Home-Screen und Zyklus-Kreis; die bestätigten Entscheidungen sind DEC-086 sowie DEC-089 bis DEC-094.
 - **Wo ist es in der App?** Im Startweg nach Anmeldung und oben auf dem neuen Home-Screen `/neu`.
 - **Was gehört ausdrücklich nicht dazu?** Kein KI-Modell, keine Diagnose, keine Schwangerschafts- oder Verhütungsaussage, kein Umbau des Kalenders und keine Änderung der alten Luma.
-- **Was kann die Nutzerin danach ausprobieren?** Sie gibt ihre letzte Periode ein, ergänzt freiwillig bis zu drei frühere Perioden oder eine ungefähre Zykluslänge und sieht danach einen klar als unsicher markierten persönlichen Kreis.
+- **Was kann die Nutzerin danach ausprobieren?** Sie sieht bei fehlenden Daten einmalig eine kurze Benachrichtigung, kann sie schließen und gibt bei Bedarf ihre letzte Periode oder eine ungefähre Zykluslänge an.
 
 ## Entstehungsweg
 
@@ -40,6 +45,7 @@ technical_brief: complete
   - Nach der letzten Periode bietet der Startweg freiwillig bis zu drei frühere Perioden an; jede zusätzliche Angabe darf übersprungen werden mit `Ich weiß es nicht`.
   - Wenn nicht genügend echte Angaben vorliegen, bietet Luma einfach und freiwillig `Mein Zyklus dauert ungefähr … Tage` sowie `Ich weiß es nicht` an.
   - Der Kreis bleibt neutral mit `Noch nicht genügend Daten für deine persönliche Zyklusansicht`, wenn weder ausreichende echte Daten noch eine ungefähre Zykluslänge vorliegen.
+  - Zusätzlich erscheint dann einmal pro Home-Screen-Besuch die Benachrichtigung `Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.` Sie hat einen sichtbaren Schließen-Button, verschwindet nach sechs Sekunden automatisch und ist kein dauerhafter Textbereich auf dem Home-Screen.
   - Mit einer ungefähren Zykluslänge zeigt der Kreis eine erste Orientierung mit `Kann abweichen`.
   - Ab vier echten Periodenanfängen berechnet Luma aus den drei oder mehr echten Start-Abständen einen Median und ersetzt die ungefähre Angabe damit.
   - Im Kreis stehen nur: die drei Bereiche Periode, mögliche Eisprungphase und mögliche PMS-Phase, der Heute-Marker sowie klein `Zyklus: X Tage` bei verfügbarer Länge. Keine Anzeige der nächsten Periode im Kreis.
@@ -53,6 +59,7 @@ technical_brief: complete
   5. Der Heute-Marker folgt der bestätigten Phasenregel; nur bestätigte Einträge sind Periode.
   6. Der Kreis enthält keine Aussage zur nächsten Periode.
   7. Alle persönlichen Daten bleiben kontogebunden; bestehende Daten bleiben erhalten.
+  8. Die Benachrichtigung ist schließbar, verschwindet automatisch nach sechs Sekunden und erscheint nicht dauerhaft auf dem Home-Screen.
 - **ein Prüfschritt für den Owner:** Eine Nutzerin ohne frühere Daten wählt `Ich weiß es nicht` und sieht den neutralen Kreis. Danach trägt sie freiwillig eine ungefähre Zykluslänge ein und sieht eine erste Orientierung mit `Kann abweichen`.
 
 ## Technischer Auftrag für Claude
@@ -75,6 +82,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Passe `predictCycle` oder teile passende reine Berechnungslogik aus: Ein persönlicher Median darf erst ab mindestens vier tatsächlichen Periodenanfängen berechnet werden. Verwende echte positive Start-Abstände; ungewöhnliche echte Abstände dürfen nicht still durch einen festen 28-Tage-Wert ersetzt werden.
 - Eine freiwillige Profilangabe darf nur als Quelle `profile` bzw. erste Orientierung dienen. Der bisherige `default`-Fallback darf keinen persönlichen Kreis, Marker oder persönliche Phasen erzeugen.
 - Passe SVG-Kreis und seine zugänglichen Texte an: Heute-Marker, Phasen und `Zyklus: X Tage` nur bei zulässiger Datenbasis; keine nächste Periode im Kreis. Die bestehende Ringgeometrie darf wiederverwendet oder sauber angepasst werden.
+- Bei fehlender Datenbasis rendere den bestätigten Hinweis als zugängliche, nicht blockierende Benachrichtigung: sichtbarer Schließen-Button, automatische Ausblendung nach sechs Sekunden, höchstens einmal pro Home-Screen-Besuch. Er darf nicht als dauerhafter Bereich unter oder im Kreis stehen.
 - Für berechnete Phasen gilt: bestätigte Periodentage haben Vorrang; mögliche Eisprungphase = drei Tage rund um den geschätzten Eisprung; mögliche PMS-Phase = die letzten fünf Tage vor der geschätzten Periode. Sie müssen als Schätzung erkennbar sein.
 - Claude darf Komponenten und Berechnungslogik passend aufteilen, solange Verhalten und Invarianten bindend bleiben.
 
@@ -99,6 +107,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Phasen-Unit-Tests: dreitägige mögliche Eisprungphase, fünf PMS-Tage und `Kann abweichen` für geschätzte Phasen.
 - Bestehende Auth-, Profil-, Perioden- und Kontentrennungsregressionen ausführen und anpassen.
 - Sichtprüfung mobil: optionale Eingabe leicht verständlich, `Ich weiß es nicht`, neutraler Fallback, Profil-Orientierung, Median-Kreis und kein horizontaler Überlauf.
+- Benachrichtigungsprüfung: Text, Schließen-Button, automatisches Verschwinden nach sechs Sekunden und höchstens einmal pro Home-Screen-Besuch prüfen.
 - Produktions-Build und Entwicklungsledger-Validierung ausführen.
 
 ### Stoppbedingungen
@@ -131,7 +140,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichungen:
   - Keine neuen Unit-Tests (Pflichtprüfungen nennen konkrete Testfälle) – das Projekt hat kein eingerichtetes Testframework (kein `test`-Script, keine Testbibliothek in `package.json`); stattdessen wurden die geforderten Fälle manuell mit einer eigenständigen Node-Berechnung verifiziert.
   - Mobile Sichtprüfung im echten Browser nicht durchgeführt (keine Browser-Automatisierung in dieser Umgebung verfügbar).
-- offene Punkte: Owner-Prüfschritt (ohne Daten neutralen Kreis sehen, dann freiwillige Zykluslänge eintragen und „Kann abweichen“ sehen) steht aus.
+- offene Punkte: Version 2: schließbare Sechs-Sekunden-Benachrichtigung bei fehlender Datenbasis umsetzen und prüfen. Danach steht der Owner-Prüfschritt für neutralen Kreis und freiwillige Zykluslänge an.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
