@@ -232,7 +232,7 @@ function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-4 bottom-6 z-40 mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#d8afbd] bg-white p-4 text-sm text-[#382631] shadow-lg"
+      className="fixed inset-x-4 top-[max(1.5rem,env(safe-area-inset-top))] z-40 mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#d8afbd] bg-white p-4 text-sm text-[#382631] shadow-lg"
     >
       <p className="flex-1">{NO_DATA_TOAST_MESSAGE}</p>
       <button

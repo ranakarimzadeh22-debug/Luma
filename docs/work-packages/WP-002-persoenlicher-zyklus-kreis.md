@@ -2,7 +2,7 @@
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
 package_revision: 3
-status: approved
+status: review
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -149,6 +149,14 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
 - Abweichungen: keine.
 - offene Punkte: Version 3: Benachrichtigung oben im Bildschirmbereich prüfen. Danach Owner-Prüfschritt für Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden und kein erneutes Erscheinen im selben Besuch.
+- Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Version 3 – Nachschärfung (7. September 2026)
+
+- umgesetzt: `NoDataToast` in `NewCycleExample.tsx` von unten (`bottom-6`) auf oben im Bildschirmbereich verschoben (`top-[max(1.5rem,env(safe-area-inset-top))]`), analog zum bestehenden `env(safe-area-inset-bottom)`-Muster in `src/app/neu/page.tsx`, damit sie auf Geräten mit Notch/Statusleiste nicht verdeckt wird. Text, Schließen-Button, 6-Sekunden-Timer und Einmaligkeit pro Besuch unverändert aus Version 2 übernommen.
+- Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
+- Abweichungen: keine.
+- offene Punkte: Owner-Prüfschritt (Position oben, Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden, kein erneutes Erscheinen im selben Besuch) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
