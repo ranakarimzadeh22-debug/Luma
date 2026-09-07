@@ -1,8 +1,8 @@
 ---
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
-package_revision: 4
-status: review
+package_revision: 5
+status: approved
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -16,7 +16,7 @@ technical_brief: complete
 
 ## Versionshinweis
 
-**Version 4 – 7. September 2026:** Der dynamische Heute-Marker im Kreis ist als kleiner roter Punkt festgelegt. Diese Nachschärfung ist freigegeben und wartet auf Claude.
+**Version 5 – 7. September 2026:** Die drei Phasen sind als deutliche farbliche Dreiteilung präzisiert. Diese Nachschärfung ist freigegeben und wartet auf Claude.
 
 ## Owner-Ansicht – einfach erklärt
 
@@ -48,7 +48,8 @@ technical_brief: complete
   - Zusätzlich erscheint dann einmal pro Home-Screen-Besuch oben im Bildschirmbereich die Benachrichtigung `Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.` Sie hat einen sichtbaren Schließen-Button, verschwindet nach sechs Sekunden automatisch und ist kein dauerhafter Textbereich auf dem Home-Screen.
   - Mit einer ungefähren Zykluslänge zeigt der Kreis eine erste Orientierung mit `Kann abweichen`.
   - Ab vier echten Periodenanfängen berechnet Luma aus den drei oder mehr echten Start-Abständen einen Median und ersetzt die ungefähre Angabe damit.
-  - Im Kreis stehen nur: die drei Bereiche Periode, mögliche Eisprungphase und mögliche PMS-Phase, ein kleiner roter Punkt als Heute-Marker sowie klein `Zyklus: X Tage` bei verfügbarer Länge. Keine Anzeige der nächsten Periode im Kreis.
+  - Der Kreis ist sichtbar dreigeteilt: Menstruationsphase (dunkles Beerenrot), PMS-Phase (warmes Rosa) und mögliche Ovulationsphase (Lavendel). Beschriftungen machen die Phasen zusätzlich ohne Farbe verständlich.
+  - Im Kreis stehen nur: diese drei Bereiche, ein kleiner roter Punkt als Heute-Marker sowie klein `Zyklus: X Tage` bei verfügbarer Länge. Keine Anzeige der nächsten Periode im Kreis.
   - Tatsächlich bestätigte Periodentage sind Periode. Die mögliche Eisprungphase umfasst drei Tage rund um den geschätzten Eisprung. Die mögliche PMS-Phase umfasst die letzten fünf Tage vor der geschätzten Periode. Eisprung und PMS tragen sichtbar `Kann abweichen`.
 - **nicht enthalten:** Kalender-Interaktion oder -Umbau, neue Kalender-Historie, geplante Perioden, KI, Diagnose, Verhütung, Schwangerschaft, Push-Erinnerungen, Änderungen an alter Luma.
 - **Abnahmekriterien:**
@@ -60,6 +61,7 @@ technical_brief: complete
   6. Der Kreis enthält keine Aussage zur nächsten Periode.
   7. Alle persönlichen Daten bleiben kontogebunden; bestehende Daten bleiben erhalten.
   8. Die Benachrichtigung ist schließbar, verschwindet automatisch nach sechs Sekunden und erscheint nicht dauerhaft auf dem Home-Screen.
+  9. Menstruationsphase, PMS-Phase und mögliche Ovulationsphase sind farblich und zusätzlich durch ihre Beschriftung klar unterscheidbar.
 - **ein Prüfschritt für den Owner:** Eine Nutzerin ohne frühere Daten wählt `Ich weiß es nicht` und sieht den neutralen Kreis. Danach trägt sie freiwillig eine ungefähre Zykluslänge ein und sieht eine erste Orientierung mit `Kann abweichen`.
 
 ## Technischer Auftrag für Claude
@@ -81,7 +83,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Nutze die bestehende kontogebundene Profil-Schnittstelle oder einen gleichwertig sicheren vorhandenen Weg für die freiwillige ungefähre Zykluslänge. Keine Schemaänderung ist vorgesehen.
 - Passe `predictCycle` oder teile passende reine Berechnungslogik aus: Ein persönlicher Median darf erst ab mindestens vier tatsächlichen Periodenanfängen berechnet werden. Verwende echte positive Start-Abstände; ungewöhnliche echte Abstände dürfen nicht still durch einen festen 28-Tage-Wert ersetzt werden.
 - Eine freiwillige Profilangabe darf nur als Quelle `profile` bzw. erste Orientierung dienen. Der bisherige `default`-Fallback darf keinen persönlichen Kreis, Marker oder persönliche Phasen erzeugen.
-- Passe SVG-Kreis und seine zugänglichen Texte an: Ein kleiner roter Punkt markiert den heutigen Zyklustag; Phasen und `Zyklus: X Tage` erscheinen nur bei zulässiger Datenbasis; keine nächste Periode im Kreis. Der rote Punkt muss auf jedem Segment klar sichtbar bleiben und einen zugänglichen Namen wie `Heute, Zyklustag X` erhalten. Die bestehende Ringgeometrie darf wiederverwendet oder sauber angepasst werden.
+- Passe SVG-Kreis und seine zugänglichen Texte an: Die Menstruationsphase ist dunkles Beerenrot, PMS warmes Rosa und mögliche Ovulationsphase Lavendel; Beschriftungen bleiben sichtbar. Ein kleiner roter Punkt markiert den heutigen Zyklustag; Phasen und `Zyklus: X Tage` erscheinen nur bei zulässiger Datenbasis; keine nächste Periode im Kreis. Der rote Punkt muss auf jedem Segment klar sichtbar bleiben und einen zugänglichen Namen wie `Heute, Zyklustag X` erhalten. Die bestehende Ringgeometrie darf wiederverwendet oder sauber angepasst werden.
 - Bei fehlender Datenbasis rendere den bestätigten Hinweis als zugängliche, nicht blockierende Benachrichtigung oben im Bildschirmbereich: sichtbarer Schließen-Button, automatische Ausblendung nach sechs Sekunden, höchstens einmal pro Home-Screen-Besuch. Er darf nicht als dauerhafter Bereich unter oder im Kreis stehen.
 - Für berechnete Phasen gilt: bestätigte Periodentage haben Vorrang; mögliche Eisprungphase = drei Tage rund um den geschätzten Eisprung; mögliche PMS-Phase = die letzten fünf Tage vor der geschätzten Periode. Sie müssen als Schätzung erkennbar sein.
 - Claude darf Komponenten und Berechnungslogik passend aufteilen, solange Verhalten und Invarianten bindend bleiben.
@@ -106,6 +108,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Reine Berechnungs-Unit-Tests: kein persönlicher Kreis aus dem Default; neutral ohne Daten; Profil-Orientierung klar unsicher; Median erst ab vier Periodenanfängen; Median mit variierenden echten Abständen; bestätigte Periodentage haben Vorrang.
 - Phasen-Unit-Tests: dreitägige mögliche Eisprungphase, fünf PMS-Tage und `Kann abweichen` für geschätzte Phasen.
 - Markerprüfung: Für einen dritten Periodentag, eine PMS-Phase und eine mögliche Eisprungphase liegt der rote Punkt jeweils auf der passenden Ringposition.
+- Sichtprüfung der Farben: Alle drei Phasen sind klar verschieden; Beschriftungen erklären sie zusätzlich.
 - Bestehende Auth-, Profil-, Perioden- und Kontentrennungsregressionen ausführen und anpassen.
 - Sichtprüfung mobil: optionale Eingabe leicht verständlich, `Ich weiß es nicht`, neutraler Fallback, Profil-Orientierung, Median-Kreis und kein horizontaler Überlauf.
 - Benachrichtigungsprüfung: Text, Schließen-Button, automatisches Verschwinden nach sechs Sekunden und höchstens einmal pro Home-Screen-Besuch prüfen.
