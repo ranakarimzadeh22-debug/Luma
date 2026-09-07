@@ -1,8 +1,8 @@
 ---
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
-package_revision: 2
-status: review
+package_revision: 3
+status: approved
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -16,7 +16,7 @@ technical_brief: complete
 
 ## Versionshinweis
 
-**Version 2 – 7. September 2026:** Der Hinweis bei fehlender Datenbasis ist als kurze schließbare Benachrichtigung ergänzt. Diese Nachschärfung ist freigegeben und wartet auf Claude.
+**Version 3 – 7. September 2026:** Die kurze schließbare Benachrichtigung erscheint oben im Bildschirmbereich. Diese Nachschärfung ist freigegeben und wartet auf Claude.
 
 ## Owner-Ansicht – einfach erklärt
 
@@ -45,7 +45,7 @@ technical_brief: complete
   - Nach der letzten Periode bietet der Startweg freiwillig bis zu drei frühere Perioden an; jede zusätzliche Angabe darf übersprungen werden mit `Ich weiß es nicht`.
   - Wenn nicht genügend echte Angaben vorliegen, bietet Luma einfach und freiwillig `Mein Zyklus dauert ungefähr … Tage` sowie `Ich weiß es nicht` an.
   - Der Kreis bleibt neutral mit `Noch nicht genügend Daten für deine persönliche Zyklusansicht`, wenn weder ausreichende echte Daten noch eine ungefähre Zykluslänge vorliegen.
-  - Zusätzlich erscheint dann einmal pro Home-Screen-Besuch die Benachrichtigung `Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.` Sie hat einen sichtbaren Schließen-Button, verschwindet nach sechs Sekunden automatisch und ist kein dauerhafter Textbereich auf dem Home-Screen.
+  - Zusätzlich erscheint dann einmal pro Home-Screen-Besuch oben im Bildschirmbereich die Benachrichtigung `Trage deine letzte Periode ein oder gib eine ungefähre Zykluslänge an, damit Luma dir eine erste Orientierung zeigen kann.` Sie hat einen sichtbaren Schließen-Button, verschwindet nach sechs Sekunden automatisch und ist kein dauerhafter Textbereich auf dem Home-Screen.
   - Mit einer ungefähren Zykluslänge zeigt der Kreis eine erste Orientierung mit `Kann abweichen`.
   - Ab vier echten Periodenanfängen berechnet Luma aus den drei oder mehr echten Start-Abständen einen Median und ersetzt die ungefähre Angabe damit.
   - Im Kreis stehen nur: die drei Bereiche Periode, mögliche Eisprungphase und mögliche PMS-Phase, der Heute-Marker sowie klein `Zyklus: X Tage` bei verfügbarer Länge. Keine Anzeige der nächsten Periode im Kreis.
@@ -82,7 +82,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Passe `predictCycle` oder teile passende reine Berechnungslogik aus: Ein persönlicher Median darf erst ab mindestens vier tatsächlichen Periodenanfängen berechnet werden. Verwende echte positive Start-Abstände; ungewöhnliche echte Abstände dürfen nicht still durch einen festen 28-Tage-Wert ersetzt werden.
 - Eine freiwillige Profilangabe darf nur als Quelle `profile` bzw. erste Orientierung dienen. Der bisherige `default`-Fallback darf keinen persönlichen Kreis, Marker oder persönliche Phasen erzeugen.
 - Passe SVG-Kreis und seine zugänglichen Texte an: Heute-Marker, Phasen und `Zyklus: X Tage` nur bei zulässiger Datenbasis; keine nächste Periode im Kreis. Die bestehende Ringgeometrie darf wiederverwendet oder sauber angepasst werden.
-- Bei fehlender Datenbasis rendere den bestätigten Hinweis als zugängliche, nicht blockierende Benachrichtigung: sichtbarer Schließen-Button, automatische Ausblendung nach sechs Sekunden, höchstens einmal pro Home-Screen-Besuch. Er darf nicht als dauerhafter Bereich unter oder im Kreis stehen.
+- Bei fehlender Datenbasis rendere den bestätigten Hinweis als zugängliche, nicht blockierende Benachrichtigung oben im Bildschirmbereich: sichtbarer Schließen-Button, automatische Ausblendung nach sechs Sekunden, höchstens einmal pro Home-Screen-Besuch. Er darf nicht als dauerhafter Bereich unter oder im Kreis stehen.
 - Für berechnete Phasen gilt: bestätigte Periodentage haben Vorrang; mögliche Eisprungphase = drei Tage rund um den geschätzten Eisprung; mögliche PMS-Phase = die letzten fünf Tage vor der geschätzten Periode. Sie müssen als Schätzung erkennbar sein.
 - Claude darf Komponenten und Berechnungslogik passend aufteilen, solange Verhalten und Invarianten bindend bleiben.
 
@@ -148,7 +148,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - umgesetzt: Der bisherige dauerhafte Hinweistext unter dem Kreis bei fehlender Datenbasis (`personalCycleView.status === "no_data"`) ist entfernt. Stattdessen rendert `NewCycleExample.tsx` eine neue `NoDataToast`-Komponente: fixierte Benachrichtigung am unteren Bildschirmrand mit dem vorgegebenen Text, sichtbarem Schließen-Button (`×`, mit `aria-label`) und `useEffect`-Timer, der sie nach 6000 ms automatisch ausblendet. Sichtbarkeit wird einmalig beim ersten Rendern aus `personalCycleView.status === "no_data"` initialisiert (`useState`-Initialwert), erscheint also genau einmal pro Seitenaufruf/Home-Screen-Besuch und nicht erneut bei Zustandsänderungen innerhalb desselben Besuchs.
 - Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
 - Abweichungen: keine.
-- offene Punkte: Owner-Prüfschritt für die Benachrichtigung (Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden, kein erneutes Erscheinen im selben Besuch) steht aus.
+- offene Punkte: Version 3: Benachrichtigung oben im Bildschirmbereich prüfen. Danach Owner-Prüfschritt für Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden und kein erneutes Erscheinen im selben Besuch.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
