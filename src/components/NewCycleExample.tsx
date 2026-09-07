@@ -352,11 +352,9 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 {(() => {
                   const marker = ringPointAt(personalRingGeometry.todayAngle);
                   return (
-                    <>
-                      <circle cx={marker.x} cy={marker.y} r="14" fill="white" />
-                      <circle cx={marker.x} cy={marker.y} r="9" fill="#4a0738" />
-                      <circle cx={marker.x} cy={marker.y} r="4" fill="#df6b9a" />
-                    </>
+                    <circle cx={marker.x} cy={marker.y} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">
+                      <title>Heute</title>
+                    </circle>
                   );
                 })()}
               </>

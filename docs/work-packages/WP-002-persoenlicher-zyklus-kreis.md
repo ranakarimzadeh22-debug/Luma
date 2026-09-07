@@ -2,7 +2,7 @@
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
 package_revision: 4
-status: approved
+status: review
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -159,6 +159,14 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichungen: keine.
 - offene Punkte: Owner-Prüfschritt (Position oben, Text, Schließen-Button, automatisches Verschwinden nach 6 Sekunden, kein erneutes Erscheinen im selben Besuch) steht aus.
 - offene Punkte: Version 4: roten dynamischen Heute-Marker als Punkt umsetzen und für Periode, PMS und mögliche Eisprungphase prüfen. Danach Owner-Prüfschritt ergänzen.
+- Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Version 4 – Nachschärfung (7. September 2026)
+
+- umgesetzt: Der bisherige Heute-Marker (drei verschachtelte weiß/dunkelrote Kreise, r=14/9/4) in `NewCycleExample.tsx` ist durch einen einzelnen kleinen roten Punkt ersetzt (`r="6"`, `fill="#e11d3f"`, weißer 2px-Rand für Kontrast über allen drei Ring-Segmentfarben, `<title>Heute</title>` für Screenreader). Position bleibt unverändert `ringPointAt(personalRingGeometry.todayAngle)`, folgt also weiterhin derselben bestätigten Phasenregel wie zuvor – nur die visuelle Darstellung hat sich geändert.
+- Tests: `npm run build` erneut erfolgreich (Compile, TypeScript, 28 Routen).
+- Abweichungen: keine.
+- offene Punkte: Owner-Prüfschritt (roter Punkt gut sichtbar bei Periode, möglicher Eisprungphase und möglicher PMS-Phase) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
