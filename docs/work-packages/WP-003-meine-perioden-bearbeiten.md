@@ -1,10 +1,10 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 2
-status: review
+package_revision: 3
+status: approved
 created: 2026-09-07
-updated: 2026-09-07
+updated: 2026-09-08
 owner_approved: yes
 executor: claude
 product_area: "Neue Luma – Periodenverwaltung"
@@ -136,6 +136,101 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichungen: keine.
 - offene Punkte: Owner-Prüfschritt (`Meine Periode aktualisieren` öffnen, eine gespeicherte Periode ändern, prüfen, speichern, Seite neu laden) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 3 – Laufende Periode sofort erfassen (8. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Wenn deine Periode heute oder gestern beginnt, kannst du den Start sofort speichern. Das echte Ende ergänzt du später.
+- **Warum machen wir das?** Bei einer laufenden Periode kennt man das tatsächliche Ende noch nicht. Trotzdem soll Luma schon den echten Beginn kennen.
+- **Zusatz:** Du darfst ein erwartetes Ende auswählen. Es erscheint als `Voraussichtlich` und `Kann abweichen`, bis du das echte Ende bestätigst.
+- **Was passiert mit kommenden Monaten?** Luma zeigt eine nächste Periode nur als automatische Schätzung. Du planst sie nicht manuell.
+- **Was bleibt geschützt?** Nur echte, von dir bestätigte Starts verbessern spätere Schätzungen. Erwartete Tage werden nie als echte Periodendaten behandelt.
+
+### Entstehungsweg
+
+`Laufende Periode hat einen echten Start, aber noch kein echtes Ende → Warten auf das Ende verhindert eine sinnvolle Erfassung → Start sofort speichern und erwartetes Ende klar getrennt anzeigen → WP-003 Version 3`
+
+- bestätigtes Problem: Der bisherige Weg speichert erst, wenn Beginn und Ende zusammen vorliegen. Dadurch kann eine laufende Periode nicht direkt erfasst werden.
+- gewünschte Wirkung: Die Nutzerin kann den Start einer laufenden Periode sofort festhalten und später das tatsächliche Ende ergänzen oder korrigieren.
+- gewählte Lösung: Ein Eintrag unterscheidet tatsächlichen Start, optionales tatsächliches Ende und optionales erwartetes Ende.
+- bestätigte Grenzen: Eine künftige neue Periode bleibt eine automatische Schätzung und wird nicht manuell als tatsächliche Periode geplant.
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-PROBLEM-008.md`; DEC-098, DEC-099 und DEC-100.
+
+### Soll – von Codex
+
+- Ein tatsächlicher Periodenstart darf heute oder in der Vergangenheit sofort gespeichert werden, auch wenn das tatsächliche Ende fehlt.
+- Ein erwartetes Ende für diese laufende Periode darf nach heute liegen. Es wird sichtbar als `Voraussichtlich` und `Kann abweichen` gezeigt, aber nicht als bestätigter Periodentag gespeichert.
+- Das tatsächliche Ende kann später ergänzt oder korrigiert werden. Beim Speichern eines tatsächlichen Endes wird ein vorheriges erwartetes Ende nicht weiter als aktiv angezeigt.
+- Historische abgeschlossene Perioden bleiben vollständig bearbeitbar und löschbar wie bisher.
+- Die automatisch berechnete nächste Periode bleibt reine, klar gekennzeichnete Schätzung. Sie wird nicht in der Datenbank als echter Eintrag angelegt und nicht für Median, Zykluslänge oder bestätigte Periodendauer verwendet.
+- Ein später bestätigter tatsächlicher Start überlagert die passende Schätzung im Kalender. Danach berechnet Luma kommende Schätzungen mit den echten Daten neu.
+- Der Home-Kalender zeigt die Unterscheidung verständlich: `Bestätigt`, `Laufend` oder `Voraussichtlich`. Er bleibt keine unklare zweite Eingabemethode.
+
+### Abnahmekriterien
+
+1. Eine Nutzerin speichert einen Start von gestern ohne tatsächliches Ende. Nach Neuladen bleibt dieser Start sichtbar.
+2. Sie ergänzt ein erwartetes Ende nach heute. Die betreffenden künftigen Tage sind klar als vorläufig erkennbar und zählen nicht als bestätigte Periode.
+3. Sie ergänzt später das echte Ende. Der Eintrag ist danach abgeschlossen; die vorläufige Anzeige verschwindet.
+4. Eine automatisch geschätzte kommende Periode ist erkennbar keine bestätigte Periode und kann nicht still in die Datenbasis gelangen.
+5. Ein echter Start im geschätzten Zeitraum ersetzt die dortige Schätzung sichtbar und beeinflusst nur danach kommende Schätzungen.
+6. Fremde Konten können laufende oder abgeschlossene Einträge weder lesen noch verändern.
+
+## Technischer Auftrag für Claude – Version 3
+
+### Bestätigte Code-Ausgangslage
+
+- `database/luma-core/migrations/202609031500_period_history.sql` definiert derzeit `new_period_entries` mit zwingendem `end_date`.
+- `src/lib/new-period-validation.ts` und `src/lib/new-periods.ts` behandeln Einträge derzeit als immer vollständige Zeiträume.
+- `POST /api/neu/periods` und `PUT /api/neu/periods/[id]` nutzen diese Validierung. Sitzungs-, Herkunfts-, Kontotrennungs- und Überschneidungsprüfungen bestehen bereits.
+- `src/lib/new-cycle-prediction.ts`, `src/lib/personal-cycle-view.ts` und `src/components/NewCycleExample.tsx` berechnen beziehungsweise zeigen Kreis und Kalender aus den Einträgen.
+- `MyPeriodsModal` und `PeriodFormModal` in `src/components/NewCycleExample.tsx` sind der bestätigte Verwaltungsweg aus Version 1 und 2.
+
+### Datenmodell und Migration
+
+- Eine neue, fortlaufend benannte Migration für **ausschließlich** `luma_core` ist ausdrücklich freigegeben.
+- `start_date` bleibt zwingend und bezeichnet immer einen tatsächlichen, manuell bestätigten Start.
+- `end_date` wird nullable und bezeichnet nur ein tatsächlich bestätigtes Ende.
+- Ergänze `expected_end_date` als nullable Feld für ein erwartetes Ende einer laufenden Periode.
+- Bestehende vollständige Einträge bleiben unverändert gültig: Sie behalten ihr echtes Ende; `expected_end_date` ist leer.
+- Datenbank-Constraints müssen mindestens sicherstellen: Ein vorhandenes echtes oder erwartetes Ende liegt nicht vor dem Start. Keine Migration darf `app_luma`, alte Luma-Tabellen oder Daten anderer Nutzer verändern.
+
+### Umsetzung und Invarianten
+
+- Passe Typen, Servervalidierung und Routen an, ohne die bestehende Sitzung, Herkunftsprüfung oder Kontotrennung zu schwächen.
+- Erlaube einen tatsächlichen Start nur bis einschließlich heute. Ein tatsächlicher Start in der Zukunft wird serverseitig abgelehnt.
+- Erlaube ein erwartetes Ende nach heute nur zusammen mit einem tatsächlichen Start bis einschließlich heute. Es ist kein tatsächliches Ende.
+- Behalte die transaktionssichere, kontobezogene Überschneidungsprüfung. Sie muss auch bei unvollständigen Einträgen sinnvoll bleiben; bestätigte und erwartete Bereiche dürfen nicht still widersprüchlich werden.
+- Im Verwaltungsweg muss verständlich sein: `Start speichern`, `Erwartetes Ende ergänzen` und später `Tatsächliches Ende speichern`. Zeige vor jeder dauerhaften Änderung eine verständliche Prüfung.
+- Wenn ein tatsächliches Ende gespeichert wird, darf kein altes erwartetes Ende weiter als gültig dargestellt werden.
+- Verwende für Zykluslänge und Median ausschließlich tatsächlich bestätigte Starts; benutze für die tatsächliche Periodendauer nur Einträge mit tatsächlichem Ende. Ein erwartetes Ende zählt nie als historische Tatsache.
+- Automatische Zukunftszyklen dürfen nur zur Laufzeit berechnet werden. Sie werden nicht als `new_period_entries` gespeichert. Kalender, Tagesinformation und zugängliche Beschriftungen müssen Schätzung und bestätigte Daten eindeutig unterscheiden.
+- Bestehende Bearbeiten- und Löschfunktionen bleiben für jeden Eintrag erhalten. Löschen braucht weiterhin die zweite Bestätigung.
+
+### Pflichtprüfungen
+
+- Migration nur auf einer Test-/Zieldatenbank für `luma_core` anwenden und Zielidentität vor der Ausführung bestätigen.
+- Start gestern ohne Ende speichern, neu laden und erneut anmelden.
+- Erwartetes Ende nach heute ergänzen; serverseitig prüfen, dass es nicht als bestätigtes Ende oder historischer Datensatz verwendet wird.
+- Tatsächliches Ende später speichern; erwartetes Ende wird danach nicht mehr aktiv angezeigt.
+- Zukunftsstart, Ende vor Start, fremde ID und Überschneidungen werden serverseitig abgelehnt.
+- Kalender zeigt mindestens einen bestätigten, einen laufenden und einen automatisch geschätzten Zustand klar verschieden. Eine Schätzung wird nie als echte Periode gespeichert.
+- Prüfen, dass Median/Zykluslänge keine erwarteten Enddaten als tatsächliche Periodendauer verwendet.
+- Kontotrennung, bestehendes Bearbeiten/Löschen, TypeScript, gezielte Tests, Produktions-Build und Ledger-Validierung bestehen.
+- Mobile Sichtprüfung: Eingabe, Prüfung, vorläufige Kennzeichnung und spätere Ergänzung sind ohne horizontalen Überlauf verständlich bedienbar.
+
+### Stoppbedingungen
+
+- Stoppe, wenn die Migration nicht eindeutig auf `luma_core` zielt oder eine bestehende Tabelle in `app_luma` berühren würde.
+- Stoppe vor einer Speicherung automatisch berechneter Zukunftsperioden als echte Daten.
+- Stoppe vor einer Änderung der alten Luma, vor medizinischen Behauptungen oder vor einer stillen Änderung anderer Periodeneinträge.
+- Wenn die bisherige Überlappungslogik für einen offenen Eintrag unklar wird, dokumentiere den Konflikt und bitte um Klärung statt Datenregeln zu erraten.
+
+### Abschluss durch Claude
+
+- Ergänze `Ist Version 3`, nenne Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus auf `review`, ergänze das Entwicklungsledger und führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus.
+- Committe nur auftragsbezogene Dateien und pushe sie. Eine Dokploy-Bereitstellung nur dann als erfolgreich melden, wenn sie wirklich geprüft wurde.
 
 ### Version 2 – Löschen (7. September 2026)
 
