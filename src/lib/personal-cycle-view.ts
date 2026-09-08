@@ -1,4 +1,4 @@
-import type { NewPeriodEntry } from "@/lib/new-period-validation";
+import type { NewPeriodEntryOpen } from "@/lib/new-period-validation";
 
 export type PersonalCyclePhase = "period" | "ovulation" | "pms" | null;
 
@@ -10,6 +10,7 @@ export interface PersonalCycleView {
   periodLengthDays: number | null;
   anchorPeriodStart: string | null;
   todayCycleDay: number | null;
+  isRunning: boolean;
 }
 
 const MIN_REAL_PERIODS_FOR_MEDIAN = 4;
@@ -44,7 +45,7 @@ function median(values: number[]): number {
   return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
-function realCycleLengthMedian(sortedPeriods: NewPeriodEntry[]): number | null {
+function realCycleLengthMedian(sortedPeriods: NewPeriodEntryOpen[]): number | null {
   if (sortedPeriods.length < MIN_REAL_PERIODS_FOR_MEDIAN) return null;
 
   const gaps: number[] = [];
@@ -65,18 +66,21 @@ function realCycleLengthMedian(sortedPeriods: NewPeriodEntry[]): number | null {
  * a personal phase from an unconfirmed 28-day default.
  */
 export function computePersonalCycleView(
-  periods: NewPeriodEntry[],
+  periods: NewPeriodEntryOpen[],
   profile: ProfileFallback | null,
   today: string,
 ): PersonalCycleView {
   const sorted = [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate));
-  const confirmedToday = sorted.some((entry) => entry.startDate <= today && entry.endDate >= today);
+  const completed = sorted.filter((entry): entry is NewPeriodEntryOpen & { endDate: string } => entry.endDate !== null);
+  const runningToday = sorted.some((entry) => entry.endDate === null && entry.startDate <= today);
+  const confirmedToday =
+    runningToday || sorted.some((entry) => entry.endDate !== null && entry.startDate <= today && entry.endDate >= today);
 
   const personalCycleLength = realCycleLengthMedian(sorted);
   const latestPeriodStart = sorted.length > 0 ? sorted[sorted.length - 1].startDate : null;
   const periodLengthDays =
-    sorted.length > 0
-      ? Math.round(median(sorted.map((entry) => daysBetween(entry.startDate, entry.endDate) + 1)))
+    completed.length > 0
+      ? Math.round(median(completed.map((entry) => daysBetween(entry.startDate, entry.endDate) + 1)))
       : DEFAULT_PERIOD_LENGTH;
 
   if (personalCycleLength && latestPeriodStart) {
@@ -88,6 +92,7 @@ export function computePersonalCycleView(
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
       todayCycleDay: todayCycleDay(latestPeriodStart, personalCycleLength, today),
+      isRunning: runningToday,
     };
   }
 
@@ -100,6 +105,7 @@ export function computePersonalCycleView(
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
       todayCycleDay: todayCycleDay(latestPeriodStart, profile.cycleLengthDays, today),
+      isRunning: runningToday,
     };
   }
 
@@ -112,6 +118,7 @@ export function computePersonalCycleView(
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
       todayCycleDay: null,
+      isRunning: runningToday,
     };
   }
 
@@ -123,6 +130,7 @@ export function computePersonalCycleView(
     periodLengthDays: null,
     anchorPeriodStart: null,
     todayCycleDay: null,
+    isRunning: false,
   };
 }
 

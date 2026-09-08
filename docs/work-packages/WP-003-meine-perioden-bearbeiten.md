@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 3
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-08
 owner_approved: yes
@@ -245,6 +245,34 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Direkte Prüfung gegen die lokale Datenbank nach einem manuellen Testlauf bestätigt den korrekten Endzustand (ein Eintrag gelöscht, der andere unverändert vorhanden) – ein automatisiertes Browser-Skript zeigte an dieser Stelle ein reines UI-Timing-Problem beim Auslesen kurz nach `router.refresh()`, das laut direkter Datenbankprüfung keine tatsächliche Dateninkonsistenz war.
 - Abweichungen: keine fachliche Abweichung.
 - offene Punkte: Owner-Prüfschritt für das Löschen (Abbrechen lässt Eintrag sichtbar, Endgültig löschen entfernt ihn dauerhaft nach Neuladen) steht aus.
+- Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Version 3 – Laufende Periode sofort erfassen (8. September 2026)
+
+- umgesetzt:
+  - Neue Migration `database/luma-core/migrations/202609081200_period_running.sql` (ausschließlich `luma_core`): `end_date` in `new_period_entries` ist jetzt nullable, neue nullable Spalte `expected_end_date` ergänzt. Zwei CHECK-Constraints stellen sicher, dass ein vorhandenes echtes oder erwartetes Ende nicht vor dem Start liegt. Lokal auf `luma_core` angewendet und per `SELECT current_database()`-Prüfung im bestehenden Migrationsskript abgesichert; `app_luma` und alte Luma-Tabellen bleiben unberührt.
+  - `src/lib/new-period-validation.ts`: neue Typen `NewRunningPeriodInput`/`NewPeriodEntryOpen` sowie `validateNewRunningPeriodInput`. Ein tatsächlicher Start wird nur bis einschließlich heute akzeptiert; `endDate` ist optional (null = laufend); ein optionales `expectedEndDate` darf nach heute liegen, muss aber auf/nach dem Start liegen. Die bisherige `validateNewPeriodInput`/`NewPeriodInput` bleibt unverändert bestehen (wird weiterhin von `new-period-plans.ts` für das separate, unveränderte Plans-System genutzt).
+  - `src/lib/new-periods.ts`: `getNewPeriodEntries`, `createNewPeriodEntry`, `updateNewPeriodEntry` arbeiten jetzt mit `NewPeriodEntryOpen` (`endDate`/`expectedEndDate` nullable). Die transaktionssichere Überschneidungsprüfung wurde erweitert: ein Eintrag ohne echtes Ende belegt für die Prüfung sein erwartetes Ende oder andernfalls unbegrenzt Zeit ab dem Start (`COALESCE(end_date, expected_end_date, '9999-12-31')`), damit ein neuer Zeitraum nicht unbemerkt in eine laufende Periode fällt.
+  - `src/app/api/neu/periods/route.ts` und `.../[id]/route.ts`: nutzen jetzt `validateNewRunningPeriodInput` statt der alten, auf vollständige Zeiträume beschränkten Validierung. Keine neue Route.
+  - `src/lib/new-cycle-prediction.ts` (`predictCycle`, für den Kalender) und `src/lib/personal-cycle-view.ts` (`computePersonalCycleView`, für den Ring): Periodendauer-Median (`periodLengthDays`) wird ausschließlich aus abgeschlossenen Einträgen (echtes `endDate`) berechnet; ein `expectedEndDate` zählt nie als historische Tatsache. Der Start-zu-Start-Median für die Zykluslänge nutzt weiterhin auch offene Starts als Anker. `computePersonalCycleView` liefert neu `isRunning: boolean` (heute läuft eine bestätigte, noch offene Periode); ein bestätigter Tag zählt als „period“, auch ohne echtes Ende.
+  - `src/lib/calendar-day-info.ts`: `getCalendarDayInfo` unterscheidet jetzt `confirmed` (echtes Ende), `running` (offener, tatsächlicher Start bis heute) und `expected` (Tag nach heute innerhalb eines `expectedEndDate`) zusätzlich zu `planned`/`estimate`/`neutral`.
+  - `src/components/NewCycleExample.tsx`: `PeriodFormModal` hat eine neue Checkbox „Das echte Ende kenne ich noch nicht“; bei Aktivierung entfällt das Pflichtfeld „Letzter Tag“ und ein optionales „Erwartetes Ende“-Feld erscheint. Prüfen-vor-Speichern zeigt bei laufenden Perioden „… läuft noch“ bzw. „… bis voraussichtlich … (kann abweichen)“. `MyPeriodsModal` zeigt laufende Einträge mit einem „Laufend“-Kennzeichen. Der Ring zeigt bei `isRunning` „Heute: Laufend“ statt einer Phase. Der Kalender zeigt bestätigte (dunkles Beerenrot, „P“), laufende (gleiche Farbe, „Läuft“) und voraussichtliche Tage (helleres Rosa, „Ca.“) sichtbar unterschiedlich; das bestehende, unveränderte `new_period_plans`-System („Plan“, Gelb) bleibt separat bestehen.
+  - Automatisch berechnete Zukunftszyklen werden weiterhin nur zur Laufzeit berechnet (`predictCycle`/`futureCycles`) und nicht als `new_period_entries` gespeichert.
+- nicht umgesetzt: keine Änderung am separaten `new_period_plans`-System (bewusste Owner-Entscheidung, siehe Abweichung unten). Kein Umbau der Kalender-Tagesaktionen, keine Datenmigration bestehender Einträge (sie behalten ihr echtes Ende, `expected_end_date` bleibt bei ihnen leer).
+- Tests:
+  - `scripts/verify-personal-cycle-view.ts`: fünf neue Prüfblöcke für Version 3 ergänzt (laufender Start ohne Ende wird als „Heute: Periode“ mit `isRunning: true` erkannt; ein `expectedEndDate` beendet `isRunning` nicht; `periodLengthDays` schließt offene Einträge vom Median aus; ein später ergänztes echtes Ende beendet `isRunning`; der Start-zu-Start-Median bleibt auch mit einem offenen Start korrekt). Gesamtskript weiterhin vollständig grün (alle bestehenden und neuen Prüfungen bestanden).
+  - `scripts/verify-my-periods.mts`: um Eingabevalidierung (`validateNewRunningPeriodInput`: laufender Start gültig, Zukunftsstart abgelehnt, erwartetes Ende nach Start gültig, erwartetes Ende vor Start abgelehnt) und DB-Integrationsfälle erweitert (laufenden Start ohne Ende speichern und nach Neuladen weiterhin offen sehen; ein erwartetes Ende, das einen anderen laufenden Zeitraum überschneidet, wird abgelehnt; erwartetes Ende ergänzen und danach echtes Ende speichern, wobei das alte erwartete Ende danach nicht mehr aktiv ist). Insgesamt 34/34 Prüfungen bestanden.
+  - `npx tsc --noEmit`: keine Fehler.
+  - `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, TypeScript-Prüfung im Build ohne Fehler, alle 34 Routen erzeugt.
+  - `node scripts/apply-luma-core-migrations.mjs`: Migration `202609081200_period_running` erfolgreich auf die lokale `luma_core`-Datenbank angewendet (Zielidentität durch das Skript selbst geprüft).
+  - `node scripts/verify-luma-core.mjs`: Datenbanktrennung weiterhin bestätigt (`app_luma` unverändert, `luma_core` enthält die neue Migration in der Liste, keine Fehler).
+  - Mobile Sichtprüfung wurde für diese Version nicht durchgeführt (siehe offene Punkte) – gemäß der vom Owner bestätigten Arbeitsweise „erst schnell bauen und selbst sichten, schwere Prüfungen erst bei Bedarf oder am Ende eines größeren Abschnitts“ wurde die Prüftiefe auf Build, TypeScript und gezielte Skript-Tests konzentriert.
+- Abweichungen:
+  - Der Auftrag ließ offen, wie sich das neue `expected_end_date`-Modell zum bereits bestehenden, unabhängig gebauten `new_period_plans`-System (geplante Zeiträume mit `confirmNewPeriodPlan`) verhalten soll. Diesen Zielkonflikt habe ich nicht selbst entschieden, sondern dem Owner zur Klärung vorgelegt: Entscheidung war, dass beide Systeme unverändert parallel bestehen bleiben. `new_period_plans` wurde in dieser Version nicht angefasst.
+  - Ein bereits vor dieser Version bestehender, unabhängiger Defekt wurde festgestellt, aber nicht behoben (außerhalb des Auftragsumfangs): `tests/calendar-day-info.test.ts` importiert eine Funktion `applyPeriodDayAction`, die in `src/lib/calendar-day-info.ts` nicht existiert; der Testlauf schlägt daher fehl. Per `git stash` bestätigt, dass dieser Fehler bereits vor allen Änderungen dieser Version bestand.
+- offene Punkte:
+  - Owner-Prüfschritt für Version 3 steht aus (siehe Pflichtprüfungen im Auftrag: laufenden Start speichern, erwartetes Ende ergänzen, später echtes Ende ergänzen, mobile Sichtprüfung ohne horizontalen Überlauf).
+  - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sollte in einem eigenen, dafür vorgesehenen Paket behoben werden.
 - Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { computePersonalCycleView } from "../src/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt } from "../src/lib/cycle-ring-geometry";
-import type { NewPeriodEntry } from "../src/lib/new-period-validation";
+import type { NewPeriodEntryOpen } from "../src/lib/new-period-validation";
 
 let failures = 0;
 
@@ -18,8 +18,12 @@ function assert(condition: boolean, label: string): void {
   if (!condition) failures += 1;
 }
 
-function period(id: string, startDate: string, endDate: string): NewPeriodEntry {
-  return { id, startDate, endDate };
+function period(id: string, startDate: string, endDate: string): NewPeriodEntryOpen {
+  return { id, startDate, endDate, expectedEndDate: null };
+}
+
+function runningPeriod(id: string, startDate: string, expectedEndDate: string | null = null): NewPeriodEntryOpen {
+  return { id, startDate, endDate: null, expectedEndDate };
 }
 
 // ---------------------------------------------------------------------------
@@ -317,6 +321,65 @@ console.log("\n== V6: 'Ich weiß es nicht' speichert keine Zahl, Kreis bleibt ne
     "2026-08-20",
   );
   assertEqual(view.status, "no_data", "cycleLengthDays: null führt weiterhin zu no_data (kein erfundener Wert)");
+}
+
+// ---------------------------------------------------------------------------
+// WP-003 Version 3: laufende Periode ohne echtes Ende
+// ---------------------------------------------------------------------------
+
+console.log("\n== V3: laufender Start ohne Ende wird als 'Heute: Periode' erkannt (isRunning) ==");
+{
+  const view = computePersonalCycleView([runningPeriod("1", "2026-09-07")], null, "2026-09-08");
+  assertEqual(view.status, "no_data", "eine laufende Periode ohne Profil bleibt no_data (keine Datenbasis für Median)");
+  assertEqual(view.todayPhase, "period", "laufender Start ohne Ende zählt heute als bestätigte Periode");
+  assert(view.isRunning === true, "isRunning ist true, solange kein echtes Ende gespeichert ist");
+}
+
+console.log("\n== V3: erwartetes Ende zählt nicht als bestätigtes Ende, isRunning bleibt bestehen ==");
+{
+  const view = computePersonalCycleView(
+    [runningPeriod("1", "2026-09-07", "2026-09-12")],
+    null,
+    "2026-09-08",
+  );
+  assert(view.isRunning === true, "expectedEndDate allein beendet die laufende Periode nicht");
+  assertEqual(view.todayPhase, "period", "Tag bleibt bestätigte Periode, nicht Voraussicht");
+}
+
+console.log("\n== V3: erwartetes Ende zählt nie als historische Periodendauer (Median) ==");
+{
+  // Vier reale Starts, aber der letzte Eintrag ist noch offen (kein echtes Ende).
+  // periodLengthDays darf nur aus den drei abgeschlossenen Einträgen stammen.
+  const periods = [
+    period("1", "2026-06-01", "2026-06-05"),
+    period("2", "2026-06-29", "2026-07-03"),
+    period("3", "2026-07-27", "2026-07-31"),
+    runningPeriod("4", "2026-08-24", "2026-09-05"),
+  ];
+  const view = computePersonalCycleView(periods, null, "2026-08-26");
+  assertEqual(view.periodLengthDays, 5, "periodLengthDays basiert nur auf den drei abgeschlossenen 5-Tage-Einträgen");
+}
+
+console.log("\n== V3: tatsächliches Ende später ergänzt beendet isRunning ==");
+{
+  const stillRunning = computePersonalCycleView([runningPeriod("1", "2026-09-05")], null, "2026-09-07");
+  assert(stillRunning.isRunning === true, "vor dem Ergänzen des echten Endes ist die Periode laufend");
+
+  const completed = computePersonalCycleView([period("1", "2026-09-05", "2026-09-09")], null, "2026-09-07");
+  assert(completed.isRunning === false, "nach dem Ergänzen eines echten Endes ist die Periode nicht mehr laufend");
+}
+
+console.log("\n== V3: Zykluslänge (Median der Starts) nutzt weiterhin auch offene Starts als Anker ==");
+{
+  const periods = [
+    period("1", "2026-06-01", "2026-06-05"),
+    period("2", "2026-06-29", "2026-07-03"),
+    period("3", "2026-07-27", "2026-07-31"),
+    runningPeriod("4", "2026-08-24"),
+  ];
+  const view = computePersonalCycleView(periods, null, "2026-08-26");
+  assertEqual(view.status, "personal", "vier Starts (auch ein offener) reichen weiterhin für einen persönlichen Median");
+  assertEqual(view.cycleLengthDays, 28, "Start-zu-Start-Median bleibt unabhängig vom offenen Ende bei 28 Tagen");
 }
 
 // ---------------------------------------------------------------------------

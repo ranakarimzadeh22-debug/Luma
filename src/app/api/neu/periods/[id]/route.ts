@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getNewAuthSession, requestHasAllowedOrigin } from "@/lib/new-auth";
 import { deleteNewPeriodEntry, updateNewPeriodEntry } from "@/lib/new-periods";
-import { isValidPeriodId, validateNewPeriodInput } from "@/lib/new-period-validation";
+import { isValidPeriodId, validateNewRunningPeriodInput } from "@/lib/new-period-validation";
 
 async function authorizeMutation(request: NextRequest) {
   if (!requestHasAllowedOrigin(request)) {
@@ -17,7 +17,7 @@ async function authorizeMutation(request: NextRequest) {
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const auth = await authorizeMutation(request);
   if ("response" in auth) return auth.response;
-  const input = validateNewPeriodInput(await request.json().catch(() => null));
+  const input = validateNewRunningPeriodInput(await request.json().catch(() => null));
   if (!input.ok) return NextResponse.json({ error: input.message }, { status: 400 });
 
   const { id } = await context.params;

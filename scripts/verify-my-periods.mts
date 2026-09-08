@@ -3,7 +3,7 @@ config({ path: ".env.local" });
 
 import { randomUUID } from "node:crypto";
 import pg from "pg";
-import { validateNewPeriodInput } from "../src/lib/new-period-validation";
+import { validateNewPeriodInput, validateNewRunningPeriodInput } from "../src/lib/new-period-validation";
 
 const { Client } = pg;
 
@@ -35,49 +35,71 @@ await client.connect();
 interface PeriodEntry {
   id: string;
   startDate: string;
-  endDate: string;
+  endDate: string | null;
+  expectedEndDate: string | null;
 }
+
+const OVERLAP_END = "COALESCE(end_date, expected_end_date, DATE '9999-12-31')";
 
 async function getEntries(userId: string): Promise<PeriodEntry[]> {
-  const result = await client.query<{ id: string; start_date: string; end_date: string }>(
-    `SELECT id, start_date::text, end_date::text FROM new_period_entries WHERE user_id = $1 ORDER BY start_date DESC`,
+  const result = await client.query<{ id: string; start_date: string; end_date: string | null; expected_end_date: string | null }>(
+    `SELECT id, start_date::text, end_date::text, expected_end_date::text FROM new_period_entries WHERE user_id = $1 ORDER BY start_date DESC`,
     [userId],
   );
-  return result.rows.map((row) => ({ id: row.id, startDate: row.start_date, endDate: row.end_date }));
+  return result.rows.map((row) => ({
+    id: row.id,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    expectedEndDate: row.expected_end_date,
+  }));
 }
 
-async function createEntry(userId: string, startDate: string, endDate: string): Promise<PeriodEntry> {
+async function createEntry(
+  userId: string,
+  startDate: string,
+  endDate: string | null,
+  expectedEndDate: string | null = null,
+): Promise<PeriodEntry> {
   const id = randomUUID();
-  const result = await client.query<{ id: string; start_date: string; end_date: string }>(
-    `INSERT INTO new_period_entries (id, user_id, start_date, end_date) VALUES ($1, $2, $3, $4)
-     RETURNING id, start_date::text, end_date::text`,
-    [id, userId, startDate, endDate],
+  const result = await client.query<{ id: string; start_date: string; end_date: string | null; expected_end_date: string | null }>(
+    `INSERT INTO new_period_entries (id, user_id, start_date, end_date, expected_end_date) VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, start_date::text, end_date::text, expected_end_date::text`,
+    [id, userId, startDate, endDate, expectedEndDate],
   );
   const row = result.rows[0];
-  return { id: row.id, startDate: row.start_date, endDate: row.end_date };
+  return { id: row.id, startDate: row.start_date, endDate: row.end_date, expectedEndDate: row.expected_end_date };
 }
 
 type UpdateResult =
   | { ok: true; entry: PeriodEntry }
   | { ok: false; reason: "overlap" | "not_found" };
 
-async function updateEntry(userId: string, entryId: string, startDate: string, endDate: string): Promise<UpdateResult> {
+async function updateEntry(
+  userId: string,
+  entryId: string,
+  startDate: string,
+  endDate: string | null,
+  expectedEndDate: string | null = null,
+): Promise<UpdateResult> {
   const existing = await client.query("SELECT 1 FROM new_period_entries WHERE id = $1 AND user_id = $2", [entryId, userId]);
   if (!existing.rowCount) return { ok: false, reason: "not_found" };
 
   const overlap = await client.query(
-    `SELECT 1 FROM new_period_entries WHERE user_id = $1 AND id <> $2 AND start_date <= $4 AND end_date >= $3 LIMIT 1`,
-    [userId, entryId, startDate, endDate],
+    `SELECT 1 FROM new_period_entries WHERE user_id = $1 AND id <> $2 AND start_date <= $4 AND ${OVERLAP_END} >= $3 LIMIT 1`,
+    [userId, entryId, startDate, endDate ?? expectedEndDate ?? startDate],
   );
   if (overlap.rowCount) return { ok: false, reason: "overlap" };
 
-  const result = await client.query<{ id: string; start_date: string; end_date: string }>(
-    `UPDATE new_period_entries SET start_date = $1, end_date = $2, updated_at = NOW() WHERE id = $3 AND user_id = $4
-     RETURNING id, start_date::text, end_date::text`,
-    [startDate, endDate, entryId, userId],
+  const result = await client.query<{ id: string; start_date: string; end_date: string | null; expected_end_date: string | null }>(
+    `UPDATE new_period_entries SET start_date = $1, end_date = $2, expected_end_date = $3, updated_at = NOW() WHERE id = $4 AND user_id = $5
+     RETURNING id, start_date::text, end_date::text, expected_end_date::text`,
+    [startDate, endDate, expectedEndDate, entryId, userId],
   );
   const row = result.rows[0];
-  return { ok: true, entry: { id: row.id, startDate: row.start_date, endDate: row.end_date } };
+  return {
+    ok: true,
+    entry: { id: row.id, startDate: row.start_date, endDate: row.end_date, expectedEndDate: row.expected_end_date },
+  };
 }
 
 async function deleteEntry(userId: string, entryId: string): Promise<boolean> {
@@ -109,6 +131,28 @@ console.log("\n== Ungültige Reihenfolge und Zukunft werden von der Eingabevalid
 
   const valid = validateNewPeriodInput({ startDate: "2026-06-01", endDate: "2026-06-05" }, today);
   assert(valid.ok, "gültiger vergangener Zeitraum wird akzeptiert (Gegenprobe)");
+}
+
+console.log("\n== V3: laufender Start ohne Ende wird von der Eingabevalidierung akzeptiert ==");
+{
+  const today = "2026-09-07";
+  const runningStart = validateNewRunningPeriodInput({ startDate: "2026-09-06", endDate: null, expectedEndDate: null }, today);
+  assert(runningStart.ok, "Start ohne Ende ist gültig");
+
+  const futureStart = validateNewRunningPeriodInput({ startDate: "2026-09-10", endDate: null, expectedEndDate: null }, today);
+  assert(!futureStart.ok, "ein zukünftiger Start wird auch ohne Ende abgelehnt");
+
+  const withExpectedEnd = validateNewRunningPeriodInput(
+    { startDate: "2026-09-06", endDate: null, expectedEndDate: "2026-09-11" },
+    today,
+  );
+  assert(withExpectedEnd.ok, "ein erwartetes Ende nach heute ist zusammen mit einem echten Start gültig");
+
+  const expectedBeforeStart = validateNewRunningPeriodInput(
+    { startDate: "2026-09-06", endDate: null, expectedEndDate: "2026-09-01" },
+    today,
+  );
+  assert(!expectedBeforeStart.ok, "ein erwartetes Ende vor dem Start wird abgelehnt");
 }
 
 const userA = await createTestUser(`wp003-verify-a-${Date.now()}@example.com`);
@@ -185,6 +229,41 @@ try {
     afterDelete.some((entry) => entry.id === entryOne.id),
     "der nicht gelöschte Eintrag bleibt weiterhin vorhanden",
   );
+
+  console.log("\n== V3: laufenden Start ohne Ende speichern, neu laden zeigt ihn weiterhin ==");
+  const runningEntry = await createEntry(userA, "2026-08-15", null);
+  assertEqual(runningEntry.endDate, null, "gespeicherter laufender Eintrag hat kein Ende");
+  const afterRunningCreate = await getEntries(userA);
+  const stillRunning = afterRunningCreate.find((entry) => entry.id === runningEntry.id);
+  assertEqual(stillRunning?.endDate, null, "laufender Eintrag bleibt nach Neuladen ohne Ende sichtbar");
+
+  console.log("\n== V3: erwartetes Ende ergänzen, überschneidet sich aber mit einem anderen laufenden Zeitraum ==");
+  const overlappingRunning = await updateEntry(userA, entryOne.id, "2026-08-16", null, "2026-08-20");
+  assert(
+    !overlappingRunning.ok && overlappingRunning.reason === "overlap",
+    "ein erwartetes Ende, das einen anderen laufenden Zeitraum überschneidet, wird abgelehnt",
+  );
+
+  console.log("\n== V3: erwartetes Ende ergänzen (kein Widerspruch), dann echtes Ende später speichern ==");
+  const withExpectedEnd = await updateEntry(userA, runningEntry.id, "2026-08-15", null, "2026-08-20");
+  assert(withExpectedEnd.ok, "erwartetes Ende lässt sich zu einem laufenden Eintrag ergänzen");
+  if (withExpectedEnd.ok) {
+    assertEqual(withExpectedEnd.entry.expectedEndDate, "2026-08-20", "erwartetes Ende wurde gespeichert");
+    assertEqual(withExpectedEnd.entry.endDate, null, "echtes Ende bleibt weiterhin offen");
+  }
+
+  const withRealEnd = await updateEntry(userA, runningEntry.id, "2026-08-15", "2026-08-19", null);
+  assert(withRealEnd.ok, "echtes Ende lässt sich nachträglich speichern");
+  if (withRealEnd.ok) {
+    assertEqual(withRealEnd.entry.endDate, "2026-08-19", "echtes Ende ist jetzt gesetzt");
+    assertEqual(
+      withRealEnd.entry.expectedEndDate,
+      null,
+      "ein altes erwartetes Ende wird nach dem echten Ende nicht weiter als aktiv dargestellt",
+    );
+  }
+
+  await deleteEntry(userA, runningEntry.id);
 } finally {
   await deleteTestUser(userA);
   await deleteTestUser(userB);

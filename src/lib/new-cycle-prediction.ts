@@ -1,4 +1,4 @@
-import type { NewPeriodEntry } from "@/lib/new-period-validation";
+import type { NewPeriodEntryOpen } from "@/lib/new-period-validation";
 
 export interface PredictedCycle {
   periodStart: string;
@@ -59,10 +59,11 @@ interface ProfileFallback {
 }
 
 export function predictCycle(
-  periods: NewPeriodEntry[],
+  periods: NewPeriodEntryOpen[],
   profile: ProfileFallback | null,
 ): CyclePrediction | null {
   const sorted = [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const completed = sorted.filter((entry): entry is NewPeriodEntryOpen & { endDate: string } => entry.endDate !== null);
 
   let cycleLengthDays: number;
   let periodLengthDays: number;
@@ -76,11 +77,12 @@ export function predictCycle(
       if (gap >= MIN_CYCLE_LENGTH && gap <= MAX_CYCLE_LENGTH) gaps.push(gap);
     }
     if (gaps.length === 0) return null;
+    if (completed.length === 0) return null;
 
     cycleLengthDays = Math.round(median(gaps));
     const latest = sorted[sorted.length - 1];
     periodLengthDays = Math.round(
-      median(sorted.map((entry) => daysBetween(entry.startDate, entry.endDate) + 1)),
+      median(completed.map((entry) => daysBetween(entry.startDate, entry.endDate) + 1)),
     );
     anchorStart = latest.startDate;
     source = "history";

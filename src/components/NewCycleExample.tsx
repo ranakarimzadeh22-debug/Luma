@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
-import { todayDateOnly, type NewPeriodEntry } from "@/lib/new-period-validation";
+import { todayDateOnly, type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
@@ -62,7 +62,7 @@ interface PhaseLegendItemProps {
 }
 
 interface NewCycleExampleProps {
-  initialPeriods: NewPeriodEntry[];
+  initialPeriods: NewPeriodEntryOpen[];
   initialPeriodPlans: NewPeriodEntry[];
   prediction: CyclePrediction | null;
   personalCycleView: PersonalCycleView;
@@ -77,6 +77,14 @@ function formatPeriodDate(value: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(
     new Date(`${value}T00:00:00`),
   );
+}
+
+function formatPeriodRange(entry: NewPeriodEntryOpen): string {
+  if (entry.endDate) return `${formatPeriodDate(entry.startDate)} bis ${formatPeriodDate(entry.endDate)}`;
+  if (entry.expectedEndDate) {
+    return `${formatPeriodDate(entry.startDate)} bis voraussichtlich ${formatPeriodDate(entry.expectedEndDate)}`;
+  }
+  return `${formatPeriodDate(entry.startDate)}, läuft noch`;
 }
 
 function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItemProps) {
@@ -113,30 +121,46 @@ function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItem
 interface PeriodFormModalProps {
   onClose: () => void;
   onBack?: () => void;
-  onSaved: (entry: NewPeriodEntry) => void;
+  onSaved: (entry: NewPeriodEntryOpen) => void;
   today: string;
-  editingEntry: NewPeriodEntry | null;
+  editingEntry: NewPeriodEntryOpen | null;
 }
 
 function PeriodFormModal({ onClose, onBack, onSaved, today, editingEntry }: PeriodFormModalProps) {
   const [startDate, setStartDate] = useState(editingEntry?.startDate ?? "");
+  const [isRunning, setIsRunning] = useState(Boolean(editingEntry && editingEntry.endDate === null));
   const [endDate, setEndDate] = useState(editingEntry?.endDate ?? "");
+  const [expectedEndDate, setExpectedEndDate] = useState(editingEntry?.expectedEndDate ?? "");
   const [step, setStep] = useState<"form" | "review">("form");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = Boolean(editingEntry);
 
   function continueToReview() {
-    if (!startDate || !endDate) {
-      setError("Bitte wähle Beginn und Ende deiner Periode.");
+    if (!startDate) {
+      setError("Bitte wähle mindestens den ersten Tag deiner Periode.");
       return;
     }
-    if (startDate > endDate) {
-      setError("Der letzte Periodentag darf nicht vor dem ersten liegen.");
+    if (startDate > today) {
+      setError("Ein zukünftiger Periodenstart kann nicht gespeichert werden.");
       return;
     }
-    if (startDate > today || endDate > today) {
-      setError("Zukünftige Periodentage können nicht gespeichert werden.");
+    if (!isRunning) {
+      if (!endDate) {
+        setError("Bitte wähle den letzten Tag oder markiere die Periode als laufend.");
+        return;
+      }
+      if (startDate > endDate) {
+        setError("Der letzte Periodentag darf nicht vor dem ersten liegen.");
+        return;
+      }
+      if (endDate > today) {
+        setError("Zukünftige Periodentage können nicht gespeichert werden.");
+        return;
+      }
+    }
+    if (isRunning && expectedEndDate && expectedEndDate < startDate) {
+      setError("Das erwartete Ende darf nicht vor dem Beginn liegen.");
       return;
     }
     setError("");
@@ -150,10 +174,14 @@ function PeriodFormModal({ onClose, onBack, onSaved, today, editingEntry }: Peri
     const response = await fetch(endpoint, {
       method: editingEntry ? "PUT" : "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ startDate, endDate }),
+      body: JSON.stringify({
+        startDate,
+        endDate: isRunning ? null : endDate,
+        expectedEndDate: isRunning && expectedEndDate ? expectedEndDate : null,
+      }),
     });
     const result = (await response.json().catch(() => null)) as
-      | { entry?: NewPeriodEntry; error?: string }
+      | { entry?: NewPeriodEntryOpen; error?: string }
       | null;
     setIsSaving(false);
     if (!response.ok || !result?.entry) {
@@ -182,16 +210,39 @@ function PeriodFormModal({ onClose, onBack, onSaved, today, editingEntry }: Peri
                 className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm font-medium text-[#382631]">
-              Letzter Tag
+            <label className="flex items-center gap-2 text-sm font-medium text-[#382631]">
               <input
-                type="date"
-                max={today}
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm"
+                type="checkbox"
+                checked={isRunning}
+                onChange={(event) => { setIsRunning(event.target.checked); setError(""); }}
+                className="size-4 rounded border-[#d8afbd]"
               />
+              Das echte Ende kenne ich noch nicht
             </label>
+            {!isRunning && (
+              <label className="flex flex-col gap-1 text-sm font-medium text-[#382631]">
+                Letzter Tag
+                <input
+                  type="date"
+                  max={today}
+                  value={endDate}
+                  onChange={(event) => setEndDate(event.target.value)}
+                  className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm"
+                />
+              </label>
+            )}
+            {isRunning && (
+              <label className="flex flex-col gap-1 text-sm font-medium text-[#382631]">
+                Erwartetes Ende (optional)
+                <input
+                  type="date"
+                  min={startDate || undefined}
+                  value={expectedEndDate}
+                  onChange={(event) => setExpectedEndDate(event.target.value)}
+                  className="rounded-xl border border-[#d8afbd] px-3 py-2.5 text-sm"
+                />
+              </label>
+            )}
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
             <div className="flex gap-3">
               <button type="button" onClick={onBack ?? onClose} className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]">
@@ -207,7 +258,11 @@ function PeriodFormModal({ onClose, onBack, onSaved, today, editingEntry }: Peri
         {step === "review" && (
           <div className="mt-4 flex flex-col gap-4">
             <p className="text-sm text-[#382631]">
-              {formatPeriodDate(startDate)} bis {formatPeriodDate(endDate)}
+              {isRunning
+                ? expectedEndDate
+                  ? `${formatPeriodDate(startDate)} bis voraussichtlich ${formatPeriodDate(expectedEndDate)} (kann abweichen)`
+                  : `${formatPeriodDate(startDate)}, läuft noch`
+                : `${formatPeriodDate(startDate)} bis ${formatPeriodDate(endDate)}`}
             </p>
             {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
             <div className="flex gap-3">
@@ -226,15 +281,15 @@ function PeriodFormModal({ onClose, onBack, onSaved, today, editingEntry }: Peri
 }
 
 interface MyPeriodsModalProps {
-  periods: NewPeriodEntry[];
+  periods: NewPeriodEntryOpen[];
   onClose: () => void;
-  onEdit: (entry: NewPeriodEntry) => void;
+  onEdit: (entry: NewPeriodEntryOpen) => void;
   onAddNew: () => void;
   onDeleted: (entryId: string) => void;
 }
 
 function MyPeriodsModal({ periods, onClose, onEdit, onAddNew, onDeleted }: MyPeriodsModalProps) {
-  const [pendingDelete, setPendingDelete] = useState<NewPeriodEntry | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<NewPeriodEntryOpen | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
 
@@ -261,7 +316,7 @@ function MyPeriodsModal({ periods, onClose, onEdit, onAddNew, onDeleted }: MyPer
             Periode endgültig löschen?
           </h2>
           <p className="mt-4 text-sm text-[#382631]">
-            {formatPeriodDate(pendingDelete.startDate)} bis {formatPeriodDate(pendingDelete.endDate)}
+            {formatPeriodRange(pendingDelete)}
           </p>
           {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
           <div className="mt-4 flex gap-3">
@@ -301,7 +356,12 @@ function MyPeriodsModal({ periods, onClose, onEdit, onAddNew, onDeleted }: MyPer
           {periods.map((entry) => (
             <div key={entry.id} className="flex items-center justify-between gap-2 rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3">
               <p className="text-sm text-[#382631]">
-                {formatPeriodDate(entry.startDate)} bis {formatPeriodDate(entry.endDate)}
+                {formatPeriodRange(entry)}
+                {entry.endDate === null && (
+                  <span className="ml-2 rounded-full bg-[#f8e4e9] px-2 py-0.5 text-xs font-semibold text-[#a52b5d]">
+                    Laufend
+                  </span>
+                )}
               </p>
               <div className="flex shrink-0 gap-2">
                 <button
@@ -455,7 +515,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
   const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
-  const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntry>("closed");
+  const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
@@ -474,7 +534,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
   }
 
-  function handlePeriodSaved(entry: NewPeriodEntry) {
+  function handlePeriodSaved(entry: NewPeriodEntryOpen) {
     setPeriods((current) =>
       [...current.filter((existing) => existing.id !== entry.id), entry].sort((first, second) =>
         second.startDate.localeCompare(first.startDate),
@@ -494,7 +554,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     setIsMyPeriodsModalOpen(true);
   }
 
-  function startEditingPeriod(entry: NewPeriodEntry) {
+  function startEditingPeriod(entry: NewPeriodEntryOpen) {
     setIsMyPeriodsModalOpen(false);
     setPeriodFormMode(entry);
   }
@@ -608,9 +668,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 <>
                   <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
                   <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
-                    {personalCycleView.todayPhase
-                      ? `Heute: ${personalPhaseLabel[personalCycleView.todayPhase]}`
-                      : "Heute: neutrale Phase"}
+                    {personalCycleView.isRunning
+                      ? "Heute: Laufend"
+                      : personalCycleView.todayPhase
+                        ? `Heute: ${personalPhaseLabel[personalCycleView.todayPhase]}`
+                        : "Heute: neutrale Phase"}
                   </text>
                   <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">
                     Zyklus: {personalCycleView.cycleLengthDays} Tage
@@ -621,9 +683,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 <>
                   <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
                   <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
-                    {personalCycleView.todayPhase
-                      ? `Heute vielleicht: ${personalPhaseLabel[personalCycleView.todayPhase]}`
-                      : "Erste Orientierung"}
+                    {personalCycleView.isRunning
+                      ? "Heute: Laufend"
+                      : personalCycleView.todayPhase
+                        ? `Heute vielleicht: ${personalPhaseLabel[personalCycleView.todayPhase]}`
+                        : "Erste Orientierung"}
                   </text>
                   <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">Kann abweichen</text>
                 </>
@@ -673,7 +737,19 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               : null;
             const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
             const storedPeriod = date
-              ? periods.find((entry) => entry.startDate <= date && entry.endDate >= date)
+              ? periods.find((entry) => entry.endDate !== null && entry.startDate <= date && entry.endDate >= date)
+              : null;
+            const runningPeriod = date
+              ? periods.find((entry) => entry.endDate === null && entry.startDate <= date && date <= todayKey)
+              : null;
+            const expectedPeriod = date
+              ? periods.find(
+                  (entry) =>
+                    entry.endDate === null &&
+                    entry.expectedEndDate !== null &&
+                    date > todayKey &&
+                    date <= entry.expectedEndDate,
+                )
               : null;
             const plannedPeriod = date
               ? periodPlans.find((entry) => entry.startDate <= date && entry.endDate >= date)
@@ -683,6 +759,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   date,
                   today: todayKey,
                   hasStoredPeriod: Boolean(storedPeriod),
+                  hasRunningPeriod: Boolean(runningPeriod),
+                  hasExpectedEnd: Boolean(expectedPeriod),
                   hasPlannedPeriod: Boolean(plannedPeriod),
                   phase: prediction ? predictedPhaseForCalendarDay(date, prediction) : null,
                 })
@@ -691,15 +769,17 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
                 {day && (
                   <div
-                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`}
+                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`}
                     className={`relative grid h-full w-full place-items-center rounded-2xl border text-base ${
-                      storedPeriod
+                      storedPeriod || runningPeriod
                         ? "bg-[#6d153f] text-white"
-                        : plannedPeriod
-                          ? "bg-[#fff3c9] text-[#6d4c00]"
-                          : phase
-                            ? phaseStyles[phase]
-                            : "bg-white/55 text-[#281c24]"
+                        : expectedPeriod
+                          ? "bg-[#f3a9bd] text-[#831341]"
+                          : plannedPeriod
+                            ? "bg-[#fff3c9] text-[#6d4c00]"
+                            : phase
+                              ? phaseStyles[phase]
+                              : "bg-white/55 text-[#281c24]"
                     } ${
                       !dayInfo?.isFuture
                         ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
@@ -708,8 +788,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   >
                     <span>{day}</span>
                     {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
-                    {!storedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
-                    {!storedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
+                    {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}
+                    {!storedPeriod && !runningPeriod && expectedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Ca.</span>}
+                    {!storedPeriod && !runningPeriod && !expectedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
+                    {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
                     {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
                   </div>
                 )}
