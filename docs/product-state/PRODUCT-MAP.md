@@ -14,7 +14,7 @@ Quelle: bestätigte Produktentscheidungen und Entwicklungsledger
 | App-Auswahl | alte und neue Luma trennen | vorhanden |
 | Registrierung | neues Konto mit Vorname, E-Mail und Passwort | vorhanden |
 | Anmeldung | Zugang zur neuen Luma | vorhanden |
-| Home `/neu` | Zyklusübersicht, persönlicher Zyklus-Kreis und Kalender | Zyklus-Kreis technisch umgesetzt; Owner-Prüfung offen |
+| Home `/neu` | Zyklusübersicht, persönlicher Zyklus-Kreis, Kalender und Einstieg `Meine Periode aktualisieren` | Zyklus-Kreis und Periodenverwaltung technisch umgesetzt; Owner-Prüfung offen |
 | Zyklusprofil | persönliche Basisangaben | vorhanden |
 
 ## Pflege

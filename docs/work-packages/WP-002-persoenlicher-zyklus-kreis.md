@@ -250,3 +250,10 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichungen: keine.
 - offene Punkte: Owner-Prüfschritt für Version 6 (eine echte Periode ohne Länge → Button sichtbar → Zykluslänge speichern → „Kann abweichen“) steht aus.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+### Soll-Ist Version 6 – von Codex
+
+- Ergebnis: Soll und Ist stimmen überein. Bei genau einer echten Periode und fehlender Zykluslänge ist der kurze Einstieg sichtbar; die freiwillige Angabe führt zur klar unsicheren ersten Orientierung. Ohne Angabe wird keine Zahl oder Phase erfunden.
+- Nachweise: Claude dokumentiert 45/45 Prüfungen, erfolgreichen Build und mobile Sichtprüfung. Commit `bf55e68` ist Bestandteil des auf `origin/main` bestätigten Stands. Eine erneute lokale Ausführung durch Codex war wegen eines lokalen Node-Speicherfehlers (`ENOMEM`) nicht möglich; dies ist kein fachlicher Gegenbeweis.
+- Abweichung: keine fachliche Abweichung.
+- Owner-Abnahme offen: Eine Periode ohne Länge eintragen, `Zykluslänge ergänzen` öffnen, zum Beispiel 28 Tage speichern und `Kann abweichen` prüfen.

@@ -154,6 +154,8 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: ausstehend
-- Nachschärfung:
-- Product-Map aktualisiert: nein
+- Ergebnis: Soll und Ist stimmen für Version 1 und Version 2 überein. Der eine Home-Einstieg führt zur getrennten Liste; einzelne Einträge lassen sich prüfen, ändern und bewusst einzeln löschen. Der Kalender bleibt reine Orientierung.
+- Nachweise: Commit `2454e6721b0412f97220365e949a92cb8f25bee3` ist auf `origin/main` bestätigt. Die gezielte Codex-Prüfung `verify-my-periods.mts` besteht mit allen Fällen; Claude dokumentiert zusätzlich erfolgreichen Build, Datenbanktrennung und mobile Sichtprüfung.
+- Abweichung: keine fachliche Abweichung. Der dokumentierte UI-Timing-Hinweis nach `router.refresh()` zeigte keine Dateninkonsistenz; die direkte Datenbankprüfung bestätigte den richtigen Endzustand.
+- Owner-Abnahme offen: `Meine Periode aktualisieren` öffnen, einen Zeitraum ändern und speichern; danach einen anderen Eintrag löschen, zuerst `Abbrechen` und dann bewusst `Endgültig löschen` prüfen.
+- Product-Map aktualisiert: ja
