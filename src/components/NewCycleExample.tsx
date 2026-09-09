@@ -834,7 +834,9 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
-            const dayAriaLabel = `${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`;
+            const dayAriaLabel = date
+              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`
+              : "";
             const dayChildren = (
               <>
                 <span>{day}</span>
