@@ -1,8 +1,8 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 6
-status: review
+package_revision: 7
+status: approved
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -574,6 +574,62 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Owner-Prüfschritt für Version 6 steht aus (auf die Monatsanzeige tippen, Historie mit Zeitraum und Zykluslänge je Zeile prüfen, neuesten Eintrag mit „Noch nicht bekannt“ bestätigen, Schließen und Escape prüfen, mobile Sichtprüfung ohne horizontalen Überlauf).
   - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 7 – Aus der Historie zum passenden Monat springen (9. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Du öffnest die Periodenhistorie über den Monatsnamen und tippst dort auf einen Monat.
+- **Beispiel:** Ein Tipp auf `Dezember 2025` schließt die Historie und zeigt direkt `Dezember 2025` im sichtbaren Kalender.
+- **Vorteil:** Du musst nicht viele Monate einzeln zurückblättern.
+- **Wichtig:** Der Sprung verändert keine Periodendaten.
+
+### Soll – von Codex
+
+- Jede echte Monatszeile in der Periodenhistorie ist ein klar zugänglicher Button.
+- Ein Tipp oder Tastatur-Aktivierung setzt den bestehenden angezeigten Kalender auf Jahr und Monat des tatsächlichen Periodenstarts.
+- Danach schließt die Historie. Der Kalender, seine Tagesmarkierungen und seine bisherigen Navigationspfeile funktionieren normal weiter.
+- Bei einer über Monatsgrenzen laufenden Periode ist der Monat des tatsächlichen Starttags das Ziel.
+- Die Historie bleibt rein lesend; keine Speicherung, keine API- oder Datenbankänderung.
+
+### Abnahmekriterien
+
+1. `Dezember 2025` in der Historie öffnet nach dem Tipp genau Dezember 2025 im Home-Kalender.
+2. Die Historie ist danach geschlossen und der Kalender wieder normal bedienbar.
+3. Der Zielmonat zeigt die schon gespeicherten Markierungen wie vorher.
+4. Touch und Tastatur können den Monat aktivieren.
+5. Keine Periodendaten, Vorhersagen oder Zykluslängen ändern sich durch die Navigation.
+
+## Technischer Auftrag für Claude – Version 7
+
+### Bestätigte Code-Ausgangslage
+
+- `src/components/NewCycleExample.tsx` hält den Zustand des angezeigten Monats und enthält die Periodenhistorie aus Version 6.
+- Jede Historienzeile ist aus einem tatsächlichen Periodeneintrag mit `startDate` abgeleitet.
+
+### Technisches Ziel
+
+- Reiche der Periodenhistorie einen klaren Callback zum vorhandenen Monatszustand durch oder nutze eine gleichwertige lokal begrenzte Lösung.
+- Formatiere die Zielnavigation datumssicher aus dem `startDate` ohne Zeitzonenverschiebung.
+- Verwende pro Zeile ein semantisches Button-Element mit verständlichem zugänglichem Namen, zum Beispiel `Kalender für Dezember 2025 öffnen`.
+- Nach erfolgreicher Auswahl setzt die Ansicht den Monat und schließt das Modal. Keine neue Route, keine neue Datenbanktabelle, keine API-Anfrage und keine Speicherung.
+
+### Pflichtprüfungen
+
+- Gezielte Prüfung für einen Sprung über eine Jahresgrenze, etwa Januar 2025 aus einem aktuellen Monat.
+- Prüfung, dass der Zeitraum bei einer Monatsgrenze den Startmonat nutzt.
+- Touch-/Tastatur-Aktivierung schließt die Historie und setzt genau den ausgewählten Monat.
+- Bestehende Monatsnavigation, Periodenhistorie, TypeScript, gezielter Test, Produktions-Build und Ledger-Validierung bestehen.
+
+### Stoppbedingungen
+
+- Stoppe vor einer Datenbank-, API- oder Vorhersageänderung.
+- Stoppe, wenn ein Historieneintrag keinen sicheren tatsächlichen Start besitzt; keine Monatsnavigation aus geschätzten Daten ableiten.
+
+### Abschluss durch Claude
+
+- Ergänze `Ist Version 7`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
+- Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
 
 ## Soll-Ist-Prüfung – von Codex
 
