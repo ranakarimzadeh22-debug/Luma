@@ -1,8 +1,8 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 5
-status: review
+package_revision: 6
+status: approved
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -477,6 +477,82 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Owner-Prüfschritt für Version 5 steht aus (in einem vergangenen Monat einen Start wählen, Aktionsdialog bestätigen, einen späteren Tag als Ende wählen, Aktionsdialog bestätigen, Zusammenfassung prüfen, speichern, nach Neuladen und erneuter Anmeldung den Zeitraum bestätigt sehen; zusätzlich Abbrechen an beiden Stellen prüfen; mobile Sichtprüfung).
   - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 6 – Periodenhistorie über die Monatsanzeige (9. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Du tippst auf die Monatsanzeige, zum Beispiel `September 2026`.
+- **Dann siehst du:** Eine klare Übersicht aller vergangenen tatsächlichen Perioden – ohne einen weiteren Kalender zu suchen.
+- **Jede Zeile zeigt:** Den Monat, den tatsächlichen Zeitraum und die tatsächliche Länge dieses Zyklus.
+- **Beispiel:** `Juli 2026: 30.07.–05.08. · Zyklus: 28 Tage`.
+- **Neuester Eintrag:** Dort steht `Zyklus: Noch nicht bekannt`, bis die nächste tatsächliche Periode begonnen hat.
+
+### Entstehungsweg
+
+`Einzelne Termine sind im Kalender verteilt → Nutzerin möchte ihre vergangenen Monate und tatsächlichen Zykluslängen auf einen Blick verstehen → antippbare Monatsanzeige öffnet eine lesende Historie → WP-003 Version 6`
+
+- bestätigtes Problem: Die bisherigen Einträge sind über Monate verteilt und die Zykluslänge je Zeitraum ist nicht direkt sichtbar.
+- gewünschte Wirkung: Die Nutzerin versteht ihre eigene Periodenhistorie und Unterschiede zwischen echten Zykluslängen schnell und ohne neue Eingabe.
+- gewählte Lösung: Eine lesende, übersichtliche Modal-Historie über der bestehenden Home-Ansicht.
+- Berechnungsregel: Die tatsächliche Zykluslänge reicht vom ersten Tag einer tatsächlichen Periode bis zum ersten Tag der folgenden tatsächlichen Periode.
+- Grenzen: Keine Schätzung, keine neue Datenart, keine Bearbeitung oder Löschung aus dieser Übersicht.
+
+### Soll – von Codex
+
+- Die sichtbare Monatsanzeige des Home-Kalenders wird als klar zugänglicher Auslöser für die Periodenhistorie nutzbar.
+- Ein Tipp öffnet ein Modal über dem vollständig abgedunkelten Home-Screen; nur die Historie ist aktiv.
+- Die Historie enthält pro tatsächlichem Periodeneintrag eine Zeile: Monatsname und Jahr des Starts, tatsächlicher Zeitraum und rückblickend berechnete Zykluslänge.
+- Der Zeitraum verwendet nur echte Daten. Ein noch laufender Eintrag wird verständlich als `läuft noch` gezeigt und erhält keine erfundene Endangabe.
+- Die Zykluslänge wird ausschließlich aus zwei aufeinanderfolgenden tatsächlichen `startDate`-Werten berechnet. Ein erwartetes Ende, eine automatische Schätzung, ein Plan oder ein Profilwert zählt nie mit.
+- Für den zeitlich neuesten tatsächlichen Start steht `Zyklus: Noch nicht bekannt`.
+- Bei keiner gespeicherten Periode erklärt das Modal kurz und freundlich, dass noch keine Historie vorhanden ist.
+- Die Historie ist rein lesend. Änderungen und Löschen bleiben weiterhin im bewussten Bereich `Meine Perioden`.
+
+### Abnahmekriterien
+
+1. Ein Tipp auf `September 2026` öffnet die Historie und dunkelt Zyklus-Kreis sowie Kalender im Hintergrund ab.
+2. Eine abgeschlossene Zeile zeigt Monat, tatsächlichen Start-Ende-Zeitraum und den Abstand bis zum Start der folgenden tatsächlichen Periode.
+3. Unterschiedliche tatsächliche Abstände, zum Beispiel 23, 24 und 25 Tage, erscheinen getrennt und werden nicht gemittelt.
+4. Der neueste tatsächliche Eintrag zeigt `Noch nicht bekannt` statt einer Schätzung.
+5. Ein erwartetes Ende oder eine geschätzte künftige Periode verändert keine Zeile und keine Zykluslänge.
+6. Schließen stellt die normale Bedienung des Home-Screens wieder her.
+
+## Technischer Auftrag für Claude – Version 6
+
+### Bestätigte Code-Ausgangslage
+
+- `src/components/NewCycleExample.tsx` erzeugt die Monatsanzeige und enthält bereits zugängliche Modal-Muster mit vollständigem Overlay, Escape und Hintergrund-Deaktivierung.
+- `initialPeriods`/`periods` enthalten kontogebundene tatsächliche Einträge aus `new_period_entries`, einschließlich `startDate` sowie optionalem echtem `endDate` und optionalem `expectedEndDate`.
+- `src/lib/new-cycle-prediction.ts` und `src/lib/personal-cycle-view.ts` enthalten Vorhersage-/Medianlogik; diese Übersicht darf sie nicht für rückblickende Werte verwenden.
+
+### Technisches Ziel
+
+- Ergänze eine rein lesende `PeriodHistoryModal` oder eine gleichwertige klar gekapselte Komponente und einen clientseitigen Öffnungszustand in `NewCycleExample.tsx`.
+- Verwende die Monatsanzeige als semantischen Button mit zugänglichem Namen, ohne die Monatsnavigation über die Pfeile zu verändern.
+- Leite für die Historie chronologisch aus tatsächlichen Einträgen ab: Für jeden Start außer dem neuesten berechne die Differenz bis zum direkt folgenden tatsächlichen Start in Kalendertagen. Der neueste Start erhält keinen berechneten Wert.
+- Formatiere Monat, Zeitraum und Datum deutsch sowie sicher ohne Zeitzonenverschiebung. Verwende für eine abgeschlossene Periode den echten `endDate`; `expectedEndDate` ist nie ein tatsächliches Ende.
+- Verwende das vorhandene Overlay-/Focus-/Escape-Muster aus Version 4. Der Hintergrund wird während der Ansicht nicht bedienbar.
+- Keine API, Datenbankmigration, Speicherung, Änderung der Kalenderauswahl oder Änderung der Vorhersagelogik einführen.
+
+### Pflichtprüfungen
+
+- Gezielte Testfälle für aufeinanderfolgende Starts über Monats- und Jahresgrenze, zum Beispiel 30.07. bis 27.08. = 28 Kalendertage.
+- Neuester Start zeigt `Noch nicht bekannt`; erwartete Enddaten und automatische Schätzungen beeinflussen die Historie nicht.
+- Abgeschlossener Zeitraum zeigt echtes Ende; laufender Zeitraum zeigt keine erfundene Endangabe.
+- Monatsanzeige per Tastatur und Touch öffnen, Escape sowie sichtbaren Schließen-Button prüfen.
+- Mobile Sichtprüfung: vollständiges Overlay, Zeilen lesbar, kein horizontaler Überlauf.
+- TypeScript, gezielter Test, Produktions-Build und Entwicklungsledger-Validierung ausführen.
+
+### Stoppbedingungen
+
+- Stoppe vor jeder Datenbank- oder API-Änderung, Speicherung, Bearbeitungsfunktion oder Nutzung einer Schätzung als historische Tatsache.
+- Stoppe, wenn mehrere echte Einträge denselben Starttag besitzen oder die Reihenfolge nicht eindeutig ist. Diesen Datenkonflikt nicht durch eine willkürliche Zykluslänge verdecken.
+
+### Abschluss durch Claude
+
+- Ergänze `Ist Version 6`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
+- Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
 
 ## Soll-Ist-Prüfung – von Codex
 
