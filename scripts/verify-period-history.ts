@@ -96,9 +96,10 @@ console.log("\n== WP-003 V6: NewCycleExample.tsx bindet die Historie rein lesend
     source.includes("changeMonth(1)");
   assert(navigationUntouched, "die Monatsnavigation über die Pfeile bleibt unverändert bestehen");
 
-  const historyIsReadOnly =
-    source.includes("function PeriodHistoryModal({ rows, onClose }: PeriodHistoryModalProps)") &&
-    !/PeriodHistoryModal[\s\S]{0,2000}fetch\(/.test(source);
+  const modalStart = source.indexOf("function PeriodHistoryModal(");
+  const modalEnd = source.indexOf("export default function NewCycleExample");
+  const modalBody = modalStart !== -1 && modalEnd !== -1 ? source.slice(modalStart, modalEnd) : "";
+  const historyIsReadOnly = modalBody.length > 0 && !modalBody.includes("fetch(");
   assert(historyIsReadOnly, "PeriodHistoryModal löst keinen Netzwerkaufruf aus (rein lesend)");
 
   const hasDialogRole = source.includes('aria-labelledby="period-history-title"');

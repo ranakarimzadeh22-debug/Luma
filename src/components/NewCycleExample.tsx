@@ -74,6 +74,11 @@ function dateForCalendarDay(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+function yearMonthFromDate(date: string): { year: number; month: number } {
+  const [year, month] = date.split("-").map(Number);
+  return { year, month: month - 1 };
+}
+
 function formatPeriodDate(value: string): string {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }).format(
     new Date(`${value}T00:00:00`),
@@ -673,9 +678,10 @@ function formatHistoryMonth(date: string): string {
 interface PeriodHistoryModalProps {
   rows: PeriodHistoryRow[];
   onClose: () => void;
+  onSelectMonth: (startDate: string) => void;
 }
 
-function PeriodHistoryModal({ rows, onClose }: PeriodHistoryModalProps) {
+function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -705,7 +711,13 @@ function PeriodHistoryModal({ rows, onClose }: PeriodHistoryModalProps) {
             </p>
           )}
           {sortedNewestFirst.map((row) => (
-            <div key={row.id} className="rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3">
+            <button
+              key={row.id}
+              type="button"
+              onClick={() => onSelectMonth(row.startDate)}
+              aria-label={`Kalender für ${formatHistoryMonth(row.startDate)} öffnen`}
+              className="w-full rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3 text-left hover:bg-[#f8e4e9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            >
               <p className="text-sm font-semibold capitalize text-[#28101f]">{formatHistoryMonth(row.startDate)}</p>
               <p className="mt-1 text-sm text-[#382631]">
                 {row.endDate ? `${formatPeriodDate(row.startDate)} bis ${formatPeriodDate(row.endDate)}` : `${formatPeriodDate(row.startDate)}, läuft noch`}
@@ -713,7 +725,7 @@ function PeriodHistoryModal({ rows, onClose }: PeriodHistoryModalProps) {
               <p className="mt-1 text-sm text-[#6b5560]">
                 Zyklus: {row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"}
               </p>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -761,6 +773,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
 
   function changeMonth(offset: number) {
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
+  }
+
+  function jumpToHistoryMonth(startDate: string) {
+    setDisplayedMonth(yearMonthFromDate(startDate));
+    setIsPeriodHistoryOpen(false);
   }
 
   function handlePeriodSaved(entry: NewPeriodEntryOpen) {
@@ -1268,7 +1285,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       />
     )}
     {isPeriodHistoryOpen && (
-      <PeriodHistoryModal rows={computePeriodHistory(periods)} onClose={() => setIsPeriodHistoryOpen(false)} />
+      <PeriodHistoryModal
+        rows={computePeriodHistory(periods)}
+        onClose={() => setIsPeriodHistoryOpen(false)}
+        onSelectMonth={jumpToHistoryMonth}
+      />
     )}
     </>
   );

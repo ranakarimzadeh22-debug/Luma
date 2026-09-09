@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 7
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -630,6 +630,27 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 - Ergänze `Ist Version 7`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
 - Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
+
+### Version 7 – Aus der Historie zum passenden Monat springen (9. September 2026)
+
+- umgesetzt:
+  - `src/components/NewCycleExample.tsx`: Jede Zeile in `PeriodHistoryModal` ist jetzt ein `<button>` (statt eines reinen `<div>`) mit zugänglichem Namen `Kalender für {Monat Jahr} öffnen`. Ein Klick oder eine Tastatur-Aktivierung ruft die neue Prop `onSelectMonth(row.startDate)` auf.
+  - Neue reine Funktion `yearMonthFromDate(date)`: zerlegt einen `"YYYY-MM-DD"`-String datumssicher (reine String-Arithmetik, kein `Date`-Objekt, keine Zeitzonenverschiebung) in `{ year, month }` (0-basierter Monat, passend zum bestehenden `displayedMonth`-Zustand).
+  - Neuer Handler `jumpToHistoryMonth(startDate)`: setzt `displayedMonth` auf `yearMonthFromDate(startDate)` und schließt danach die Historie (`setIsPeriodHistoryOpen(false)`). Bei einer über eine Monatsgrenze laufenden Periode ist der Monat des tatsächlichen Starttags das Ziel, da ausschließlich `startDate` verwendet wird.
+  - Die bestehende Pfeil-Monatsnavigation (`changeMonth`, `‹`/`›`) bleibt unverändert unabhängig von diesem neuen Weg bestehen; nach dem Sprung funktionieren Tagesmarkierungen und Navigation im Zielmonat normal weiter, da derselbe `displayedMonth`-Zustand verwendet wird, den auch die Pfeile setzen.
+  - Keine neue API-Route, keine Datenbankänderung, keine Speicherung, keine Vorhersageänderung – reine clientseitige Zustandsnavigation.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen.
+- Tests:
+  - Neues `scripts/verify-history-month-jump.ts`: 8 Prüfungen – `yearMonthFromDate` löst Jahres- und Monatsgrenzen korrekt auf (Januar/Dezember/Juli), eine über die Monatsgrenze laufende Periode (30.07.–03.08.) zeigt auf den Startmonat Juli statt August; Quelltext-Prüfungen bestätigen, dass `jumpToHistoryMonth` sowohl `setDisplayedMonth` als auch `setIsPeriodHistoryOpen(false)` aufruft, keinen `fetch`-Aufruf enthält, dass jede Historienzeile ein Button mit dem geforderten zugänglichen Namen ist, und dass die bestehende Pfeil-Navigation unverändert bleibt. Alle 8 Prüfungen bestanden.
+  - `scripts/verify-period-history.ts`: eine Quelltext-Prüfung (`historyIsReadOnly`) wurde robuster gemacht, da sich die Funktionssignatur von `PeriodHistoryModal` durch die neue `onSelectMonth`-Prop geändert hatte und der bisherige exakte Match nicht mehr traf; inhaltlich unverändert, alle 12 Prüfungen weiterhin bestanden.
+  - `scripts/verify-day-detail.ts`, `scripts/verify-historical-entry.ts`, `scripts/verify-personal-cycle-view.ts`, `scripts/verify-my-periods.mts` erneut ausgeführt (Regressionsprüfung für Version 3–6): weiterhin alle Prüfungen bestanden.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, alle 34 Routen erzeugt.
+  - Mobile Sichtprüfung und ein lokaler Produktions-Server-Testlauf wurden für diese Version nicht erneut durchgeführt: Die Änderung fügt keinen neuen serverseitigen Berechnungspfad und keine neuen unbedingten Feldzugriffe in der Kalenderzellen-Schleife hinzu (anders als die frühere Regression aus Version 4), sondern verdrahtet ausschließlich zwei bereits vorhandene, einzeln geprüfte Zustände (`displayedMonth`, `isPeriodHistoryOpen`) neu; die Modal- und Button-Layouts entsprechen den bereits mobil geprüften Mustern aus Version 1–6.
+- Abweichungen: keine fachliche Abweichung. Der bereits in Version 3–6 dokumentierte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für diese Version nicht im Umfang.
+- offene Punkte:
+  - Owner-Prüfschritt für Version 7 steht aus (Periodenhistorie öffnen, auf einen vergangenen Monat tippen, prüfen dass genau dieser Monat im Kalender erscheint und die Historie geschlossen ist, Tastatur-Aktivierung prüfen, mobile Sichtprüfung).
+  - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 
