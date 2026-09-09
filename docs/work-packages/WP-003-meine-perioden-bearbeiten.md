@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 5
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -452,6 +452,31 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 - Ergänze `Ist Version 5`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
 - Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
+
+### Version 5 – Vergangene Periode direkt im Kalender erfassen (9. September 2026)
+
+- umgesetzt:
+  - `src/components/NewCycleExample.tsx`: Ein neutraler Kalendertag vor heute (kein `confirmed`, `running`, `expected` oder `planned`) ist jetzt klickbar und öffnet ein neues, rein geführtes Tagesfenster `HistoricalDayActionModal` mit Datum und genau einem Aktions-Button: `Start der Periode`, solange noch keine Auswahl läuft, danach `Ende der Periode` für einen zulässigen späteren Tag. Erst der Button-Klick setzt die jeweilige Auswahl (`historicalDayAction` → `confirmHistoricalDayAction`); der reine Tipp auf den Tag verändert noch nichts.
+  - Nach der Start-Wahl bleibt die Auswahl sichtbar als schwebender, nicht blockierender Hinweis („Beginn: … Tippe jetzt auf den letzten Tag der Periode.“, mit ×-Abbrechen) sowie farblich im Kalender markiert (`isSelectionStart`/`isInSelectionRange`, gleiche Farbe wie ein bestätigter Periodentag). Der übrige Home-Screen bleibt währenddessen bedienbar, damit der zweite Tag angetippt werden kann.
+  - Nach der Ende-Wahl öffnet `HistoricalReviewModal` mit der Zusammenfassung (`Beginn bis Ende`) und den Buttons `Abbrechen`/`Prüfen und speichern`; der Home-Screen-Hintergrund wird währenddessen über `inert` deaktiviert (analog zu `DayDetailModal` aus Version 4). Erst `Prüfen und speichern` sendet `POST /api/neu/periods` (bestehende, bereits gesicherte Route, keine neue Route, keine Schemaänderung) mit `{ startDate, endDate }`.
+  - `Abbrechen` ist an jeder Stelle (Aktionsdialog, schwebender Hinweis, Review) rein lokal: es setzt nur `historicalSelection`/`historicalDayAction` zurück und löst keinen Netzwerkaufruf aus.
+  - Ein erneuter Tipp auf einen früheren Tag als den bisherigen Start (bevor ein Ende gewählt wurde) öffnet erneut den Aktionsdialog mit `Start der Periode` und ersetzt den bisherigen Start; damit ist immer nur ein in sich stimmiger Zeitraum in Arbeit.
+  - Bereits bestätigte oder laufende Periodentage (`confirmed`/`running`) bleiben unverändert beim lesenden `DayDetailModal` aus Version 4 (`isDayDetailAvailable`-Zweig unverändert); erwartete, geplante und zukünftige Tage bleiben nicht klickbar für die neue Erfassung.
+  - Die neue Auswahl ist ausschließlich für `date < todayKey` verfügbar (`isPastNeutralDay`); ein heutiger oder zukünftiger Tag löst sie nicht aus. Laufende Perioden von heute und erwartete Enden folgen unverändert der Logik aus Version 3.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen. Kein zweiter Kalender, keine neue API-Route, keine Datenbankänderung, keine Änderung der Vorhersage-/Zykluskreislogik.
+- Tests:
+  - Neues `scripts/verify-historical-entry.ts`: 10 Prüfungen – bestehende Servervalidierung akzeptiert vergangenen Start mit vergangenem Ende und Start=Ende, lehnt Ende-vor-Start sowie heutige/zukünftige Daten ab; Quelltext-Prüfungen bestätigen den bestehenden `POST /api/neu/periods`-Weg (keine neue Route), die `Start der Periode`/`Ende der Periode`-Beschriftung, die Beschränkung auf vergangene neutrale Tage, dass Abbrechen ausschließlich lokal wirkt (kein `fetch`), dass der Hintergrund während der Review-Ansicht über `inert` blockiert wird, und dass Version 4 unverändert bestehen bleibt. Alle 10 Prüfungen bestanden.
+  - `scripts/verify-day-detail.ts` an die erweiterte `inert`-Bedingung angepasst (jetzt auch `historicalDayAction` und die Review-Phase berücksichtigend) und erneut ausgeführt: alle 13 Prüfungen bestanden.
+  - `scripts/verify-personal-cycle-view.ts` und `scripts/verify-my-periods.mts` erneut ausgeführt (Regressionsprüfung für Version 3): weiterhin alle Prüfungen bestanden.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, alle 34 Routen erzeugt.
+  - Zusätzliche end-to-end-Prüfung mit temporär installiertem Playwright (Chromium, 375×812, danach vollständig wieder entfernt) gegen einen lokalen Produktions-Build (`npm run build && next start`) mit einem Testkonto: (1) Tipp auf einen neutralen vergangenen Tag öffnet den Dialog mit „Start der Periode“; Klick darauf zeigt den schwebenden Hinweis; Tipp auf einen späteren Tag öffnet den Dialog mit „Ende der Periode“; Klick darauf öffnet das Review-Modal; während des Reviews ist der Monatswechsel-Button nicht bedienbar (inert bestätigt); „Prüfen und speichern“ speichert erfolgreich (per direkter Datenbankprüfung bestätigt: neuer Eintrag mit dem gewählten Zeitraum vorhanden, keine Konsolen-/Seitenfehler). (2) Abbrechen im Aktionsdialog nach der Starttag-Wahl und Abbrechen im Review-Modal wurden separat geprüft; die Datenbank zeigte in beiden Fällen exakt den vorherigen Datenstand ohne neuen Eintrag. Diese vertiefte Prüfung wurde bewusst durchgeführt, weil Version 4 zuvor einen Serverfehler enthielt, der nur durch echtes Rendering sichtbar wurde; für die neue, mehrstufige Kalender-Interaktion war eine reine Quelltext-/Unit-Prüfung nicht ausreichend. Playwright und das Testkonto wurden danach vollständig entfernt.
+- Abweichungen:
+  - Der Auftrag beschreibt „Ein neutraler vergangener Tag öffnet ein kleines, zugängliches Tagesfenster mit der passenden Aktion“ – dazu wurde eine Owner-Rückfrage gestellt, ob der Tipp direkt die Auswahl setzen darf oder zwingend über ein Tagesfenster mit explizitem Aktions-Button laufen soll. Entscheidung: wörtlich wie im Soll-Text, über ein Tagesfenster mit Button. So umgesetzt.
+  - Der bereits in Version 3/4 dokumentierte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für diese Version nicht im Umfang.
+- offene Punkte:
+  - Owner-Prüfschritt für Version 5 steht aus (in einem vergangenen Monat einen Start wählen, Aktionsdialog bestätigen, einen späteren Tag als Ende wählen, Aktionsdialog bestätigen, Zusammenfassung prüfen, speichern, nach Neuladen und erneuter Anmeldung den Zeitraum bestätigt sehen; zusätzlich Abbrechen an beiden Stellen prüfen; mobile Sichtprüfung).
+  - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 

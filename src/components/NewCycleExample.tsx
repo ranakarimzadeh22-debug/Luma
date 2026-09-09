@@ -556,6 +556,115 @@ function DayDetailModal({ date, periodDay, onClose }: DayDetailModalProps) {
   );
 }
 
+type HistoricalSelection = { start: string; end: string | null };
+
+interface HistoricalDayActionModalProps {
+  date: string;
+  action: "start" | "end";
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function HistoricalDayActionModal({ date, action, onConfirm, onCancel }: HistoricalDayActionModalProps) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="historical-day-action-title"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-lg">
+        <h2 id="historical-day-action-title" className="text-lg font-semibold capitalize text-[#28101f]">
+          {formatFullGermanDate(date)}
+        </h2>
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            {action === "start" ? "Start der Periode" : "Ende der Periode"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface HistoricalReviewModalProps {
+  selection: { start: string; end: string };
+  onSave: () => void;
+  onCancel: () => void;
+  error: string;
+  isSaving: boolean;
+}
+
+function HistoricalReviewModal({ selection, onSave, onCancel, error, isSaving }: HistoricalReviewModalProps) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="historical-review-title"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-lg">
+        <h2 id="historical-review-title" className="text-lg font-semibold text-[#28101f]">
+          Periode speichern?
+        </h2>
+        <p className="mt-3 text-sm text-[#382631]">
+          {formatPeriodDate(selection.start)} bis {formatPeriodDate(selection.end)}
+        </p>
+        {error && (
+          <p role="alert" className="mt-2 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631] disabled:opacity-50"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={onSave}
+            className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {isSaving ? "Wird gespeichert …" : "Prüfen und speichern"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
   const router = useRouter();
   const [today] = useState(() => new Date());
@@ -569,6 +678,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
   const [selectedDayDetail, setSelectedDayDetail] = useState<{ date: string; periodDay: number | null } | null>(null);
+  const [historicalSelection, setHistoricalSelection] = useState<HistoricalSelection | null>(null);
+  const [historicalDayAction, setHistoricalDayAction] = useState<{ date: string; action: "start" | "end" } | null>(null);
+  const [isSavingHistorical, setIsSavingHistorical] = useState(false);
+  const [historicalError, setHistoricalError] = useState("");
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -625,9 +738,71 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     router.refresh();
   }
 
+  function handlePastNeutralDayTap(date: string) {
+    if (!historicalSelection || historicalSelection.end !== null) {
+      setHistoricalDayAction({ date, action: "start" });
+      return;
+    }
+    if (date < historicalSelection.start) {
+      setHistoricalDayAction({ date, action: "start" });
+      return;
+    }
+    setHistoricalDayAction({ date, action: "end" });
+  }
+
+  function confirmHistoricalDayAction() {
+    if (!historicalDayAction) return;
+    if (historicalDayAction.action === "start") {
+      setHistoricalSelection({ start: historicalDayAction.date, end: null });
+    } else {
+      setHistoricalSelection((current) =>
+        current ? { start: current.start, end: historicalDayAction.date } : { start: historicalDayAction.date, end: null },
+      );
+    }
+    setHistoricalDayAction(null);
+  }
+
+  function cancelHistoricalDayAction() {
+    setHistoricalDayAction(null);
+  }
+
+  function cancelHistoricalSelection() {
+    setHistoricalSelection(null);
+    setHistoricalError("");
+  }
+
+  async function saveHistoricalSelection() {
+    if (!historicalSelection || historicalSelection.end === null) return;
+    setIsSavingHistorical(true);
+    setHistoricalError("");
+    const response = await fetch("/api/neu/periods", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ startDate: historicalSelection.start, endDate: historicalSelection.end }),
+    }).catch(() => null);
+    const result = (await response?.json().catch(() => null)) as { entry?: NewPeriodEntryOpen; error?: string } | null;
+    setIsSavingHistorical(false);
+    if (!response?.ok || !result?.entry) {
+      setHistoricalError(result?.error || "Die Periode konnte nicht gespeichert werden.");
+      return;
+    }
+    setPeriods((current) =>
+      [...current, result.entry as NewPeriodEntryOpen].sort((first, second) => second.startDate.localeCompare(first.startDate)),
+    );
+    setHistoricalSelection(null);
+    router.refresh();
+  }
+
   return (
     <>
-    <div className="space-y-9 sm:space-y-10" inert={selectedDayDetail ? true : undefined}>
+    <div
+      className="space-y-9 sm:space-y-10"
+      inert={
+        selectedDayDetail || historicalDayAction || (historicalSelection && historicalSelection.end !== null)
+          ? true
+          : undefined
+      }
+    >
       <section aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"} className="space-y-3">
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
@@ -819,8 +994,26 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
             const isDayDetailAvailable = Boolean(date && confirmedPeriodEntry);
+            const isPastNeutralDay = Boolean(
+              date &&
+                date < todayKey &&
+                !storedPeriod &&
+                !runningPeriod &&
+                !expectedPeriod &&
+                !plannedPeriod,
+            );
+            const isSelectionStart = Boolean(date && historicalSelection && date === historicalSelection.start);
+            const isInSelectionRange = Boolean(
+              date &&
+                historicalSelection &&
+                historicalSelection.end !== null &&
+                date >= historicalSelection.start &&
+                date <= historicalSelection.end,
+            );
+            const isHistoricalSelectionTarget = isSelectionStart || isInSelectionRange;
+            const isHistoricalPickAvailable = isPastNeutralDay;
             const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-base ${
-              storedPeriod || runningPeriod
+              storedPeriod || runningPeriod || isHistoricalSelectionTarget
                 ? "bg-[#6d153f] text-white"
                 : expectedPeriod
                   ? "bg-[#f3a9bd] text-[#831341]"
@@ -835,7 +1028,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
             const dayAriaLabel = date
-              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`
+              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isSelectionStart ? ", ausgewählter Beginn, noch nicht gespeichert" : ""}`
               : "";
             const dayChildren = (
               <>
@@ -865,7 +1058,17 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                     {dayChildren}
                   </button>
                 )}
-                {day && !isDayDetailAvailable && (
+                {day && !isDayDetailAvailable && isHistoricalPickAvailable && (
+                  <button
+                    type="button"
+                    aria-label={dayAriaLabel}
+                    onClick={() => handlePastNeutralDayTap(date as string)}
+                    className={dayClassName}
+                  >
+                    {dayChildren}
+                  </button>
+                )}
+                {day && !isDayDetailAvailable && !isHistoricalPickAvailable && (
                   <div aria-label={dayAriaLabel} className={dayClassName}>
                     {dayChildren}
                   </div>
@@ -949,6 +1152,42 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         date={selectedDayDetail.date}
         periodDay={selectedDayDetail.periodDay}
         onClose={() => setSelectedDayDetail(null)}
+      />
+    )}
+    {historicalSelection && historicalSelection.end === null && !historicalDayAction && (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed inset-x-4 top-[max(1.5rem,env(safe-area-inset-top))] z-40 mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#d8afbd] bg-white p-4 text-sm text-[#382631] shadow-lg"
+      >
+        <p className="flex-1">
+          Beginn: {formatPeriodDate(historicalSelection.start)}. Tippe jetzt auf den letzten Tag der Periode.
+        </p>
+        <button
+          type="button"
+          onClick={cancelHistoricalSelection}
+          aria-label="Auswahl abbrechen"
+          className="rounded-full px-2 py-1 text-lg leading-none text-[#6b5560] hover:bg-[#f4e4e3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+        >
+          ×
+        </button>
+      </div>
+    )}
+    {historicalDayAction && (
+      <HistoricalDayActionModal
+        date={historicalDayAction.date}
+        action={historicalDayAction.action}
+        onConfirm={confirmHistoricalDayAction}
+        onCancel={cancelHistoricalDayAction}
+      />
+    )}
+    {historicalSelection && historicalSelection.end !== null && !historicalDayAction && (
+      <HistoricalReviewModal
+        selection={{ start: historicalSelection.start, end: historicalSelection.end }}
+        onSave={saveHistoricalSelection}
+        onCancel={cancelHistoricalSelection}
+        error={historicalError}
+        isSaving={isSavingHistorical}
       />
     )}
     </>
