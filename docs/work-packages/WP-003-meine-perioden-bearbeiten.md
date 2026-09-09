@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 4
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -344,6 +344,27 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 - Ergänze `Ist Version 4`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
 - Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
+
+### Version 4 – Periodentag im Tagesfenster (9. September 2026)
+
+- umgesetzt:
+  - `src/lib/calendar-day-info.ts`: neue reine Funktion `periodDayNumber(date, startDate)` – inklusive Zählung ab dem tatsächlichen Start (Starttag = 1), reine Datums-String-Arithmetik über `Date.UTC` ohne Zeitzonenverschiebung.
+  - `src/components/NewCycleExample.tsx`: neue Komponente `DayDetailModal` – rein lesend, zeigt vollständigen deutschen Wochentag/Datum (`Intl.DateTimeFormat`) und, falls vorhanden, `{n}. Periodentag`. `role="dialog"`, `aria-modal="true"`, sichtbarer „Schließen“-Button, Escape-Handler via `useEffect`/`keydown`.
+  - Jede Kalenderzelle mit `storedPeriod` oder `runningPeriod` (also `dayInfo.status` `confirmed` oder `running`) ist jetzt ein `<button>` statt eines reinen `<div>`; Klick berechnet den Periodentag aus dem zugehörigen Eintrag (`confirmedPeriodEntry = storedPeriod ?? runningPeriod`) und öffnet `DayDetailModal`. Zellen mit `expected`, `planned`, `estimate` oder `neutral` bleiben unverändert nicht klickbar und zeigen keinen erfundenen Periodentag.
+  - Der Home-Screen-Hintergrund (Ring, Kalender, Buttons) wird bei offenem Tagesfenster über das native HTML-Attribut `inert` deaktiviert (nicht fokussierbar, nicht klickbar, für Screenreader ausgeblendet); `DayDetailModal` selbst liegt als Geschwisterelement außerhalb der `inert`-Root, damit es bedienbar bleibt.
+  - Keine neue API-Route, keine Datenbankänderung, keine neue Speicherung – rein lesende Client-Ableitung aus bereits geladenen `periods`.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen.
+- Tests:
+  - Neues `scripts/verify-day-detail.ts`: 13 Prüfungen – `periodDayNumber` (Starttag = 1, dritter Tag = 3, Monatsgrenze September/Oktober, Jahresgrenze Dezember/Januar), `getCalendarDayInfo`-Status für `confirmed`/`running` (öffnen das Fenster) sowie `expected`/`planned`/`estimate`/`neutral` (kein Periodentag), sowie Quelltext-Prüfungen, dass der klickbare Tag ausschließlich aus `storedPeriod`/`runningPeriod` abgeleitet wird, `role="dialog"`/`aria-modal="true"` gesetzt sind, der Hintergrund über `inert` deaktiviert wird und Escape das Fenster schließt. Alle 13 Prüfungen bestanden.
+  - `scripts/verify-personal-cycle-view.ts` und `scripts/verify-my-periods.mts` erneut ausgeführt (Regressionsprüfung für Version 3): weiterhin alle Prüfungen bestanden.
+  - `npx tsc --noEmit`: keine Fehler.
+  - `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, alle 34 Routen erzeugt.
+  - Mobile Sichtprüfung wurde für diese Version nicht mit Playwright durchgeführt (siehe offene Punkte) – gemäß der vom Owner bestätigten Arbeitsweise „erst schnell bauen und selbst sichten, schwere Prüfungen erst bei Bedarf“ wurde die Prüftiefe auf Build, TypeScript und die gezielte Skript-Prüfung konzentriert. Das Modal nutzt dieselben, bereits mobil geprüften Layout-Muster (`fixed inset-0`, `max-w-sm`, zentriert) wie `PeriodFormModal` und `MyPeriodsModal` aus Version 1/2.
+- Abweichungen: keine fachliche Abweichung. Der bereits in Version 3 dokumentierte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und wurde deshalb für die Pflichtprüfung dieser Version durch ein eigenständiges `npx tsx`-Skript ersetzt, statt sich auf den kaputten Node-Testrunner zu verlassen.
+- offene Punkte:
+  - Owner-Prüfschritt für Version 4 steht aus (dritten bestätigten Periodentag antippen, Wochentag/Datum/„3. Periodentag“ prüfen, Hintergrund währenddessen unbedienbar, Schließen und Escape prüfen, mobile Sichtprüfung ohne horizontalen Überlauf).
+  - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 

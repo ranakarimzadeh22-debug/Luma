@@ -7,7 +7,7 @@ import { todayDateOnly, type NewPeriodEntry, type NewPeriodEntryOpen } from "@/l
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
-import { getCalendarDayInfo } from "@/lib/calendar-day-info";
+import { getCalendarDayInfo, periodDayNumber } from "@/lib/calendar-day-info";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -506,6 +506,56 @@ function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+interface DayDetailModalProps {
+  date: string;
+  periodDay: number | null;
+  onClose: () => void;
+}
+
+function formatFullGermanDate(date: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00`));
+}
+
+function DayDetailModal({ date, periodDay, onClose }: DayDetailModalProps) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="day-detail-title"
+    >
+      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-lg">
+        <h2 id="day-detail-title" className="text-lg font-semibold capitalize text-[#28101f]">
+          {formatFullGermanDate(date)}
+        </h2>
+        <p className="mt-3 text-base text-[#382631]">
+          {periodDay !== null ? `${periodDay}. Periodentag` : "Keine bestätigte Periode an diesem Tag."}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 w-full rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white"
+        >
+          Schließen
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
   const router = useRouter();
   const [today] = useState(() => new Date());
@@ -518,6 +568,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
+  const [selectedDayDetail, setSelectedDayDetail] = useState<{ date: string; periodDay: number | null } | null>(null);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -575,7 +626,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   }
 
   return (
-    <div className="space-y-9 sm:space-y-10">
+    <>
+    <div className="space-y-9 sm:space-y-10" inert={selectedDayDetail ? true : undefined}>
       <section aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"} className="space-y-3">
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
@@ -765,34 +817,55 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   phase: prediction ? predictedPhaseForCalendarDay(date, prediction) : null,
                 })
               : null;
+            const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
+            const isDayDetailAvailable = Boolean(date && confirmedPeriodEntry);
+            const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-base ${
+              storedPeriod || runningPeriod
+                ? "bg-[#6d153f] text-white"
+                : expectedPeriod
+                  ? "bg-[#f3a9bd] text-[#831341]"
+                  : plannedPeriod
+                    ? "bg-[#fff3c9] text-[#6d4c00]"
+                    : phase
+                      ? phaseStyles[phase]
+                      : "bg-white/55 text-[#281c24]"
+            } ${
+              !dayInfo?.isFuture
+                ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
+                : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
+            } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
+            const dayAriaLabel = `${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`;
+            const dayChildren = (
+              <>
+                <span>{day}</span>
+                {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
+                {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}
+                {!storedPeriod && !runningPeriod && expectedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Ca.</span>}
+                {!storedPeriod && !runningPeriod && !expectedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
+                {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
+                {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
+              </>
+            );
             return (
               <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
-                {day && (
-                  <div
-                    aria-label={`${formatPeriodDate(date as string)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`}
-                    className={`relative grid h-full w-full place-items-center rounded-2xl border text-base ${
-                      storedPeriod || runningPeriod
-                        ? "bg-[#6d153f] text-white"
-                        : expectedPeriod
-                          ? "bg-[#f3a9bd] text-[#831341]"
-                          : plannedPeriod
-                            ? "bg-[#fff3c9] text-[#6d4c00]"
-                            : phase
-                              ? phaseStyles[phase]
-                              : "bg-white/55 text-[#281c24]"
-                    } ${
-                      !dayInfo?.isFuture
-                        ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
-                        : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
-                    } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`}
+                {day && isDayDetailAvailable && (
+                  <button
+                    type="button"
+                    aria-label={dayAriaLabel}
+                    onClick={() =>
+                      setSelectedDayDetail({
+                        date: date as string,
+                        periodDay: periodDayNumber(date as string, confirmedPeriodEntry!.startDate),
+                      })
+                    }
+                    className={dayClassName}
                   >
-                    <span>{day}</span>
-                    {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
-                    {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}
-                    {!storedPeriod && !runningPeriod && expectedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Ca.</span>}
-                    {!storedPeriod && !runningPeriod && !expectedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
-                    {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
-                    {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
+                    {dayChildren}
+                  </button>
+                )}
+                {day && !isDayDetailAvailable && (
+                  <div aria-label={dayAriaLabel} className={dayClassName}>
+                    {dayChildren}
                   </div>
                 )}
               </div>
@@ -869,5 +942,13 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
 
       {isNoDataToastVisible && <NoDataToast onDismiss={() => setIsNoDataToastVisible(false)} />}
     </div>
+    {selectedDayDetail && (
+      <DayDetailModal
+        date={selectedDayDetail.date}
+        periodDay={selectedDayDetail.periodDay}
+        onClose={() => setSelectedDayDetail(null)}
+      />
+    )}
+    </>
   );
 }
