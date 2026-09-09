@@ -9,6 +9,7 @@ import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
 import { getCalendarDayInfo, periodDayNumber } from "@/lib/calendar-day-info";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
+import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -665,6 +666,69 @@ function HistoricalReviewModal({ selection, onSave, onCancel, error, isSaving }:
   );
 }
 
+function formatHistoryMonth(date: string): string {
+  return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(new Date(`${date}T00:00:00`));
+}
+
+interface PeriodHistoryModalProps {
+  rows: PeriodHistoryRow[];
+  onClose: () => void;
+}
+
+function PeriodHistoryModal({ rows, onClose }: PeriodHistoryModalProps) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  const sortedNewestFirst = [...rows].sort((a, b) => b.startDate.localeCompare(a.startDate));
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="period-history-title"
+    >
+      <div className="flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl bg-white p-6 shadow-lg">
+        <h2 id="period-history-title" className="text-lg font-semibold text-[#28101f]">
+          Periodenhistorie
+        </h2>
+
+        <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
+          {sortedNewestFirst.length === 0 && (
+            <p className="text-sm text-[#6b5560]">
+              Noch keine Historie vorhanden. Trage deine erste Periode ein, um sie hier später zu sehen.
+            </p>
+          )}
+          {sortedNewestFirst.map((row) => (
+            <div key={row.id} className="rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3">
+              <p className="text-sm font-semibold capitalize text-[#28101f]">{formatHistoryMonth(row.startDate)}</p>
+              <p className="mt-1 text-sm text-[#382631]">
+                {row.endDate ? `${formatPeriodDate(row.startDate)} bis ${formatPeriodDate(row.endDate)}` : `${formatPeriodDate(row.startDate)}, läuft noch`}
+              </p>
+              <p className="mt-1 text-sm text-[#6b5560]">
+                Zyklus: {row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-4 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white"
+        >
+          Schließen
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
   const router = useRouter();
   const [today] = useState(() => new Date());
@@ -682,6 +746,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [historicalDayAction, setHistoricalDayAction] = useState<{ date: string; action: "start" | "end" } | null>(null);
   const [isSavingHistorical, setIsSavingHistorical] = useState(false);
   const [historicalError, setHistoricalError] = useState("");
+  const [isPeriodHistoryOpen, setIsPeriodHistoryOpen] = useState(false);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -798,7 +863,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     <div
       className="space-y-9 sm:space-y-10"
       inert={
-        selectedDayDetail || historicalDayAction || (historicalSelection && historicalSelection.end !== null)
+        selectedDayDetail ||
+        historicalDayAction ||
+        (historicalSelection && historicalSelection.end !== null) ||
+        isPeriodHistoryOpen
           ? true
           : undefined
       }
@@ -945,7 +1013,16 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       <section aria-label="Kalender zur Orientierung" className="space-y-5">
         <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
-          <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">{monthName}</h2>
+          <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">
+            <button
+              type="button"
+              onClick={() => setIsPeriodHistoryOpen(true)}
+              aria-label={`Periodenhistorie öffnen, aktuell angezeigter Monat: ${monthName}`}
+              className="rounded-xl px-2 py-1 hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            >
+              {monthName}
+            </button>
+          </h2>
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
         </div>
 
@@ -1189,6 +1266,9 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         error={historicalError}
         isSaving={isSavingHistorical}
       />
+    )}
+    {isPeriodHistoryOpen && (
+      <PeriodHistoryModal rows={computePeriodHistory(periods)} onClose={() => setIsPeriodHistoryOpen(false)} />
     )}
     </>
   );

@@ -115,7 +115,8 @@ console.log("\n== WP-003 V4: NewCycleExample.tsx öffnet das Tagesfenster nur f�
   const hasDialogRole = source.includes('role="dialog"') && source.includes('aria-modal="true"');
   assertEqual(hasDialogRole, true, "DayDetailModal trägt role=\"dialog\" und aria-modal=\"true\"");
 
-  const hasInert = source.includes("inert={\n        selectedDayDetail || historicalDayAction ||") || source.includes("selectedDayDetail || historicalDayAction");
+  const inertBlockMatch = source.match(/inert=\{([\s\S]*?)\}\s*\n\s*>/);
+  const hasInert = Boolean(inertBlockMatch?.[1].includes("selectedDayDetail"));
   assertEqual(hasInert, true, "der Home-Screen-Hintergrund wird bei offenem Tagesfenster (selectedDayDetail) weiterhin über inert deaktiviert");
 
   const hasEscapeHandling = source.includes('event.key === "Escape"');

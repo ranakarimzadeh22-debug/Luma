@@ -2,7 +2,7 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 6
-status: approved
+status: review
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -553,6 +553,27 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 
 - Ergänze `Ist Version 6`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
 - Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
+
+### Version 6 – Periodenhistorie über die Monatsanzeige (9. September 2026)
+
+- umgesetzt:
+  - Neues, reines Modul `src/lib/period-history.ts` mit `computePeriodHistory(periods)`: leitet chronologisch aus tatsächlichen Einträgen eine Historie ab. Für jeden Start außer dem zeitlich neuesten wird die Differenz in Kalendertagen bis zum direkt folgenden tatsächlichen Start berechnet (reine Datums-String-Arithmetik über `Date.UTC`, keine Zeitzonenverschiebung); der neueste Start erhält `cycleLengthDays: null`. `endDate` wird unverändert durchgereicht (bleibt `null` bei einem laufenden Eintrag, auch wenn `expectedEndDate` gesetzt ist) – ein erwartetes Ende zählt nie als echtes Ende oder Berechnungsgrundlage.
+  - `src/components/NewCycleExample.tsx`: Die bestehende Monatsanzeige (`{monthName}`) ist jetzt ein zugänglicher `<button>` mit sprechendem `aria-label`, der `PeriodHistoryModal` öffnet. Die Monatsnavigation über die `‹`/`›`-Pfeile bleibt unverändert unabhängig davon bestehen.
+  - Neue Komponente `PeriodHistoryModal`: rein lesendes, vollständiges Overlay (`role="dialog"`, `aria-modal="true"`, Escape-Handler, sichtbarer „Schließen“-Button) über dem gesamten Home-Screen, analog zum bestehenden Muster aus `DayDetailModal`. Zeigt pro Zeile Monat/Jahr des Starts, den tatsächlichen Zeitraum (`Beginn bis Ende` bzw. `Beginn, läuft noch` für einen offenen Eintrag) und `Zyklus: {n} Tage` bzw. `Zyklus: Noch nicht bekannt` für den neuesten Eintrag, neueste Zeile zuerst. Bei keiner gespeicherten Periode erscheint ein kurzer, freundlicher Hinweistext statt einer leeren Liste.
+  - Der Home-Screen-Hintergrund wird bei offener Historie über das bereits bestehende `inert`-Attribut auf der Root-`div` deaktiviert (dieselbe Bedingung wie für `DayDetailModal`/`HistoricalDayActionModal`/Review aus Version 4/5, um `isPeriodHistoryOpen` erweitert).
+  - Keine neue API-Route, keine Datenbankänderung, keine Speicherung – reine clientseitige Ableitung aus den bereits geladenen `periods`. Die bestehende Kalenderauswahl (Version 5) und Verwaltung (`Meine Perioden`) bleiben unverändert.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen.
+- Tests:
+  - Neues `scripts/verify-period-history.ts`: 12 Prüfungen – Zykluslänge über Monats- und Jahresgrenze (30.07.–27.08. sowie 05.12.–02.01. ergeben je 28 Kalendertage), unterschiedliche Abstände (23/24/25 Tage) bleiben getrennt sichtbar statt gemittelt, der neueste Start bleibt ohne Zykluslänge, ein laufender Eintrag ohne echtes Ende zeigt kein erfundenes Ende, eine leere Historie liefert eine leere Liste ohne Fehler; dazu Quelltext-Prüfungen, dass die Monatsanzeige ein zugänglicher Button ist, die Pfeil-Navigation unverändert bleibt, `PeriodHistoryModal` keinen `fetch`-Aufruf enthält (rein lesend), eine zugängliche Dialog-Kennzeichnung trägt und der Hintergrund über `inert` blockiert wird. Alle 12 Prüfungen bestanden.
+  - `scripts/verify-day-detail.ts` und `scripts/verify-historical-entry.ts`: die `inert`-Quelltext-Prüfungen wurden formatierungsrobuster gemacht (Regex statt exaktem Mehrzeilen-String), da die `inert`-Bedingung durch diese Version erneut erweitert wurde; inhaltlich unverändert, weiterhin alle Prüfungen bestanden (13 bzw. 10).
+  - `scripts/verify-personal-cycle-view.ts` und `scripts/verify-my-periods.mts` erneut ausgeführt (Regressionsprüfung für Version 3): weiterhin alle Prüfungen bestanden.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, alle 34 Routen erzeugt.
+  - Zusätzliche Prüfung gegen einen lokalen Produktions-Build (`npm run build && next start`) mit einem Testkonto mit drei Perioden (inkl. einer laufenden mit erwartetem Ende): `/neu` liefert nach Login `STATUS 200` ohne Server-Fehler; der neue Button „Periodenhistorie öffnen“ ist im gerenderten HTML vorhanden. Diese Prüfung wurde bewusst durchgeführt, weil eine frühere Version (4) durch einen unbedingten Feldzugriff in derselben Kalenderzellen-Umgebung einen Serverfehler ausgelöst hatte; für diese Version genügte ein gezielter HTML-Abruf (kein State-Machine-Flow wie in Version 5), da die neue Funktion rein lesend ist. Testkonto danach gelöscht.
+- Abweichungen: keine fachliche Abweichung. Der bereits in Version 3/4/5 dokumentierte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für diese Version nicht im Umfang.
+- offene Punkte:
+  - Owner-Prüfschritt für Version 6 steht aus (auf die Monatsanzeige tippen, Historie mit Zeitraum und Zykluslänge je Zeile prüfen, neuesten Eintrag mit „Noch nicht bekannt“ bestätigen, Schließen und Escape prüfen, mobile Sichtprüfung ohne horizontalen Überlauf).
+  - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
+- Commit: folgt unmittelbar nach diesem Eintrag.
 
 ## Soll-Ist-Prüfung – von Codex
 
