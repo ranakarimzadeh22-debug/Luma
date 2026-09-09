@@ -1,8 +1,8 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 4
-status: review
+package_revision: 5
+status: approved
 created: 2026-09-07
 updated: 2026-09-09
 owner_approved: yes
@@ -374,6 +374,84 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Owner sollte nach dem Deployment dieser Korrektur bestätigen, dass `/neu` online wieder ohne Fehler lädt.
   - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 5 – Vergangene Periode direkt im Kalender erfassen (9. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Du gehst im sichtbaren Kalender zum vergangenen Monat. Dort tippst du zuerst auf den tatsächlichen Starttag und danach auf den tatsächlichen Endtag.
+- **Beispiel:** Du tippst auf den 30. Juli, wählst `Start der Periode`, tippst später auf den letzten Tag und wählst `Ende der Periode`.
+- **Danach:** Luma zeigt den ausgewählten Zeitraum direkt im selben Kalender. Du prüfst ihn einmal und speicherst ihn bewusst.
+- **Wichtig:** Du öffnest keinen zweiten Kalender. `Meine Perioden` bleibt nur für späteres Ändern oder Löschen bestehen.
+
+### Entstehungsweg
+
+`Nachtragen vergangener Perioden über einen getrennten Weg ist zu umständlich → Nutzerin sieht den richtigen Monat bereits im Home-Kalender → Start und Ende dort auswählen, prüfen und speichern → WP-003 Version 5`
+
+- bestätigtes Problem: Der getrennte Eingabeweg verlangt zusätzliche Schritte und einen weiteren Kalender, obwohl der passende Monat bereits sichtbar ist.
+- gewünschte Wirkung: Eine vergangene Periode kann schnell und verständlich im sichtbaren Kalender erfasst werden.
+- gewählte Lösung: Zwei geführte Tagesaktionen im selben Kalender; erst Start, dann Ende, danach genau eine Prüfung und Speicherung.
+- ersetzt für vergangene Neueinträge: Die frühere Regel „Kalender nur zur Orientierung“ gilt nicht mehr für diese klar geführte Erfassung.
+- bleibt getrennt: Laufende Perioden, erwartete Enden und die Verwaltung bestehender Einträge folgen weiterhin ihren bestehenden Wegen.
+
+### Soll – von Codex
+
+- Jeder vergangene, neutrale Kalendertag kann ein Tagesfenster mit `Start der Periode` öffnen.
+- Nach der Auswahl eines Starts bleibt dieser sichtbar als noch nicht gespeicherte Auswahl. Der Kalender erklärt klar, dass jetzt der letzte Tag gewählt wird.
+- Nach Auswahl eines späteren vergangenen Tages bietet das Tagesfenster `Ende der Periode`. Ein Ende vor dem gewählten Start ist nicht zulässig.
+- Nach Start und Ende zeigt Luma im selben Ablauf eine kurze Zusammenfassung mit `Prüfen und speichern` sowie `Abbrechen`.
+- Erst `Speichern` erstellt den bestehenden kontogebundenen Periodeneintrag. Danach markieren die betreffenden Tage den bestätigten Zeitraum direkt im Kalender.
+- `Abbrechen` verwirft nur die noch nicht gespeicherte Auswahl und verändert keine Daten.
+- Bereits bestätigte Periodentage behalten das lesende Tagesfenster aus Version 4. `Meine Perioden` bleibt für Ändern und Löschen vorhandener Einträge erreichbar.
+- Zukünftige, erwartete, geplante und neutrale heutige Tage werden durch diese Version nicht zu einer neuen historischen Eingabe. Die neue Kalendererfassung gilt ausschließlich für vergangene Daten.
+
+### Abnahmekriterien
+
+1. In einem vergangenen Monat kann die Nutzerin einen vergangenen Starttag wählen, ohne einen zweiten Kalender zu öffnen.
+2. Nach dem Start kann sie nur einen gleichen oder späteren vergangenen Tag als Ende übernehmen.
+3. Vor dem Speichern ist der Zeitraum im sichtbaren Kalender erkennbar; nach `Abbrechen` verschwindet er wieder.
+4. Nach `Speichern` bleibt der bestätigte Zeitraum nach Neuladen und erneuter Anmeldung sichtbar.
+5. Ein ungültiges Ende, Zukunftsdatum, Überschneidung oder fremdes Konto kann keine Daten verändern.
+6. Ein bereits bestätigter Periodentag zeigt weiterhin seine Information aus Version 4.
+
+## Technischer Auftrag für Claude – Version 5
+
+### Bestätigte Code-Ausgangslage
+
+- `src/components/NewCycleExample.tsx` enthält den sichtbaren Monatskalender, Monatsnavigation, `DayDetailModal` aus Version 4 und die vorhandenen modalen Eingabe-/Verwaltungswege.
+- `POST /api/neu/periods` sowie `validateNewRunningPeriodInput` und `createNewPeriodEntry` speichern kontogebundene Perioden mit serverseitiger Reihenfolge-, Zukunfts- und Überschneidungsprüfung.
+- Die aktuelle Kalenderdarstellung kann bestätigte, laufende, erwartete und neutrale Tage unterscheiden.
+
+### Technisches Ziel
+
+- Ergänze im bestehenden Kalender eine klar begrenzte Client-Auswahl für **vergangene neue historische Perioden**: Zustand `kein Start → Start gewählt → Ende gewählt → prüfen/speichern`.
+- Ein neutraler vergangener Tag öffnet ein kleines, zugängliches Tagesfenster mit der passenden Aktion. Solange noch kein Start ausgewählt ist, ist das `Start der Periode`; danach ist es für einen zulässigen Tag `Ende der Periode`.
+- Nutze für Start und Ende weiterhin den bestehenden `POST /api/neu/periods`-Weg. Keine zweite Kalenderkomponente, keine neue Datenbanktabelle und keine neue API-Route.
+- Verwende die vorhandene serverseitige Validierung als verbindliche Sicherheit. Die Oberfläche darf lediglich sinnvoll führen, aber keine serverseitigen Prüfungen ersetzen.
+- Zeige die unfertige Auswahl sichtbar und barrierefrei im selben Kalender. Erst nach explizitem `Speichern` darf der Eintrag dauerhaft entstehen; `Abbrechen` setzt ausschließlich den lokalen Auswahlzustand zurück.
+- Lass Version 4 für bereits bestätigte `confirmed`/`running`-Tage bestehen. Es darf keine unklare Konkurrenz zwischen Tagesinformation und Neueingabe geben.
+- Die neue Auswahl gilt nur für Datum `< heute`. Laufende Eingaben von heute und erwartete Enden bleiben bei der Logik aus Version 3.
+
+### Pflichtprüfungen
+
+- Vergangener Start + späteres vergangenes Ende: Zusammenfassung, Speichern, Neuladen und erneute Anmeldung bestätigen den einen neuen Zeitraum.
+- Starttag = Endtag ist nur zulässig, wenn die vorhandene Servervalidierung dies akzeptiert; andernfalls verständliche Fehlermeldung ohne Speicherung.
+- Ende vor Start, heutige/zukünftige Daten und Überschneidung werden serverseitig abgelehnt.
+- Abbrechen nach Start und nach Ende verändert die Datenbank nicht und entfernt nur die lokale Auswahl.
+- Bereits bestätigter Periodentag öffnet weiterhin Version-4-Information; erwartete/geplante Tage erhalten keine historische Neueingabe.
+- Kontotrennung, bestehendes Ändern/Löschen, TypeScript, gezielter Test, Produktions-Build und Ledger-Validierung bestehen.
+- Mobile Sichtprüfung: Monatswechsel, Auswahl, Prüfung, Abbrechen und Speichern funktionieren ohne horizontalen Überlauf.
+
+### Stoppbedingungen
+
+- Stoppe vor einer Datenbankmigration, neuen API-Route, automatischer Speicherung oder einer Änderung der Vorhersage- und Zykluskreislogik.
+- Stoppe, wenn ein neutraler Kalendertag nicht sicher von einem erwarteten/geplanten oder bestätigten Tag unterscheidbar ist. Keine Statusregel raten.
+- Stoppe vor einer Veränderung der alten Luma oder von Daten eines anderen Kontos.
+
+### Abschluss durch Claude
+
+- Ergänze `Ist Version 5`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
+- Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
 
 ## Soll-Ist-Prüfung – von Codex
 
