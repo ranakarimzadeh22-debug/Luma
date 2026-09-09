@@ -1,10 +1,10 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 3
-status: review
+package_revision: 4
+status: approved
 created: 2026-09-07
-updated: 2026-09-08
+updated: 2026-09-09
 owner_approved: yes
 executor: claude
 product_area: "Neue Luma – Periodenverwaltung"
@@ -274,6 +274,76 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Owner-Prüfschritt für Version 3 steht aus (siehe Pflichtprüfungen im Auftrag: laufenden Start speichern, erwartetes Ende ergänzen, später echtes Ende ergänzen, mobile Sichtprüfung ohne horizontalen Überlauf).
   - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sollte in einem eigenen, dafür vorgesehenen Paket behoben werden.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 4 – Periodentag im Tagesfenster (9. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Du tippst einen bestätigten Periodentag im Kalender an. Der Home-Screen wird grau und ein kleines Fenster zeigt die genaue Tagesinformation.
+- **Beispiel:** `Mittwoch, 9. September 2026 – 3. Periodentag`.
+- **Was bleibt im Hintergrund?** Zyklus-Kreis, Kalender und alle anderen Elemente sind sichtbar, aber nicht bedienbar, bis das Fenster geschlossen wird.
+- **Wichtig:** Ein geschätzter zukünftiger Tag ist kein bestätigter Periodentag. Er zeigt deshalb keinen erfundenen Zähler.
+
+### Entstehungsweg
+
+`Periodentag im Kalender ist sichtbar, aber nicht sofort verständlich → Nutzerin braucht die genaue Einordnung eines einzelnen echten Tages → lesendes Tagesfenster mit Datum und Periodentag → WP-003 Version 4`
+
+- bestätigtes Problem: Die Nutzerin kann bei einem einzelnen Kalendertag nicht direkt erkennen, der wievielte Tag ihrer Periode er ist.
+- gewünschte Wirkung: Ein Tipp auf einen echten Periodentag liefert sofort eine kurze, eindeutige Erklärung, ohne die Verwaltungslogik zu öffnen oder Daten zu verändern.
+- gewählte Lösung: Ein zugängliches, lesendes Modal über dem gesamten Home-Screen.
+- Grenzen: Keine neue Dateneingabe, keine neue Berechnung, keine Änderung an Vorhersagen oder Datenbank.
+
+### Soll – von Codex
+
+- Ein Tipp auf einen `confirmed` oder `running` Periodentag öffnet ein kleines Tagesfenster.
+- Das Fenster deckt den gesamten Home-Screen mit einem grauen/abgedunkelten Hintergrund ab. Im Vordergrund ist nur das Fenster aktiv.
+- Es zeigt den deutschen Wochentag, das vollständige deutsche Datum und den inklusiv gezählten Periodentag: `Mittwoch, 9. September 2026 – 3. Periodentag`.
+- Der Starttag ist immer `1. Periodentag`; die Zählung beginnt erneut für jeden tatsächlichen Periodeneintrag.
+- Ein geschätzter, geplanter oder neutraler Tag erhält keinen Periodentag. Seine bestehende Tagesinformation bleibt ehrlich und unterscheidbar.
+- Das Fenster hat einen sichtbaren Schließen-Einstieg, schließt mit Escape und gibt den Fokus sinnvoll zurück. Es verändert keine Daten.
+
+### Abnahmekriterien
+
+1. Beim Tipp auf den dritten bestätigten Tag erscheint genau `3. Periodentag` zusammen mit Wochentag und vollständigem Datum.
+2. Der gesamte Home-Screen, einschließlich Zyklus-Kreis und Kalender, ist im Hintergrund abgedunkelt und nicht bedienbar.
+3. Nach Schließen ist der Home-Screen wieder normal bedienbar.
+4. Ein laufender bestätigter Tag bis einschließlich heute zeigt ebenfalls den korrekten Zähler.
+5. Ein nur erwarteter, geschätzter oder neutraler Tag zeigt keinen erfundenen Periodentag.
+
+## Technischer Auftrag für Claude – Version 4
+
+### Bestätigte Code-Ausgangslage
+
+- `src/components/NewCycleExample.tsx` rendert den clientseitigen Home-Kalender und enthält bereits Modal-Muster für `Meine Perioden` und das Periodenformular.
+- `src/lib/calendar-day-info.ts` unterscheidet bereits `confirmed`, `running`, `expected`, `planned`, `estimate` und `neutral`.
+- Die bestätigten Einträge in `initialPeriods` enthalten `startDate`; abgeschlossene Einträge enthalten außerdem ein echtes `endDate`.
+
+### Technisches Ziel
+
+- Ergänze eine rein lesende Tagesdetail-Modal-Komponente oder einen gleichwertigen klar gekapselten Zustand in `NewCycleExample.tsx`.
+- Ermittle den Periodentag ausschließlich aus einem tatsächlichen Eintrag: Kalendertag minus `startDate` plus eins, in lokaler datumssicherer Logik ohne Zeitzonenverschiebung.
+- Öffne für `confirmed` und `running` das Modal mit vollständiger deutscher Datumsformatierung. Für andere Status nutze höchstens die bestehende ehrliche Tagesinformation; keine erfundene Phasen- oder Periodentag-Aussage.
+- Verwende einen vollständigen Overlay-Backdrop über der Home-Ansicht, `role="dialog"`, `aria-modal="true"`, sichtbaren Schließen-Button und Escape-Schließen. Während das Modal offen ist, darf der Hintergrund nicht als aktive Bedienoberfläche wirken.
+- Nutze keine API-Route, keine Datenbankänderung und keine Speicherung. Die bestehende Periodenverwaltung und das Löschen bleiben unverändert.
+
+### Pflichtprüfungen
+
+- Unit-Test oder gezielte reproduzierbare Prüfung: Starttag = 1, dritter Tag = 3, Monats- und Jahresgrenze korrekt.
+- Bestätigter abgeschlossener Tag und laufender Tag bis heute öffnen das Modal korrekt.
+- Erwarteter, geplanter und neutraler Tag erhalten keinen erfundenen Periodentag.
+- Escape und sichtbarer Schließen-Button schließen; danach ist der Kalender wieder bedienbar.
+- Mobile Sichtprüfung: Overlay bedeckt Zyklus-Kreis und Kalender, kein horizontaler Überlauf, Text vollständig lesbar.
+- TypeScript, gezielter Test, Produktions-Build und Entwicklungsledger-Validierung ausführen.
+
+### Stoppbedingungen
+
+- Stoppe vor jeder Datenbankänderung, API-Änderung, automatischen Speicherung oder Änderung der Vorhersagelogik.
+- Stoppe, wenn der gleiche Kalendertag widersprüchlich mehreren tatsächlichen Periodeneinträgen zugeordnet wäre; diesen Zustand nicht durch eine willkürliche Zahl verdecken.
+
+### Abschluss durch Claude
+
+- Ergänze `Ist Version 4`, nenne Abweichungen sichtbar und setze das Paket auf `review`.
+- Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus und committe/pushe nur auftragsbezogene Dateien.
 
 ## Soll-Ist-Prüfung – von Codex
 
