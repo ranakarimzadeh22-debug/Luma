@@ -1,8 +1,8 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 2
-status: review
+package_revision: 3
+status: approved
 created: 2026-09-10
 updated: 2026-09-10
 owner_approved: yes
@@ -164,3 +164,114 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
 - Ergebnis: WP-004 ist freigegeben. Die notwendige getrennte Datenbankmigration für alte und neue Luma wurde vom Owner ausdrücklich erlaubt.
 - Nachschärfung: keine offene Produktfrage für den Verbindungskern. Partnerkalender und Push sind ausdrücklich spätere, getrennte Arbeitspakete.
 - Product-Map aktualisiert: ja.
+
+## Version 3 – Partnerkalender der neuen Luma
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Nach der Verbindung sieht der Partner in der **Neuen App** einen einfachen Monatskalender.
+- **Was sieht der Partner?** Tatsächlich bestätigte Periodentage und, bei einer noch laufenden Periode, klar markierte erwartete Tage bis zum erwarteten Ende.
+- **Beispiel:** Beginnt die Periode am 7. September und heute ist der 10. September, sind der 7. bis 10. September als `Bestätigt` sichtbar. Ist der 13. September als erwartetes Ende gespeichert, sind der 11. bis 13. September zusätzlich als `Erwartet – kann abweichen` sichtbar.
+- **Was sieht der Partner nicht?** Keine PMS- oder Eisprungphase, keine Zykluslänge, keine Vorhersagen für eine neue Periode, keine Historienliste, keine Profilangaben und keine Bearbeitungsfunktionen.
+- **Wer behält die Kontrolle?** Nur die Eigentümerin trägt Perioden ein, ändert oder löscht sie und kann die Verbindung beenden.
+
+### Entstehungsweg
+
+`Verbindung ist aktiv, aber der Partner sieht noch keinen Nutzen → sichere und sehr begrenzte Orientierung nötig → nur lesender Kalender mit klarer Trennung zwischen Tatsache und Erwartung → WP-004 Version 3`
+
+- bestätigtes Problem: Die sichere Partnerverbindung funktioniert, zeigt im Moment aber nur `Verbindung aktiv`.
+- gewünschte Wirkung: Der Partner erkennt auf einen Blick, welche Tage einer laufenden oder vergangenen Periode tatsächlich bestätigt und welche Tage nur erwartet sind.
+- gewählte Lösung: Ein geschützter, nur lesender Monatskalender ausschließlich im neuen Partnerbereich.
+- bestätigte Grenzen: Keine weiteren Zyklus- oder Gesundheitsinformationen; keine Eingabe; die alte Luma bleibt in dieser Version unverändert.
+- Quellen/Akten: `APP-IDEA-014`, Owner-Beschreibung vom 10. September 2026.
+
+### Soll – von Codex
+
+- `/neu/partner` ersetzt bei aktiver neuer Partnerverbindung den Platzhalter durch einen Monatskalender.
+- Der Kalender enthält nur Daten der Eigentümerin, die genau mit diesem aktiven Partnerkonto verbunden ist.
+- Tatsächlich bestätigte Periodentage werden aus echten `startDate`/`endDate`-Werten abgeleitet. Bei einer laufenden Periode gelten die Tage vom tatsächlichen Start bis einschließlich heute als `Bestätigt`.
+- Erwartete Tage sind nur bei einer laufenden Periode mit `expectedEndDate` sichtbar: ab morgen bis einschließlich erwartetes Ende. Sie tragen sichtbar `Erwartet` und `Kann abweichen`.
+- Erwartete Tage werden nie als bestätigt dargestellt und beeinflussen keine Berechnung, Historie oder Datenbank.
+- Der Partner kann Monat wechseln und Tagesinformationen nur lesen. Ein Tagesfenster darf nur Datum und Status `Bestätigt`, `Erwartet – kann abweichen` oder `Keine freigegebene Information` zeigen.
+- Ohne aktive Verbindung, nach Widerruf oder bei einem fremden Konto werden keinerlei Periodendaten geliefert oder angezeigt.
+
+### Nicht enthalten
+
+- Partnerkalender in der alten Luma.
+- Push-Nachrichten, E-Mails, Geräteberechtigungen, PMS, Eisprung, Zykluslänge, Vorhersage einer neuen Periode, Stimmungen, Profilangaben oder Periodenhistorie.
+- Jede Eingabe, Änderung oder Löschung durch den Partner.
+- Datenbankmigration oder Änderung von Periodendaten.
+
+### Abnahmekriterien
+
+1. Ein aktiv verbundener Partner der neuen Luma sieht einen einfachen Monatskalender.
+2. Eine laufende Periode ab 7. September zeigt am 10. September den 7. bis 10. September als bestätigt.
+3. Ein erwartetes Ende am 13. September zeigt nur den 11. bis 13. September als erwartet und abweichbar.
+4. Eine abgeschlossene Periode zeigt nur echte, bestätigte Tage und keine erwarteten Tage.
+5. Der Partner kann keine Periodendaten speichern, ändern oder löschen.
+6. Ein anderer Partner, ein nicht verbundenes Konto und ein Partner nach Widerruf erhalten keine Daten – auch nicht direkt über eine API-Anfrage.
+7. Mobile Ansicht bleibt ohne horizontalen Überlauf verständlich und bedienbar.
+
+### Technischer Auftrag für Claude – Version 3
+
+#### Bestätigte Ausgangslage im Code
+
+- `src/app/neu/partner` ist der geschützte neue Partnerbereich aus WP-004 und zeigt mit aktiver Verbindung bisher nur den Platzhalter `Verbindung aktiv`.
+- `src/lib/new-partner.ts` und die bestehenden `/api/neu/partner/*`-Routen prüfen die neue Sitzung sowie die aktive Verbindung.
+- `src/lib/new-periods.ts` und die für `/neu` bereits geladenen `new_period_entries` enthalten nur kontogebundene echte `startDate`, optionales echtes `endDate` und optionales `expectedEndDate`.
+- Die Home-Ansicht der neuen Luma besitzt bereits Monats- und Tagesdarstellung. Claude darf passende, reine Anzeige-/Datumslogik wiederverwenden, aber keine Owner-Interaktion oder Vorhersagelogik an den Partner weitergeben.
+
+#### Technisches Ziel
+
+- Ergänze eine serverseitig geschützte, ausschließlich lesende Datenquelle für den neuen Partnerbereich. Sie prüft vor jeder Antwort: neue Sitzung, aktiver Verbindungsstatus, zugehörige Eigentümerin und genau diese App-Variante.
+- Gib ausschließlich die minimalen Kalenderdaten zurück, die für bestätigte Tage und erwartete Tage der aktuell verbundenen Eigentümerin erforderlich sind. Keine E-Mail-Adresse, keine Namen, keine IDs, keine vollständige Historie und keine Profil-/Zykluswerte.
+- Leite den sichtbaren Tagesstatus ohne Speichern ab: echte abgeschlossene Tage und echte Tage einer laufenden Periode bis heute sind bestätigt; nur die noch kommenden Tage bis `expectedEndDate` sind erwartet.
+- Baue eine klare, mobile lesbare Kalenderansicht. Farben oder Symbole müssen zusätzlich mit Text/Legende unterscheidbar sein.
+- Tagesdialoge bleiben nur lesend. Sie dürfen keine Aktionen zum Periodenbeginn/-ende, Bearbeiten, Löschen oder Speichern enthalten.
+- Die alte Partneransicht und die bestehende Verbindungskernlogik werden nicht umgebaut.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Ohne aktive neue Partnerverbindung keine Antwort mit Periodendaten; nach Widerruf muss der Zugriff sofort scheitern.
+- Partnerzugriff ist strikt lesend und nur für die verbundene Eigentümerin gültig.
+- Erwartete Enddaten bleiben sichtbar vorläufig und werden nie zu echten Periodendaten oder Vorhersageeingaben.
+- Bestehende Owner-Kalender-, Profil-, Verbindungs-, Authentifizierungs- und Datenbanklogik bleiben unverändert.
+- Keine Datenbankmigration, keine Datenkopie zwischen alter/neuer Luma und keine Änderung an alten Partnerwegen.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: keine neue Tabelle und keine Änderung gespeicherter Daten.
+- API-Wirkung: nur eine neue oder erweiterte **lesende** neue Partnerroute, falls die vorhandene Statusroute nicht minimal genug ist.
+- Migration nötig: nein.
+
+#### Pflichtprüfungen
+
+- Laufende Periode: bestätigte Tage bis heute und erwartete Tage erst ab morgen korrekt getrennt.
+- Abgeschlossene Periode: nur echte bestätigte Tage.
+- Kein `expectedEndDate`: keine erfundenen erwarteten Tage.
+- Kein Zugriff ohne Sitzung, ohne aktive Verbindung, nach Widerruf oder mit einem Partnerkonto eines anderen Paares.
+- API-Antwort enthält keine Namen, E-Mail-Adressen, IDs, PMS-, Eisprung-, Profil-, Historien- oder Bearbeitungsdaten.
+- Partner-UI bietet keine schreibende Aktion; Tagesinformationen sind lesend.
+- Mobile Sichtprüfung, TypeScript, gezielte Sicherheits-/Integrationstests, Produktions-Build und Entwicklungsledger-Validierung.
+
+#### Stoppbedingungen
+
+- Stoppe vor einer Migration, einer neuen Freigabemöglichkeit, Push-Nachricht, Profilweitergabe, Vorhersage oder jeder schreibenden Partneraktion.
+- Stoppe, wenn die bestehende Verbindungsprüfung nicht pro Datenabruf sicher nachweisbar ist. Keine Daten auf den Client laden und dort erst filtern.
+- Stoppe, wenn erwartete und bestätigte Tage nicht sicher unterscheidbar abgeleitet werden können.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 3`, Abweichungen und Tests sichtbar.
+- Setze den Paketstatus auf `review`.
+- Ergänze das Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-004` und danach `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe nur auftragsbezogene Dateien. Kein Deploy ohne weitere Owner-Freigabe.
+
+### Ist Version 3 – von Claude
+
+- umgesetzt: noch nicht gestartet.
+- nicht umgesetzt: gesamter Umfang dieser Version.
+- Tests: noch keine.
+- Abweichungen: keine.
+- offene Punkte: keine vor der Umsetzung.
+- Commit: keiner.
