@@ -6,7 +6,7 @@ import { useLocale } from "@/context/LocaleContext";
 import CycleWheel from "./CycleWheel";
 import StatCard from "./StatCard";
 import SymptomLog from "./SymptomLog";
-import PartnerCard from "./PartnerCard";
+import PartnerConnectionCard from "./PartnerConnectionCard";
 import CycleEditModal from "./CycleEditModal";
 import { useAuth } from "@/context/AuthContext";
 import { getUserCycle } from "@/lib/actions/cycle";
@@ -157,7 +157,7 @@ export default function Dashboard() {
         </div>
 
         {/* Partner */}
-        <PartnerCard />
+        <PartnerConnectionCard />
 
         <p className="text-center text-xs pb-4" style={{ color: "#b799e5" }}>{t.tagline}</p>
       </div>

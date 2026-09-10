@@ -11,7 +11,7 @@ import {
   addSupplement as addSupplementDb,
   deleteSupplement as deleteSupplementDb,
 } from "@/lib/health";
-import { getOrCreatePartnerCode } from "@/lib/actions/partner";
+import PartnerConnectionCard from "@/components/PartnerConnectionCard";
 import { getUserCycle, saveUserCycle } from "@/lib/actions/cycle";
 import { getUserPregnancy, saveUserPregnancy } from "@/lib/actions/pregnancy";
 import {
@@ -55,9 +55,6 @@ export default function ProfilePage() {
   const { t, isRtl, locale, setLocale } = useLocale();
   const { user, signOut } = useAuth();
   const [saved, setSaved] = useState(false);
-  const [partnerUrl, setPartnerUrl] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [shared, setShared] = useState(false);
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -148,16 +145,6 @@ export default function ProfilePage() {
         });
       }
 
-      // Partner
-      const code = (await getOrCreatePartnerCode()) ?? "LUMA";
-      const cyclePayload = {
-        name: p?.name ?? "Luma",
-        lastPeriodStart: cd?.last_period_start ?? "",
-        cycleLength: cd?.cycle_length ?? 28,
-        periodLength: cd?.period_length ?? 5,
-      };
-      const encoded = btoa(encodeURIComponent(JSON.stringify(cyclePayload)));
-      setPartnerUrl(`${window.location.origin}/partner/${code}?d=${encoded}`);
     }
     load();
   }, [user]);
@@ -264,18 +251,6 @@ export default function ProfilePage() {
     setPwSaved(true);
     setPasswords({ current: "", newPw: "", confirm: "" });
     setTimeout(() => setPwSaved(false), 2000);
-  }
-
-  function copyLink() {
-    navigator.clipboard.writeText(partnerUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  async function shareLink() {
-    if (navigator.share) {
-      await navigator.share({ title: "Luma – Mein Zyklus", text: "Ich teile meinen Zyklus mit dir über Luma 🌸", url: partnerUrl });
-    } else { copyLink(); }
   }
 
   // --- Pregnancy Share ---
@@ -577,22 +552,7 @@ export default function ProfilePage() {
           </button>
         </form>
 
-        {/* Partner Link */}
-        {partnerUrl && (
-          <div className="rounded-3xl p-5 flex flex-col gap-3" style={{ background: "#fff8f2", border: "1.5px solid #b799e5" }}>
-            <p className="text-xs" style={{ color: "#b799e5" }}>💑 Partner Link</p>
-            <div className="flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: "#fafafa", border: "1.5px solid #f4c7d7" }}>
-              <span className="text-xs font-mono truncate" style={{ color: "#a094a8" }}>{partnerUrl}</span>
-              <button onClick={copyLink} className="text-xs font-medium ml-2 shrink-0" style={{ color: "#b799e5" }}>{copied ? "✓" : "Kopieren"}</button>
-            </div>
-            <button onClick={shareLink} className="w-full text-white font-medium rounded-2xl py-3 text-sm flex items-center justify-center gap-2" style={{ background: "#b799e5" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              Link teilen
-            </button>
-          </div>
-        )}
+        <PartnerConnectionCard />
 
         {/* Logout */}
         <div className="rounded-3xl p-5 flex flex-col gap-2" style={{ background: "#fff8f2", border: "1.5px solid #ffd9c7" }}>

@@ -28,7 +28,46 @@ model User {
   interactionLogs       UserInteractionLog[]
   dailyTips             UserDailyTip[]
 
+  ownedPartnerConnectionCodes PartnerConnectionCode[] @relation("PartnerConnectionCodeOwner")
+  ownedPartnerConnections     PartnerConnection[]     @relation("PartnerConnectionOwner")
+  partnerOfConnections        PartnerConnection[]     @relation("PartnerConnectionPartner")
+
   @@map("users")
+}
+
+model PartnerConnectionCode {
+  id          String    @id @default(uuid())
+  ownerUserId String    @map("owner_user_id")
+  owner       User      @relation("PartnerConnectionCodeOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  codeHash    String    @unique @map("code_hash")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz
+  consumedAt  DateTime? @map("consumed_at") @db.Timestamptz
+
+  @@index([ownerUserId])
+  @@map("partner_connection_codes")
+}
+
+model PartnerRateLimit {
+  keyHash         String   @id @map("key_hash")
+  attempts        Int      @map("attempts")
+  windowStartedAt DateTime @map("window_started_at") @db.Timestamptz
+
+  @@map("partner_rate_limits")
+}
+
+model PartnerConnection {
+  id            String    @id @default(uuid())
+  ownerUserId   String    @map("owner_user_id")
+  owner         User      @relation("PartnerConnectionOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  partnerUserId String    @map("partner_user_id")
+  partner       User      @relation("PartnerConnectionPartner", fields: [partnerUserId], references: [id], onDelete: Cascade)
+  status        String    @default("active")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz
+
+  @@index([partnerUserId])
+  @@map("partner_connections")
 }
 
 model Profile {

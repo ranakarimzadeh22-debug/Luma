@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function NewRegisterForm() {
+export default function NewRegisterForm({ redirectTo = "/neu" }: { redirectTo?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -40,7 +40,7 @@ export default function NewRegisterForm() {
       return;
     }
 
-    router.push("/neu");
+    router.push(redirectTo);
     router.refresh();
   }
 
