@@ -2,9 +2,9 @@
 id: WP-001
 title: "Home-Kalender vereinfachen und einen Eingabeweg schaffen"
 package_revision: 2
-status: review
+status: parked
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-10
 owner_approved: yes
 executor: claude
 product_area: "Neuer Home-Screen /neu und vorhandener Zyklus-Startweg"
@@ -13,6 +13,12 @@ technical_brief: complete
 ---
 
 # Aufgabe: Home-Kalender vereinfachen und einen Eingabeweg schaffen
+
+## Abschlussstatus – ersetzt
+
+Der Owner hat WP-001 am 10. September 2026 bewusst als ersetzt geschlossen. Die ursprüngliche Vereinfachung des Home-Kalenders wurde technisch umgesetzt, aber die spätere und umfassendere Kalenderlogik liegt nun in WP-003: direkte Erfassung vergangener Perioden, Tagesfenster, Historie und Monatsnavigation.
+
+WP-001 wird deshalb nicht als weiterer aktiver Entwicklungsstrang fortgeführt. Es bleibt als nachvollziehbare Grundlage erhalten; neue Kalenderänderungen gehören in WP-003.
 
 ## Versionshinweis
 
