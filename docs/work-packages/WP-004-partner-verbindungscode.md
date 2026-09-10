@@ -1,16 +1,16 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 1
-status: on_hold
+package_revision: 2
+status: approved
 created: 2026-09-10
 updated: 2026-09-10
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
 brief_version: 1
-technical_brief: blocked
-migration_approval: pending
+technical_brief: complete
+migration_approval: approved_2026-09-10
 ---
 
 # Aufgabe: Sichere Partnerverbindung mit persönlichem Code
@@ -89,7 +89,7 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
 
 ### Daten, Schnittstellen und Migrationen
 
-- **Migration nötig:** ja, getrennt für die Datenbasis der neuen und der alten Luma. Diese Migration ist noch **nicht freigegeben**; bis zur ausdrücklichen Owner-Freigabe bleibt die Arbeit gestoppt.
+- **Migration nötig:** ja, getrennt für die Datenbasis der neuen und der alten Luma. Der Owner hat diese Migration am 10. September 2026 ausdrücklich freigegeben.
 - **Neue Luma (`luma_core`):** Ergänze getrennte, kontogebundene Daten für kurzlebige Code-Ausgaben und aktive Partnerverbindungen. Die Verbindung braucht mindestens Eigentümerkonto, Partnerkonto, App-Variante, aktiven/beendeten Zustand sowie sichere Zeitstempel. Datenbank-Constraints und eindeutige Indizes müssen eine doppelte aktive Zuordnung verhindern.
 - **Alte Luma:** Erst den vorhandenen Auth- und Migrationsweg lesend feststellen. Dann ein gleichwertiges, aber von `luma_core` getrenntes Modell ergänzen. Niemals neue Luma-Konten oder Daten in die alte Datenbasis schreiben oder umgekehrt.
 - **API-Wirkung:** geschützte Endpunkte für Code erzeugen/erneuern, einlösen, Verbindungsstatus lesen und Verbindung beenden. Keine Perioden-, Zyklus- oder Profil-API darf in diesem Paket für Partner geöffnet werden.
@@ -116,14 +116,13 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
 
 ### Stoppbedingungen
 
-- **Harter Stopp bis zur neuen ausdrücklichen Owner-Freigabe:** keine Datenbankmigration, kein Schema, keine Produktionsänderung ausführen.
 - Stoppe, wenn der alte App-Weg keine sichere, getrennte Speicherung mit eindeutiger Kontozuordnung zulässt. Dokumentiere den Befund, statt Daten zwischen den Wegen zu vermischen.
 - Stoppe vor Kalenderfreigabe, Periodendaten, Push, Prognosen, Berechtigungs-Ausweitung oder einer zweiten aktiven Partnerverbindung.
 - Stoppe, wenn klare Abmeldung, Widerruf oder atomare Einlösung nicht sicher nachweisbar sind.
 
 ### Abschluss durch Claude
 
-- Nach der Migrationsfreigabe: `Ist` vollständig ergänzen und Abweichungen sichtbar nennen.
+- `Ist` vollständig ergänzen und Abweichungen sichtbar nennen.
 - Status auf `review` setzen.
 - Entwicklungsledger ergänzen.
 - `node scripts/work-package-state.mjs mark-updated WP-004` sowie `node scripts/work-package-state.mjs validate` ausführen.
@@ -132,14 +131,14 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
 ## Ist – von Claude
 
 - umgesetzt: noch nicht gestartet.
-- nicht umgesetzt: gesamter Umfang; die Datenmigration ist nicht freigegeben.
+- nicht umgesetzt: gesamter Umfang; die Umsetzung durch Claude steht aus.
 - Tests: noch keine.
 - Abweichungen: keine.
-- offene Punkte: ausdrückliche Owner-Freigabe der getrennten Datenbankmigrationen für alte und neue Luma.
+- offene Punkte: keine vor der Umsetzung.
 - Commit: keiner.
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: WP-004 ist als ausführbares Konzept mit klaren Grenzen vorbereitet, aber wegen der notwendigen Datenmigration bewusst `on_hold`.
+- Ergebnis: WP-004 ist freigegeben. Die notwendige getrennte Datenbankmigration für alte und neue Luma wurde vom Owner ausdrücklich erlaubt.
 - Nachschärfung: keine offene Produktfrage für den Verbindungskern. Partnerkalender und Push sind ausdrücklich spätere, getrennte Arbeitspakete.
 - Product-Map aktualisiert: ja.
