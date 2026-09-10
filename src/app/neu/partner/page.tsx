@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { getNewAuthSession } from "@/lib/new-auth";
 import { getPartnerConnectionStatusForPartner } from "@/lib/new-partner";
+import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerEndButton from "@/components/NewPartnerEndButton";
+import NewPartnerCalendar from "@/components/NewPartnerCalendar";
 import NewLogoutButton from "@/components/NewLogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -44,10 +46,11 @@ export default async function NewPartnerPage() {
   }
 
   const status = await getPartnerConnectionStatusForPartner(session.userId);
+  const calendarView = status.connected ? await getPartnerCalendarView(session.userId) : null;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-neutral-50 px-6">
-      <section className="flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+    <main className="min-h-screen bg-neutral-50 px-6 py-10">
+      <section className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
         <div className="space-y-2">
           <p className="text-sm font-medium text-neutral-500">Für meinen Partner / meine Partnerin</p>
           <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">
@@ -57,9 +60,11 @@ export default async function NewPartnerPage() {
 
         {status.connected ? (
           <>
-            <p className="text-sm leading-6 text-neutral-600">
-              Deine Verbindung ist aktiv. Weitere Inhalte folgen in einem späteren Schritt.
-            </p>
+            {calendarView ? (
+              <NewPartnerCalendar confirmedDates={calendarView.confirmedDates} expectedDates={calendarView.expectedDates} />
+            ) : (
+              <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
+            )}
             <NewPartnerEndButton />
           </>
         ) : (

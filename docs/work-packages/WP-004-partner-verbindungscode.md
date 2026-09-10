@@ -2,7 +2,7 @@
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
 package_revision: 3
-status: approved
+status: review
 created: 2026-09-10
 updated: 2026-09-10
 owner_approved: yes
@@ -269,9 +269,23 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
 
 ### Ist Version 3 – von Claude
 
-- umgesetzt: noch nicht gestartet.
-- nicht umgesetzt: gesamter Umfang dieser Version.
-- Tests: noch keine.
-- Abweichungen: keine.
-- offene Punkte: keine vor der Umsetzung.
-- Commit: keiner.
+- umgesetzt:
+  - Neues, rein lesendes Modul `src/lib/new-partner-calendar.ts` mit `getPartnerCalendarView(partnerUserId)`: eine einzige Query (`resolveActiveOwnerUserId`) prüft in einem Schritt, ob eine aktive Verbindung besteht und zu welcher Eigentümerin – vermeidet eine separate Statusabfrage, die zwischen zwei Aufrufen veralten könnte. Ohne aktive Verbindung liefert die Funktion `null`; Aufrufer dürfen in diesem Fall auf keine andere Datenquelle ausweichen (im UI-Code entsprechend umgesetzt).
+  - Bestätigte Tage werden aus den echten `startDate`/`endDate`-Werten der Eigentümerin abgeleitet: bei einer laufenden Periode (kein echtes `endDate`) gelten die Tage vom tatsächlichen Start bis einschließlich heute als bestätigt. Erwartete Tage entstehen ausschließlich bei einer laufenden Periode mit gesetztem `expectedEndDate`: ab morgen bis einschließlich erwartetem Ende. Die Rückgabe enthält ausschließlich zwei Datumslisten (`confirmedDates`, `expectedDates`) als reine `YYYY-MM-DD`-Strings – keine IDs, keine E-Mail-Adressen, keine Namen, keine Profil-/Zykluswerte, keine Historie.
+  - `src/app/neu/partner/page.tsx` (Server-Komponente, bereits bestehender geschützter Bereich aus Version 1/2) ruft bei aktiver Verbindung zusätzlich `getPartnerCalendarView` auf und übergibt nur die beiden Datumslisten an die neue Client-Komponente. Keine neue API-Route: die vorhandene, bereits sitzungsgeprüfte Server-Komponente lädt die Daten direkt, wodurch keine zusätzliche Angriffsfläche für einen Netzwerk-Endpunkt entsteht (im Sinne des Auftrags „nur eine neue... Route, falls die vorhandene Statusroute nicht minimal genug ist“ – hier war gar keine zusätzliche Route nötig).
+  - Neue Client-Komponente `src/components/NewPartnerCalendar.tsx`: rein lesender Monatskalender (Wiederverwendung von `getCalendarMonthGrid`/`shiftCalendarMonth` aus dem bestehenden Owner-Kalender, aber ohne jede Owner-Interaktions- oder Vorhersagelogik). Jeder Tag ist ein Button, der ein schreibfreies Tagesfenster mit Datum und genau einem von drei Status öffnet: `Bestätigt`, `Erwartet – kann abweichen` oder `Keine freigegebene Information`. Zusätzlich zur Farbe (dunkel für bestätigt, hellgrau für erwartet) trägt jeder Tag ein Textkürzel (`B`/`E`) sowie eine textuelle Legende – Status ist nicht ausschließlich über Farbe erkennbar. Tagesfenster schließt über sichtbaren Button und Escape; der Hintergrund wird währenddessen über `inert` deaktiviert (gleiches Muster wie die bestehenden Owner-Tagesfenster).
+  - Monatswechsel über `‹`/`›`-Pfeile ist möglich; alle Berechnungen bleiben rein clientseitige Ableitung aus den bereits geladenen, minimalen Datumslisten – kein weiterer Netzwerkaufruf beim Blättern.
+- nicht umgesetzt: nichts aus dem vereinbarten Umfang offen. Kein Partnerkalender in der alten Luma, keine PMS-/Eisprung-/Zykluslängen-/Vorhersage-/Historien-/Profilanzeige, keine schreibende Partneraktion, keine Datenbankmigration.
+- Tests:
+  - Neues `scripts/verify-partner-calendar.mts` (12 Prüfungen, direkt gegen `luma_core`): kein Zugriff ohne aktive Verbindung; laufende Periode zeigt bestätigte Tage exakt vom echten Start bis einschließlich heute und erwartete Tage exakt ab morgen bis zum erwarteten Ende (mit expliziter Prüfung, dass der heutige Tag nicht als erwartet und der morgige Tag nicht als bestätigt erscheint); eine abgeschlossene Periode zeigt nur echte bestätigte Tage und keine erwarteten; eine laufende Periode ohne `expectedEndDate` erfindet keine erwarteten Tage; nach einem Widerruf sind sofort keine Daten mehr sichtbar; ein fremdes, nicht verbundenes Owner-Konto liefert keine Daten, während die eigenen verbundenen Daten weiterhin korrekt erscheinen. Alle 12 Prüfungen bestanden.
+  - `scripts/verify-partner-new.mts` und `verify-partner-old.mts` erneut ausgeführt (Regressionsprüfung für Version 1/2 des Verbindungskerns): weiterhin alle 40 Prüfungen bestanden.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, weiterhin 47 Routen (keine neue Route hinzugekommen).
+  - Zusätzliche end-to-end-Prüfung per `curl` gegen einen lokalen Produktions-Build: Owner registriert sich, trägt eine laufende Periode mit echtem Start vor drei Tagen und erwartetem Ende in zwei Tagen ein, erzeugt einen Code; ein zweites, unabhängiges Konto meldet sich als Partner an und löst den Code ein. Die gerenderte Partnerseite enthält die Legenden „Bestätigt“ und „Erwartet“ sowie den korrekten Monatsnamen, aber nachweislich **keine** der verbotenen Begriffe „PMS“, „Eisprung“ oder eine E-Mail-Adresse (per `grep` auf das vollständige gerenderte HTML geprüft). Ein drittes, nicht verbundenes Konto sieht auf derselben Route ausschließlich die Code-Eingabe, keine Kalenderdaten. Nach `POST .../partner/end` durch die Eigentümerin zeigt ein erneuter Abruf der Partnerseite durch das (jetzt getrennte) Partnerkonto sofort wieder nur die Code-Eingabe.
+  - Mobile Sichtprüfung mit temporär installiertem Playwright (Chromium, 375×812, mit echter Partner-Session-Cookie gegen den lokalen Produktions-Build, danach vollständig wieder entfernt): kein horizontaler Überlauf, Legende „Bestätigt“ sichtbar, Tagesfenster öffnet und schließt korrekt über Escape, im Tagesfenster keine schreibenden Aktionen (`Speichern`/`Löschen`/`Bearbeiten` kommen nicht vor), keine Konsolen-/Seitenfehler.
+  - Alle bei den Prüfungen erzeugten Testkonten und Testperioden wurden danach aus `luma_core` gelöscht; bestehende Datenbestände blieben unverändert.
+- Abweichungen: keine fachliche Abweichung. Wie oben erläutert wurde bewusst keine zusätzliche API-Route ergänzt, da die vorhandene, bereits geschützte Server-Komponente die minimalen Daten direkt und sicher laden kann; das entspricht dem Auftrag, eine neue Route nur zu ergänzen, falls die vorhandene Statusroute nicht ausreicht.
+- offene Punkte:
+  - Owner-Prüfschritt für Version 3 steht aus (aktiv verbundener Partner öffnet `/neu/partner` und sieht den Monatskalender; laufende Periode zeigt bestätigte und erwartete Tage korrekt getrennt; abgeschlossene Periode zeigt nur bestätigte Tage; Tagesfenster ist rein lesend; mobile Sichtprüfung).
+  - Der bereits aus früheren Paketen bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für dieses Paket nicht im Umfang.
+  - Kein Deploy ausgelöst – wie beauftragt nicht vorgenommen.
+- Commit: folgt unmittelbar nach diesem Eintrag.
