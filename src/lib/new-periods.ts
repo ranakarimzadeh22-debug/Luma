@@ -5,7 +5,7 @@ import { getLumaCorePool, withLumaCoreTransaction } from "@/lib/new-auth-db";
 import type { NewPeriodEntryOpen, NewRunningPeriodInput } from "@/lib/new-period-validation";
 
 type SaveResult =
-  | { ok: true; entry: NewPeriodEntryOpen }
+  | { ok: true; entry: NewPeriodEntryOpen; previousEntry?: NewPeriodEntryOpen }
   | { ok: false; reason: "overlap" | "not_found" };
 
 interface PeriodRow {
@@ -75,11 +75,12 @@ export async function updateNewPeriodEntry(
 ): Promise<SaveResult> {
   return withLumaCoreTransaction(async (client) => {
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [userId]);
-    const existing = await client.query(
-      "SELECT 1 FROM new_period_entries WHERE id = $1 AND user_id = $2",
+    const existing = await client.query<PeriodRow>(
+      "SELECT id, start_date::text, end_date::text, expected_end_date::text FROM new_period_entries WHERE id = $1 AND user_id = $2",
       [entryId, userId],
     );
     if (!existing.rowCount) return { ok: false, reason: "not_found" };
+    const previousEntry = toEntry(existing.rows[0]);
 
     const overlap = await client.query(
       `SELECT 1 FROM new_period_entries
@@ -96,7 +97,7 @@ export async function updateNewPeriodEntry(
        RETURNING id, start_date::text, end_date::text, expected_end_date::text`,
       [input.startDate, input.endDate, input.expectedEndDate, entryId, userId],
     );
-    return { ok: true, entry: toEntry(result.rows[0]) };
+    return { ok: true, entry: toEntry(result.rows[0]), previousEntry };
   });
 }
 

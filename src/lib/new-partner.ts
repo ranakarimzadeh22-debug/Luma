@@ -127,9 +127,20 @@ export async function getPartnerConnectionStatusForPartner(partnerUserId: string
 }
 
 export async function endPartnerConnection(ownerUserId: string): Promise<boolean> {
-  const result = await getLumaCorePool().query(
-    `UPDATE new_partner_connections SET status = 'ended', ended_at = NOW() WHERE owner_user_id = $1 AND status = 'active'`,
+  const result = await getLumaCorePool().query<{ partner_user_id: string }>(
+    `UPDATE new_partner_connections SET status = 'ended', ended_at = NOW()
+     WHERE owner_user_id = $1 AND status = 'active'
+     RETURNING partner_user_id`,
     [ownerUserId],
   );
+  const endedPartnerUserId = result.rows[0]?.partner_user_id;
+  if (endedPartnerUserId) {
+    // Revoke this partner's push subscriptions immediately so no further
+    // event can reach a device that just lost access.
+    await getLumaCorePool().query(
+      "DELETE FROM new_partner_push_subscriptions WHERE partner_user_id = $1",
+      [endedPartnerUserId],
+    );
+  }
   return (result.rowCount ?? 0) > 0;
 }

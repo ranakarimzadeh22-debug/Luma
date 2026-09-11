@@ -5,6 +5,7 @@ import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerEndButton from "@/components/NewPartnerEndButton";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
+import NewPartnerPushActivation from "@/components/NewPartnerPushActivation";
 import NewLogoutButton from "@/components/NewLogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,7 @@ export default async function NewPartnerPage() {
             ) : (
               <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
             )}
+            <NewPartnerPushActivation />
             <NewPartnerEndButton />
           </>
         ) : (

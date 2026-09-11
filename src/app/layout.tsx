@@ -12,6 +12,7 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "Luma – Dein Zyklus-Begleiter",
   description: "Perioden-Tracker und Gesundheits-App für Frauen",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

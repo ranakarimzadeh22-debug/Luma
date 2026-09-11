@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getNewAuthSession, requestHasAllowedOrigin } from "@/lib/new-auth";
 import { deleteNewPeriodEntry, updateNewPeriodEntry } from "@/lib/new-periods";
 import { isValidPeriodId, validateNewRunningPeriodInput } from "@/lib/new-period-validation";
+import { dispatchPartnerPeriodEvent } from "@/lib/new-partner-push";
+import { todayBerlinDateOnly } from "@/lib/berlin-date";
 
 async function authorizeMutation(request: NextRequest) {
   if (!requestHasAllowedOrigin(request)) {
@@ -34,6 +36,17 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       { status: 409 },
     );
   }
+
+  const today = todayBerlinDateOnly();
+  const startIsNewToday = result.entry.startDate === today && result.previousEntry?.startDate !== today;
+  const endIsNewToday = result.entry.endDate === today && result.previousEntry?.endDate !== today;
+  if (startIsNewToday) {
+    void dispatchPartnerPeriodEvent(auth.session.userId, "period_started", today);
+  }
+  if (endIsNewToday) {
+    void dispatchPartnerPeriodEvent(auth.session.userId, "period_ended", today);
+  }
+
   return NextResponse.json({ entry: result.entry });
 }
 

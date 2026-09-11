@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getNewAuthSession, requestHasAllowedOrigin } from "@/lib/new-auth";
 import { createNewPeriodEntry, getNewPeriodEntries } from "@/lib/new-periods";
 import { validateNewRunningPeriodInput } from "@/lib/new-period-validation";
+import { dispatchPartnerPeriodEvent } from "@/lib/new-partner-push";
+import { todayBerlinDateOnly } from "@/lib/berlin-date";
 
 export async function GET() {
   const session = await getNewAuthSession();
@@ -25,5 +27,14 @@ export async function POST(request: NextRequest) {
       { status: 409 },
     );
   }
+
+  const today = todayBerlinDateOnly();
+  if (result.entry.startDate === today) {
+    void dispatchPartnerPeriodEvent(session.userId, "period_started", today);
+  }
+  if (result.entry.endDate === today) {
+    void dispatchPartnerPeriodEvent(session.userId, "period_ended", today);
+  }
+
   return NextResponse.json({ entry: result.entry }, { status: 201 });
 }
