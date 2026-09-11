@@ -23,7 +23,7 @@ async function inspect(label, connectionString) {
         .map((row) => row.table_name)
         .filter((name) => name.startsWith("new_")),
     };
-    if (label === "core" && summary.newAuthTables.length === 10) {
+    if (label === "core" && summary.newAuthTables.length === 11) {
       const counts = await client.query(`
         SELECT
           (SELECT COUNT(*)::int FROM new_users) AS users,
@@ -35,7 +35,8 @@ async function inspect(label, connectionString) {
           (SELECT COUNT(*)::int FROM new_partner_connection_codes) AS partner_connection_codes,
           (SELECT COUNT(*)::int FROM new_partner_connections) AS partner_connections,
           (SELECT COUNT(*)::int FROM new_partner_push_subscriptions) AS partner_push_subscriptions,
-          (SELECT COUNT(*)::int FROM new_partner_period_events) AS partner_period_events
+          (SELECT COUNT(*)::int FROM new_partner_period_events) AS partner_period_events,
+          (SELECT COUNT(*)::int FROM new_partner_notification_preferences) AS partner_notification_preferences
       `);
       const firstNameColumn = await client.query(`
         SELECT is_nullable, character_maximum_length
@@ -68,7 +69,7 @@ const result = await Promise.all([
 if (result[0].database === result[1].database) {
   throw new Error("Datenbanktrennung fehlgeschlagen.");
 }
-if (result[0].newAuthTables.length !== 0 || result[1].newAuthTables.length !== 10) {
+if (result[0].newAuthTables.length !== 0 || result[1].newAuthTables.length !== 11) {
   throw new Error("Neue Auth-Tabellen sind nicht eindeutig von der alten Datenbank getrennt.");
 }
 if (!result[1].firstNameColumn || result[1].firstNameColumn.is_nullable !== "YES") {

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { getNewAuthSession } from "@/lib/new-auth";
 import { getPartnerConnectionStatusForPartner } from "@/lib/new-partner";
 import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
+import { getPartnerNotificationPreference } from "@/lib/new-partner-notification-preference";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerEndButton from "@/components/NewPartnerEndButton";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
-import NewPartnerPushActivation from "@/components/NewPartnerPushActivation";
+import NewPartnerNotificationPreference from "@/components/NewPartnerNotificationPreference";
 import NewLogoutButton from "@/components/NewLogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,7 @@ export default async function NewPartnerPage() {
 
   const status = await getPartnerConnectionStatusForPartner(session.userId);
   const calendarView = status.connected ? await getPartnerCalendarView(session.userId) : null;
+  const notificationPreference = status.connected ? await getPartnerNotificationPreference(session.userId) : null;
 
   return (
     <main className="min-h-screen bg-neutral-50 px-6 py-10">
@@ -66,7 +68,7 @@ export default async function NewPartnerPage() {
             ) : (
               <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
             )}
-            <NewPartnerPushActivation />
+            <NewPartnerNotificationPreference initialPreference={notificationPreference} />
             <NewPartnerEndButton />
           </>
         ) : (

@@ -261,7 +261,27 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
 
 ### Ist Version 5 – von Claude
 
-- noch nicht umgesetzt.
+- **Umgesetzt:** Der verbundene neue Partnerbereich zeigt jetzt anstelle der echten Push-Aktivierung nur noch die einfache Frage `Möchtest du Benachrichtigungen erhalten?` mit den zwei Buttons `Ja, Benachrichtigungen aktivieren` und `Nein, später` (`src/components/NewPartnerNotificationPreference.tsx`). Beide Antworten speichern die Auswahl über `POST /api/neu/partner/notification-preference` (`src/app/api/neu/partner/notification-preference/route.ts`) kontogebunden in der neuen Tabelle `new_partner_notification_preferences` (`database/luma-core/migrations/202609111800_partner_notification_preference.sql`, angewendet). Nach dem Speichern zeigt die Seite ausschließlich `Deine Auswahl wurde gespeichert.`; ein erneuter Seitenaufruf liest die Auswahl serverseitig (`src/lib/new-partner-notification-preference.ts`) und zeigt die Frage nicht erneut.
+- Die Route prüft Herkunft (`requestHasAllowedOrigin`) und Sitzung (`getNewAuthSession`) und lehnt ohne aktive eigene Partnerverbindung mit 403 ab. Die Tabelle hat `partner_user_id` als Primärschlüssel mit Fremdschlüssel auf `new_users` – pro Partnerkonto ist nur eine Zeile möglich, ein fremdes Konto kann sie weder lesen noch überschreiben.
+- Der gesamte echte Versandweg aus Version 4 wurde deaktiviert und entfernt: `src/components/NewPartnerPushActivation.tsx`, `src/lib/new-partner-push.ts`, `src/app/api/neu/partner/push-subscription/route.ts`, `src/app/api/neu/partner/push-test/route.ts` sowie das dadurch unbenutzt gewordene `src/lib/berlin-date.ts` wurden gelöscht. Die Auslöse-Blöcke in `POST /api/neu/periods` und `PUT /api/neu/periods/[id]` (Aufruf von `dispatchPartnerPeriodEvent`) wurden entfernt; beide Routen lösen keinen Partner-Push mehr aus.
+- Die bereits migrierten Push-Tabellen `new_partner_push_subscriptions` und `new_partner_period_events` (aus Version 4) wurden **nicht** gelöscht oder verändert und bleiben als ungenutzte Altstruktur bestehen, wie im Auftrag ausdrücklich erlaubt. `public/manifest.json`, `public/sw.js` und die Abhängigkeit `web-push` bleiben ebenfalls unverändert bestehen (harmlos, ungenutzt).
+- Keine VAPID-Variable wurde erzeugt, geändert oder vorausgesetzt. Kein Dokploy- oder Produktions-Schritt wurde ausgeführt.
+
+**Tests:**
+- Neue `scripts/verify-partner-notification-preference.mts` (12 Prüfungen): Speichern ohne aktive Verbindung wird abgelehnt; verbundener Partner ohne Auswahl liefert `null`; `Ja` und `Nein` speichern jeweils den korrekten Wert; erneutes Speichern überschreibt (Update, kein Duplikat); Auswahl bleibt über einen erneuten Lesevorgang erhalten; ein anderes, unabhängiges Partnerkonto hat eine eigene, unbeeinflusste Auswahl; die Tabelle enthält ausschließlich Kontobindung, Auswahl und Zeitstempel – keine Zyklus-/Perioden-/Geräte-/Profildaten. Alle 12 Prüfungen bestanden.
+- Neue `scripts/verify-no-real-push.mts` (16 Prüfungen, Quelltext-Nachweis): bestätigt, dass die entfernten Push-Dateien nicht mehr existieren, dass weder die neue Komponente noch die neue Route `Notification.requestPermission`, `PushManager`, `serviceWorker` oder die alten Push-Routen referenzieren, dass beide Periodenrouten `dispatchPartnerPeriodEvent` und das Push-Dispatch-Modul nicht mehr importieren, dass kein VAPID-/web-push-Bezug im neuen Code steckt, und dass die Migration der alten Push-Tabellen nicht entfernt wurde. Alle 16 Prüfungen bestanden.
+- End-to-end über echten lokalen Dev-Server (`npm run dev`, Port 3006) mit echten HTTP-Requests und Sitzungscookies: Registrierung, Codeerzeugung, Codeeinlösung, Frage erscheint vor der Auswahl, `Ja` speichert korrekt, Seite zeigt danach nur noch `Deine Auswahl wurde gespeichert.` ohne erneute Frage, Route lehnt fehlende Sitzung (401), falsche Herkunft (403) und ein verbundenes, aber falsches Konto (Owner ohne Partnerrolle, 403) korrekt ab. Testkonten danach aus `luma_core` gelöscht.
+- Regressionen erneut grün: `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-partner-calendar.mts`, `scripts/verify-my-periods.mts`.
+- `scripts/verify-luma-core.mjs` aktualisiert (Tabellenanzahl 10 → 11 wegen `new_partner_notification_preferences`) und erneut grün.
+- `npx tsc --noEmit` fehlerfrei. `npm run build` erfolgreich; die Routenliste bestätigt, dass `push-subscription` und `push-test` nicht mehr existieren und nur noch `notification-preference` vorhanden ist.
+
+**Abweichungen:**
+- Die `.env.example`-Dokumentation der VAPID-Variablen aus Version 4 (nur Platzhalter, keine echten Werte) wurde nicht entfernt, da sie reine Dokumentation ohne Funktionswirkung ist und der Auftrag nur das Entfernen des tatsächlichen Versandwegs verlangt.
+- `result.previousEntry` im Rückgabetyp von `updateNewPeriodEntry` (`src/lib/new-periods.ts`, aus Version 4) wird von den Periodenrouten nicht mehr gelesen, aber nicht entfernt, da es keine Sicherheits- oder Funktionswirkung hat und der Auftrag keine Bereinigung dieses Felds verlangt.
+
+**Offene Punkte:**
+- Owner-Prüfschritt steht aus (Sichtprüfung im Browser: Frage erscheint, Auswahl speichert sichtbar, keine Geräteberechtigung wird angefragt).
+- Kein Deploy ausgelöst – wie beauftragt.
 
 ## Soll-Ist-Prüfung – von Codex
 
