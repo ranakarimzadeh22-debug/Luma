@@ -1,7 +1,7 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 4
+package_revision: 5
 status: review
 created: 2026-09-10
 updated: 2026-09-11
@@ -158,6 +158,110 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
   - Der bereits aus WP-003 bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für dieses Paket nicht im Umfang.
   - Kein Deploy ohne gesonderte Owner-Freigabe – wie beauftragt nicht ausgelöst.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 5 – Auswahl für spätere Benachrichtigungen
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Nach dem Verbinden sieht der Partner nur eine einfache Frage: `Möchtest du Benachrichtigungen erhalten?`
+- **Die zwei Antworten:** `Ja, Benachrichtigungen aktivieren` oder `Nein, später`.
+- **Was passiert jetzt wirklich?** Luma speichert nur die Auswahl dauerhaft beim Partnerkonto. Es wird noch keine Gerätefreigabe abgefragt und keine Nachricht versendet.
+- **Warum machen wir das?** Die erste Einstellung soll leicht verständlich sein. Die genaue technische Push-Funktion wird erst später separat entschieden und getestet.
+- **Was bleibt gleich?** Partnerkalender, Verbindungscode und die privaten Grenzen bleiben unverändert.
+
+### Entstehungsweg
+
+`Partner soll später Hinweise erhalten → vor dem technischen Versand zuerst bewusst entscheiden können → einfache Ja/Nein-Auswahl dauerhaft speichern → WP-004 Version 5`
+
+- Ausgangsidee: Nach Codeeinlösung soll der Partner selbst entscheiden können, ob er später Benachrichtigungen erhalten möchte.
+- bestätigte Wirkung: Die Auswahl ist einfach, wird nach dem erneuten Öffnen noch erkannt und löst noch keine echte Nachricht aus.
+- gewählte Lösung: Eine kontogebundene Einstellung mit zwei Werten: aktivieren oder später.
+- wichtige Entscheidung(en): DEC-115 bis DEC-118.
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-014.md`.
+
+### Soll – von Codex
+
+- Nur im bereits verbundenen neuen Partnerbereich erscheint die Frage `Möchtest du Benachrichtigungen erhalten?`.
+- Es gibt genau zwei sichtbare Antworten: `Ja, Benachrichtigungen aktivieren` und `Nein, später`.
+- Beide Antworten speichern eine eindeutige persönliche Auswahl dauerhaft beim angemeldeten Partnerkonto.
+- Nach dem Speichern zeigt Luma nur den einfachen Hinweis `Deine Auswahl wurde gespeichert.` Die Frage erscheint nach einem Neuladen oder erneuten Anmelden nicht wieder.
+- Die Auswahl `Ja, Benachrichtigungen aktivieren` bedeutet in dieser Version ausschließlich: Interesse für später gespeichert. Sie fordert **keine** Systemberechtigung an und schickt **keine** Nachricht.
+
+#### Nicht enthalten
+
+- Kein echter Push-Versand, keine Testbenachrichtigung und keine Benachrichtigung bei Periodenstart oder -ende.
+- Keine Anfrage an `Notification.requestPermission`, keine `PushManager.subscribe`-Anmeldung, keine VAPID-Schlüssel und keine Dokploy-Änderung.
+- Keine neue Anzeige oder Bearbeitung von Gesundheits-, Zyklus- oder Periodendaten.
+- Keine Änderung an der alten Luma.
+
+### Abnahmekriterien
+
+1. Ein neuer oder bereits verbundener Partner ohne gespeicherte Auswahl sieht die Frage nach dem Verbindungscode im Partnerbereich.
+2. Ein Tipp auf `Ja, Benachrichtigungen aktivieren` oder `Nein, später` speichert genau diese Auswahl und bestätigt sie verständlich.
+3. Nach Neuladen und erneutem Anmelden bleibt die Auswahl gespeichert; die Frage wird nicht wiederholt.
+4. Die Auswahl löst weder eine Browser-/Geräteberechtigung noch eine Test- oder Periodenbenachrichtigung aus.
+5. Ohne aktive eigene Partnerverbindung kann keine Auswahl gelesen oder gespeichert werden.
+6. Partnerkalender, Codeeinlösung, Verbindung beenden und Abmeldung funktionieren unverändert.
+
+### Technischer Auftrag für Claude – Version 5
+
+#### Bestätigte Ausgangslage im Code
+
+- `src/app/neu/partner/page.tsx` rendert im verbundenen Zustand den Partnerkalender und derzeit `NewPartnerPushActivation`.
+- `src/components/NewPartnerPushActivation.tsx` fragt derzeit Geräteberechtigung an, speichert eine Push-Subscription und kann eine Testnachricht auslösen. Dieses Verhalten ist für Version 5 ausdrücklich nicht mehr erwünscht.
+- `src/lib/new-partner-push.ts`, die Routen `/api/neu/partner/push-subscription` und `/api/neu/partner/push-test` sowie die Einhängepunkte in `POST /api/neu/periods` und `PUT /api/neu/periods/[id]` gehören zur bisherigen echten Push-Logik.
+- `luma_core` enthält aus Version 4 bereits Push-Tabellen. Diese bereits migrierten Tabellen dürfen nicht zurückgesetzt oder für die neue Ja/Nein-Auswahl missbraucht werden.
+- Die neue Luma verwendet kontogebundene Sitzungen, Herkunftsprüfung und `luma_core`.
+
+#### Technisches Ziel
+
+- Ersetze die bisherige sichtbare Push-Aktivierung im verbundenen neuen Partnerbereich durch eine kleine Client-Komponente oder gleichwertige UI für die bestätigte Ja/Nein-Auswahl.
+- Speichere die Auswahl mit einer eigenen minimalen kontogebundenen Einstellung in `luma_core`; nutze dafür weder Browser-Subscriptions noch Push-Endpunkte.
+- Ein Partner ohne gespeicherte Auswahl sieht die Frage. Ein Partner mit gespeicherter Auswahl sieht nach dem Laden nur den neutralen gespeicherten Status.
+- Deaktiviere den gesamten tatsächlichen Versandweg aus Version 4: Keine Periodenroute darf ein Partner-Push-Ereignis auslösen; die UI darf keine Push-Subscription oder Testnachricht anfordern. Entferne oder sperre nicht mehr benötigte Push-Routen und -Komponenten sicher. Bereits migrierte Push-Tabellen dürfen als ungenutzte Altstruktur bestehen bleiben.
+- Keine VAPID-Variablen erzeugen, ändern oder voraussetzen. Keine Produktions-, Dokploy- oder Deployment-Aktion ausführen.
+
+#### Daten, Schnittstellen und Migrationen
+
+- **Migration nötig:** ja, ausschließlich `luma_core`, für eine kleine Tabelle oder gleichwertig sichere Speicherung der Partner-Auswahl. Die Ownerin hat die getrennte Datenbankmigration für WP-004 bereits genehmigt.
+- Die Einstellung referenziert nur das Partnerkonto, hat eine eindeutige Begrenzung pro Partnerkonto und eine explizit validierte Auswahl. Sie speichert keine Perioden-, Zyklus-, Profil- oder Geräteinformationen.
+- Eine geschützte neue-Luma-Route darf die Auswahl nur für die eingeloggte Person mit aktiver eigener Partnerverbindung lesen/speichern. Sie prüft Sitzung und Herkunft und gibt keine fremden Daten aus.
+- Die Daten aus der alten Luma und alle bestehenden Push-Tabellen bleiben unberührt.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Die neue Ja/Nein-Auswahl löst niemals eine echte Benachrichtigung oder Geräteberechtigung aus.
+- Kein Push-Endpoint, VAPID-Schlüssel, Geräteendpunkt oder Zeitraum wird von der Partnerseite gelesen, erzeugt oder angezeigt.
+- Partner sieht weiterhin nur die bisher bestätigte eingeschränkte Kalenderansicht; private Bereiche bleiben geschlossen.
+- Verbindungscode, Kontotrennung, Widerruf und Abmeldung bleiben sicher und unverändert.
+- Keine Datenübernahme in die alte Luma und keine Dokploy-Aktion.
+
+#### Pflichtprüfungen
+
+- Verbundener Partner ohne Auswahl sieht beide bestätigten Buttons; Auswahl `Ja` und `Nein` speichern jeweils den korrekten Wert.
+- Auswahl bleibt über Neuladen, neue Sitzung und erneute Anmeldung erhalten; eine andere Partnerperson kann sie nicht lesen oder überschreiben.
+- Ohne aktive Verbindung sowie bei fremder Herkunft wird die Route abgelehnt.
+- Prüfe nachweislich, dass kein Klick `Notification.requestPermission`, `PushManager.subscribe`, die alte Subscription-Route oder eine Testnachricht auslöst.
+- Prüfe nachweislich, dass die POST-/PUT-Periodenrouten keinen Partner-Push mehr anstoßen.
+- Bestehende Partnerkalender-, Verbindungscode-, Perioden- und Auth-Regressionen, TypeScript, Produktions-Build sowie `node scripts/work-package-state.mjs validate` ausführen.
+- Entwicklungsledger ergänzen. Testdaten nach den Prüfungen entfernen.
+
+#### Stoppbedingungen
+
+- Stoppe, wenn die dauerhafte Speicherung nicht eindeutig kontogebunden, herkunfts- und sitzungsgeschützt nachweisbar ist.
+- Stoppe vor Browser-/Geräteberechtigungen, VAPID-Konfiguration, Testnachrichten, echtem Versand, Dokploy oder einer Änderung der alten Luma.
+- Stoppe, wenn das Abschalten der alten Push-Auslösung Partnerkalender oder Periodenspeicherung beeinträchtigt; dokumentiere den Befund statt andere Produktlogik zu verändern.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 5`, Tests, Abweichungen und offene Punkte sichtbar.
+- Lasse den Paketstatus auf `review`.
+- Ergänze den Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-004` und danach `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe ausschließlich auftragsbezogene Dateien. Keinen manuellen Deploy und keine Produktionskonfiguration ausführen.
+
+### Ist Version 5 – von Claude
+
+- noch nicht umgesetzt.
 
 ## Soll-Ist-Prüfung – von Codex
 
