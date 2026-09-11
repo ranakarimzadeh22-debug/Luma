@@ -1,10 +1,10 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 3
+package_revision: 4
 status: review
 created: 2026-09-10
-updated: 2026-09-10
+updated: 2026-09-11
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
@@ -289,3 +289,119 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
   - Der bereits aus früheren Paketen bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für dieses Paket nicht im Umfang.
   - Kein Deploy ausgelöst – wie beauftragt nicht vorgenommen.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+## Version 4 – Push-Benachrichtigungen für den neuen Partnerbereich
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Direkt nach dem erfolgreichen Verbindungscode kann der Partner auf seinem eigenen Gerät freiwillig Benachrichtigungen aktivieren.
+- **Welche Hinweise kommen an?** Nur `Die Periode deiner Partnerin hat heute begonnen.` und `Die Periode deiner Partnerin ist heute zu Ende.`
+- **Wann kommt kein Hinweis?** Bei erwarteten Tagen, Schätzungen, nachträglichen vergangenen Daten, ohne aktive Verbindung, ohne Gerätefreigabe oder nach einem bewussten Widerruf.
+- **Wichtig auf iPhone:** Luma erklärt, dass die Web-App zuerst zum Home-Bildschirm hinzugefügt werden muss. Erst danach kann der Partner die Gerätefreigabe erteilen.
+- **Was bleibt privat?** Der Partner erhält keine weiteren Zyklus-, Profil- oder Gesundheitsdaten. Er kann keine Daten ändern.
+
+### Entstehungsweg
+
+`Aktive Partnerverbindung und lesender Kalender → Partner soll bei einem tatsächlichen Ereignis sofort aufmerksam werden → freiwillige, gerätegebundene Push-Freigabe → direkte Hinweise nur bei heutigem echten Start oder Ende → WP-004 Version 4`
+
+- bestätigtes Problem: Ohne aktive Benachrichtigung muss der Partner den Kalender selbst öffnen und erkennt den tatsächlichen Beginn oder das Ende nicht rechtzeitig.
+- gewünschte Wirkung: Der aktiv verbundene Partner erhält auf seinem freiwillig freigegebenen Gerät einen klaren Hinweis zum heutigen tatsächlichen Beginn oder Ende.
+- gewählte Lösung: Standardkonforme Web-Push-Benachrichtigung nach bewusstem Aktivieren direkt nach der Codeverbindung.
+- bestätigte Grenzen: Nur neue Luma, nur Start und Ende, keine Schätzungen und keine zusätzlichen Gesundheitsinformationen.
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-014.md`, DEC-109, DEC-110, DEC-115 und DEC-116.
+
+### Soll – von Codex
+
+- Der Umfang gilt ausschließlich für die **Neue Luma** und den bestehenden Partnerweg unter `/neu/partner`.
+- Direkt nach einer erfolgreichen Codeeinlösung zeigt der Partnerbereich deutlich `Benachrichtigungen aktivieren`. Die Codeverbindung und der Kalender bleiben auch nutzbar, wenn der Partner ablehnt oder später entscheidet.
+- Erst der bewusste Tipp des Partners darf die Betriebssystem-Abfrage starten. Benachrichtigungen werden nie still oder standardmäßig aktiviert.
+- Auf iPhone/iPad prüft Luma vor der Abfrage, ob die Seite als Home-Bildschirm-Web-App läuft. Falls nicht, erklärt Luma in einfacher Sprache das Hinzufügen zum Home-Bildschirm und zeigt keine irreführende Aktivierungsbestätigung.
+- Bei unterstützten Geräten speichert Luma die Push-Anmeldung ausschließlich für das angemeldete, aktiv verbundene Partnerkonto und dieses Gerät.
+- Speichert die Eigentümerin einen tatsächlichen Beginn mit dem heutigen Kalenderdatum, erhält der Partner genau den Text `Die Periode deiner Partnerin hat heute begonnen.`
+- Speichert die Eigentümerin ein tatsächliches Ende mit dem heutigen Kalenderdatum, erhält der Partner genau den Text `Die Periode deiner Partnerin ist heute zu Ende.`
+- `Heute` richtet sich in dieser ersten Version nach `Europe/Berlin`, dem aktuellen Projekt- und Zielmarkt-Zeitraum. Eine spätere persönliche Zeitzone ist nicht Teil dieser Version.
+- Eine Benachrichtigung entsteht nur, wenn das Ereignis durch Anlegen oder Ändern eines echten Periodeneintrags **neu** als heutiger Start beziehungsweise heutiges Ende gespeichert wird. Wiederholtes Speichern desselben Zustands darf keinen zweiten Hinweis senden.
+- Nachträge vergangener Tage, erwartete Enddaten, geplante oder geschätzte Werte und neutrale Kalenderaktionen senden niemals Push-Nachrichten.
+- Wird die Verbindung beendet, löscht oder deaktiviert Luma die zugehörigen Push-Anmeldungen. Danach darf kein weiterer Hinweis versendet werden.
+
+### Nicht enthalten
+
+- Push-Benachrichtigungen für die alte Luma.
+- PMS, Eisprung, Zykluslänge, Stimmung, Historie, Profilinformationen oder eine Vorhersage einer neuen Periode.
+- E-Mail, SMS, Werbung, wiederkehrende Erinnerungen oder Benachrichtigungen ohne aktive Partnerverbindung.
+- Eine native iOS- oder Android-App. Dieser Umfang nutzt sichere Standard-Web-Push-Funktionen.
+
+### Abnahmekriterien
+
+1. Nach dem Einlösen eines gültigen Verbindungscodes sieht der Partner eine verständliche freiwillige Aktivierung.
+2. Ohne bewusste Freigabe wird keine Push-Anmeldung gespeichert und der Partnerkalender bleibt dennoch zugänglich.
+3. Ein unterstütztes Gerät kann die Freigabe aktivieren; das Ergebnis zeigt Luma klar an. Bei nicht unterstützter Umgebung oder abgelehnter Freigabe erscheint eine einfache, hilfreiche Erklärung.
+4. Ein heutiger tatsächlicher Start erzeugt einmalig genau den bestätigten Starttext; ein heutiges tatsächliches Ende erzeugt einmalig genau den bestätigten Endtext.
+5. Mehrfaches Speichern, erwartete Enden, Schätzungen und nachträgliche vergangene Daten erzeugen keinen Hinweis.
+6. Nur das aktiv verbundene Partnerkonto kann für sein eigenes Gerät eine Anmeldung speichern; andere Konten, fremde Paare und getrennte Partner erhalten keine Nachricht.
+7. Nach einem Widerruf werden Push-Anmeldungen entfernt oder wirksam deaktiviert; nachfolgende Ereignisse senden nichts.
+8. Push-Daten, VAPID-Schlüssel und Geräte-Endpunkte erscheinen nie im Browser, in Logs, Tests, Fehlerantworten oder dem Repository.
+
+### Technischer Auftrag für Claude – Version 4
+
+#### Bestätigte Ausgangslage im Code
+
+- `src/app/neu/partner/page.tsx` prüft bereits die neue Sitzung und den aktiven Partnerstatus. Erfolgreiche Codeeinlösung erfolgt über `src/components/NewPartnerRedeemForm.tsx` und `POST /api/neu/partner/redeem`.
+- `src/lib/new-partner.ts` verwaltet den atomaren Verbindungskern und `endPartnerConnection` beendet eine Verbindung.
+- Tatsächliche neue Perioden werden über `POST /api/neu/periods` und `PUT /api/neu/periods/[id]` mit `src/lib/new-periods.ts` gespeichert. Ein echter Start ist `startDate`; ein echtes Ende ist `endDate`; `expectedEndDate` ist ausdrücklich nur vorläufig.
+- `public/sw.js` und `src/components/SwRegister.tsx` registrieren bereits einen Service Worker mit einem `push`- und `notificationclick`-Handler. Dieser darf sicher erweitert werden, darf aber keine persönlichen Daten in Logs ausgeben.
+- Die neue Datenbasis ist `luma_core`; der Owner hat die notwendige Datenbankmigration für WP-004 bereits am 10. September 2026 ausdrücklich genehmigt.
+
+#### Technisches Ziel
+
+- Ergänze den Web-Push-Weg nur für die neue Luma: Manifest/Home-Screen-fähige Web-App, Service-Worker-Registrierung, Partner-Aktivierungsoberfläche und serverseitigen Versand.
+- Nutze den Standard `Push API`/`Notifications API` mit VAPID. Der öffentliche Schlüssel darf nur zur Geräteanmeldung ausgeliefert werden; privater VAPID-Schlüssel und Absender bleiben ausschließlich als Produktionsgeheimnisse in der Laufzeitumgebung.
+- Ergänze eine sitzungs-, herkunfts- und verbindungsgeprüfte Partnerroute zum Speichern und Entfernen einer Push-Anmeldung. Die Route akzeptiert nur eine valide Browser-Subscription und gibt nie Endpunkt, Schlüssel oder fremde Daten zurück.
+- Speichere Subscriptions verschlüsselt oder so minimal geschützt wie technisch möglich; mindestens Endpoint sowie `p256dh`- und `auth`-Schlüssel nur serverseitig, kontogebunden, ohne Klartext-Ausgabe und mit eindeutiger Begrenzung pro Partnerkonto/Gerät.
+- Ergänze eine deduplizierte serverseitige Ereignisaufzeichnung für `period_started` und `period_ended`, damit pro aktiver Verbindung und tatsächlichem heutigen Ereignis höchstens ein Versand entsteht – auch bei Doppelklick, Wiederholung, Aktualisierung oder parallelen Anfragen.
+- Prüfe beim Auslösen und unmittelbar vor dem Versand erneut die aktive Verbindung. Beende/Widerruf entfernt die Subscription oder macht sie für den Versand unbrauchbar.
+- Verknüpfe den Versand nur mit den beiden bestehenden echten Speicherwegen (POST/PUT). Vergleiche für PUT den bisherigen und neuen tatsächlichen Zustand; nur ein neu hinzugekommener heutiger Start oder ein neu hinzugekommenes heutiges Ende darf ein Ereignis auslösen.
+- Sende erst nach erfolgreicher Speicherung. Ein Versandfehler darf niemals den echten Periodeneintrag zurückrollen oder die Nutzerin zu einer erneuten Eingabe zwingen. Permanenter Push-Fehler wie eine ungültige/abgemeldete Subscription entfernt genau diese Subscription sicher; Fehlerantworten bleiben allgemein.
+- Nach erfolgreicher Codeeinlösung führt die Oberfläche ohne Umweg zur Aktivierungsaufforderung. Ist die Berechtigung bereits erteilt, zeigt sie den aktiven Status; bei Ablehnung erklärt sie knapp, wie der Partner die Berechtigung später erneut in den Browser-/Geräteeinstellungen erlauben kann.
+- Die erste Meldung kann als kurze Test-Benachrichtigung erfolgen, aber nur nach bewusster Freigabe des Partners und ohne Gesundheitsinhalt, zum Beispiel `Luma-Benachrichtigungen sind aktiviert.`
+
+#### Daten, Schnittstellen und Migrationen
+
+- **Migration nötig:** ja, ausschließlich in `luma_core`. Keine Änderung an `app_luma` und keine Datenkopie.
+- Lege eine kontogebundene Tabelle für Partner-Push-Anmeldungen an. Sie referenziert das Partnerkonto mit `ON DELETE CASCADE`, schützt doppelte Endpunkte per eindeutiger Begrenzung und speichert keine Zyklus- oder Profildaten.
+- Lege eine zweite, minimale Tabelle oder gleichwertig robuste serverseitige Deduplizierung für versendete/auszulösende Partnerereignisse an. Sie verhindert mehrfachen Versand für dieselbe aktive Verbindung, Ereignisart und Ereignisdatum.
+- Ergänze ausschließlich geschützte neue-Luma-Partnerendpunkte für Subscription/Abmeldung und eventuell einen lokalen Testversand. Kein frei abrufbarer Versandendpunkt und keine neue Partnerdaten-API.
+- Ergänze die benötigten Laufzeitvariablen dokumentiert, aber ohne Werte im Repository: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` und ein zulässiger `VAPID_SUBJECT`. Produktionswerte werden später getrennt in Dokploy gesetzt; sie gehören nie in `.env`-Beispiele mit echten Werten, Commits oder Screenshots.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Der Partner hat weiterhin ausschließlich Lesezugriff auf die bisher freigegebenen Kalenderdaten.
+- Nur die aktive neue Partnerverbindung der Eigentümerin darf Hinweise an dieses Partnerkonto auslösen.
+- Keine Nachricht bei `expectedEndDate`, Schätzung, Vergangenheit, fremden Konten, fehlender oder widerrufener Verbindung.
+- Keine Klartext-Push-Endpunkte, Auth-Schlüssel, VAPID-Geheimnisse, Codes, Namen, E-Mail-Adressen oder Periodendaten in Logs, Fehlern, Ledger, Committexten oder Tests.
+- Der direkte Nachrichtentext bleibt exakt auf Start/Ende begrenzt; keine neue medizinische Interpretation.
+- Alte Luma, bestehende Auth-, Kalender-, Partnercode- und Periodenlogik bleiben außerhalb der notwendigen Einhängepunkte unverändert.
+
+#### Pflichtprüfungen
+
+- Unit-/Integrationstests für Subscription-Validierung, Partner-/Kontotrennung, fehlende Verbindung, Widerruf und serverseitige Entfernung ungültiger Subscriptions.
+- Start/Ende: heutiger neuer tatsächlicher Wert löst je genau ein Ereignis aus; Wiederholung und parallele Anfrage erzeugen kein zweites.
+- Negativfälle: erwartetes Ende, Schätzung, vergangenes Datum und neutrales Update lösen nichts aus.
+- Versand wird nach Widerruf oder bei fremdem Partnerkonto zuverlässig unterdrückt.
+- Teste Service Worker und Partner-Aktivierungsweg mobil. Prüfe iPhone/Home-Screen-Hinweis, Ablehnung, bereits erteilte Freigabe und nicht unterstützte Browser verständlich.
+- Prüfe, dass Antworten und gerenderte Partnerseiten weder Push-Endpunkte noch Schlüssel oder verbotene Gesundheitsdaten ausgeben.
+- TypeScript, zielgerichtete Sicherheits-/Datenbanktests, bestehende Partner-/Periodenregressionen, Produktions-Build und Entwicklungsledger-Validierung.
+
+#### Stoppbedingungen
+
+- Stoppe vor einem Deployment oder vor dem Setzen echter VAPID-Geheimnisse in Dokploy. Das ist eine getrennte Produktionsfreigabe der Ownerin.
+- Stoppe, wenn eine sichere kontogebundene Speicherung, Deduplizierung oder Widerruf nicht nachweisbar ist.
+- Stoppe vor einer stillen Standardfreigabe, Push für die alte Luma, einer Profil-/Zyklusdaten-Erweiterung oder dem Versand bei erwarteten/geschätzten Daten.
+- Stoppe bei fehlender Browserunterstützung nicht mit einer Fake-Erfolgsmeldung; zeige stattdessen eine klare Hilfe und lasse den Partnerkalender nutzbar.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 4`, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus auf `review`.
+- Ergänze den Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-004` und danach `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe ausschließlich auftragsbezogene Dateien. Ein Test von echten Push-Nachrichten in Produktion sowie ein Deploy bleiben eine getrennte Owner-Freigabe.
