@@ -32,6 +32,7 @@ COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/apply-luma-core-migrations.mjs ./scripts/apply-luma-core-migrations.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/reset-new-luma-password.mjs ./scripts/reset-new-luma-password.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/database ./database
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./docker-entrypoint.sh
 
