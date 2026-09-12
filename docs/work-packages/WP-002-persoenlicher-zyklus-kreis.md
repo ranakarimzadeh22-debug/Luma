@@ -2,7 +2,7 @@
 id: WP-002
 title: "Persönlichen Zyklus-Kreis aus echten Daten anzeigen"
 package_revision: 6
-status: review
+status: parked
 created: 2026-09-06
 updated: 2026-09-07
 owner_approved: yes
@@ -16,7 +16,7 @@ technical_brief: complete
 
 ## Versionshinweis
 
-**Version 6 – 7. September 2026:** Nach einer einzigen tatsächlichen Periode muss die freiwillige ungefähre Zykluslänge direkt vom neutralen Kreis aus erreichbar sein. Diese Nachschärfung ist freigegeben und wartet auf Claude.
+**Pausiert am 12. September 2026:** WP-002 bleibt technisch erhalten, wird aber auf Wunsch der Ownerin vorübergehend zugunsten von WP-005 (Passwort-Reset) nicht weitergeführt.
 
 ## Owner-Ansicht – einfach erklärt
 
