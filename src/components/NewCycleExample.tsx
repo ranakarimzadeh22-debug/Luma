@@ -7,6 +7,7 @@ import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-v
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber } from "@/lib/calendar-day-info";
+import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
@@ -511,6 +512,13 @@ function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
 interface DayDetailModalProps {
   date: string;
   periodDay: number | null;
+  actions: PeriodDayActions;
+  isMiddleConfirmedDay: boolean;
+  isSaving: boolean;
+  error: string;
+  onBegin: () => void;
+  onEnd: () => void;
+  onRequestDeleteEdge: () => void;
   onClose: () => void;
 }
 
@@ -523,7 +531,18 @@ function formatFullGermanDate(date: string): string {
   }).format(new Date(`${date}T00:00:00`));
 }
 
-function DayDetailModal({ date, periodDay, onClose }: DayDetailModalProps) {
+function DayDetailModal({
+  date,
+  periodDay,
+  actions,
+  isMiddleConfirmedDay,
+  isSaving,
+  error,
+  onBegin,
+  onEnd,
+  onRequestDeleteEdge,
+  onClose,
+}: DayDetailModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -546,10 +565,50 @@ function DayDetailModal({ date, periodDay, onClose }: DayDetailModalProps) {
         <p className="mt-3 text-base text-[#382631]">
           {periodDay !== null ? `${periodDay}. Periodentag` : "Keine bestätigte Periode an diesem Tag."}
         </p>
+        {isMiddleConfirmedDay && (
+          <p className="mt-2 text-sm text-[#6b5560]">Du kannst nur den ersten oder letzten Periodentag löschen.</p>
+        )}
+        {error && (
+          <p role="alert" className="mt-2 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+        <div className="mt-4 flex flex-col gap-2.5">
+          {actions.canBegin && (
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={onBegin}
+              className="rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {isSaving ? "Wird gespeichert …" : "Periode begonnen"}
+            </button>
+          )}
+          {actions.runningEntryToEnd && (
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={onEnd}
+              className="rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {isSaving ? "Wird gespeichert …" : "Periode beendet"}
+            </button>
+          )}
+          {actions.deletableEdge && (
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={onRequestDeleteEdge}
+              className="rounded-xl border border-[#b97791] bg-white px-4 py-2.5 text-sm font-semibold text-[#6d153f] disabled:opacity-50"
+            >
+              Periodentag löschen
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white"
+          className="mt-4 w-full rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]"
         >
           Schließen
         </button>
@@ -558,16 +617,16 @@ function DayDetailModal({ date, periodDay, onClose }: DayDetailModalProps) {
   );
 }
 
-type HistoricalSelection = { start: string; end: string | null };
-
-interface HistoricalDayActionModalProps {
-  date: string;
-  action: "start" | "end";
+interface DeleteEdgeConfirmModalProps {
+  entry: NewPeriodEntryOpen;
+  isSingleDay: boolean;
+  isSaving: boolean;
+  error: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-function HistoricalDayActionModal({ date, action, onConfirm, onCancel }: HistoricalDayActionModalProps) {
+function DeleteEdgeConfirmModal({ entry, isSingleDay, isSaving, error, onConfirm, onCancel }: DeleteEdgeConfirmModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
@@ -581,64 +640,20 @@ function HistoricalDayActionModal({ date, action, onConfirm, onCancel }: Histori
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="historical-day-action-title"
+      aria-labelledby="delete-edge-title"
     >
       <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-lg">
-        <h2 id="historical-day-action-title" className="text-lg font-semibold capitalize text-[#28101f]">
-          {formatFullGermanDate(date)}
-        </h2>
-        <div className="mt-6 flex gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-xl border border-[#d8afbd] px-4 py-2.5 text-sm font-semibold text-[#382631]"
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white"
-          >
-            {action === "start" ? "Start der Periode" : "Ende der Periode"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface HistoricalReviewModalProps {
-  selection: { start: string; end: string };
-  onSave: () => void;
-  onCancel: () => void;
-  error: string;
-  isSaving: boolean;
-}
-
-function HistoricalReviewModal({ selection, onSave, onCancel, error, isSaving }: HistoricalReviewModalProps) {
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onCancel();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="historical-review-title"
-    >
-      <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-lg">
-        <h2 id="historical-review-title" className="text-lg font-semibold text-[#28101f]">
-          Periode speichern?
+        <h2 id="delete-edge-title" className="text-lg font-semibold text-[#28101f]">
+          Periodentag löschen?
         </h2>
         <p className="mt-3 text-sm text-[#382631]">
-          {formatPeriodDate(selection.start)} bis {formatPeriodDate(selection.end)}
+          {entry.endDate ? `${formatPeriodDate(entry.startDate)} bis ${formatPeriodDate(entry.endDate)}` : `${formatPeriodDate(entry.startDate)}, läuft noch`}
         </p>
+        {isSingleDay && (
+          <p className="mt-2 text-sm font-medium text-[#831341]">
+            Das ist der einzige Tag dieser Periode. Damit wird der gesamte Eintrag gelöscht.
+          </p>
+        )}
         {error && (
           <p role="alert" className="mt-2 text-sm text-red-700">
             {error}
@@ -656,10 +671,10 @@ function HistoricalReviewModal({ selection, onSave, onCancel, error, isSaving }:
           <button
             type="button"
             disabled={isSaving}
-            onClick={onSave}
+            onClick={onConfirm}
             className="flex-1 rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {isSaving ? "Wird gespeichert …" : "Prüfen und speichern"}
+            {isSaving ? "Wird gelöscht …" : "Endgültig löschen"}
           </button>
         </div>
       </div>
@@ -751,10 +766,13 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
   const [selectedDayDetail, setSelectedDayDetail] = useState<{ date: string; periodDay: number | null } | null>(null);
-  const [historicalSelection, setHistoricalSelection] = useState<HistoricalSelection | null>(null);
-  const [historicalDayAction, setHistoricalDayAction] = useState<{ date: string; action: "start" | "end" } | null>(null);
-  const [isSavingHistorical, setIsSavingHistorical] = useState(false);
-  const [historicalError, setHistoricalError] = useState("");
+  const [isSavingDayAction, setIsSavingDayAction] = useState(false);
+  const [dayActionError, setDayActionError] = useState("");
+  const [pendingDeleteEdge, setPendingDeleteEdge] = useState<{
+    entry: NewPeriodEntryOpen;
+    edge: "start" | "end";
+    isSingleDay: boolean;
+  } | null>(null);
   const [isPeriodHistoryOpen, setIsPeriodHistoryOpen] = useState(false);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
@@ -814,58 +832,105 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     router.refresh();
   }
 
-  function handlePastNeutralDayTap(date: string) {
-    if (!historicalSelection || historicalSelection.end !== null) {
-      setHistoricalDayAction({ date, action: "start" });
-      return;
-    }
-    if (date < historicalSelection.start) {
-      setHistoricalDayAction({ date, action: "start" });
-      return;
-    }
-    setHistoricalDayAction({ date, action: "end" });
+
+  function closeDayDetail() {
+    setSelectedDayDetail(null);
+    setDayActionError("");
+    setPendingDeleteEdge(null);
   }
 
-  function confirmHistoricalDayAction() {
-    if (!historicalDayAction) return;
-    if (historicalDayAction.action === "start") {
-      setHistoricalSelection({ start: historicalDayAction.date, end: null });
-    } else {
-      setHistoricalSelection((current) =>
-        current ? { start: current.start, end: historicalDayAction.date } : { start: historicalDayAction.date, end: null },
-      );
-    }
-    setHistoricalDayAction(null);
-  }
-
-  function cancelHistoricalDayAction() {
-    setHistoricalDayAction(null);
-  }
-
-  function cancelHistoricalSelection() {
-    setHistoricalSelection(null);
-    setHistoricalError("");
-  }
-
-  async function saveHistoricalSelection() {
-    if (!historicalSelection || historicalSelection.end === null) return;
-    setIsSavingHistorical(true);
-    setHistoricalError("");
+  async function beginPeriodAtSelectedDay() {
+    if (!selectedDayDetail) return;
+    setIsSavingDayAction(true);
+    setDayActionError("");
     const response = await fetch("/api/neu/periods", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ startDate: historicalSelection.start, endDate: historicalSelection.end }),
+      body: JSON.stringify({ startDate: selectedDayDetail.date, endDate: null, expectedEndDate: null }),
     }).catch(() => null);
     const result = (await response?.json().catch(() => null)) as { entry?: NewPeriodEntryOpen; error?: string } | null;
-    setIsSavingHistorical(false);
+    setIsSavingDayAction(false);
     if (!response?.ok || !result?.entry) {
-      setHistoricalError(result?.error || "Die Periode konnte nicht gespeichert werden.");
+      setDayActionError(result?.error || "Der Beginn konnte nicht gespeichert werden.");
       return;
     }
     setPeriods((current) =>
       [...current, result.entry as NewPeriodEntryOpen].sort((first, second) => second.startDate.localeCompare(first.startDate)),
     );
-    setHistoricalSelection(null);
+    closeDayDetail();
+    router.refresh();
+  }
+
+  async function endPeriodAtSelectedDay(entry: NewPeriodEntryOpen) {
+    if (!selectedDayDetail) return;
+    setIsSavingDayAction(true);
+    setDayActionError("");
+    const response = await fetch(`/api/neu/periods/${entry.id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ startDate: entry.startDate, endDate: selectedDayDetail.date, expectedEndDate: null }),
+    }).catch(() => null);
+    const result = (await response?.json().catch(() => null)) as { entry?: NewPeriodEntryOpen; error?: string } | null;
+    setIsSavingDayAction(false);
+    if (!response?.ok || !result?.entry) {
+      setDayActionError(result?.error || "Das Ende konnte nicht gespeichert werden.");
+      return;
+    }
+    setPeriods((current) =>
+      [...current.filter((existing) => existing.id !== entry.id), result.entry as NewPeriodEntryOpen].sort((first, second) =>
+        second.startDate.localeCompare(first.startDate),
+      ),
+    );
+    closeDayDetail();
+    router.refresh();
+  }
+
+  function requestDeleteEdge(edge: { entry: NewPeriodEntryOpen; edge: "start" | "end"; isSingleDay: boolean }) {
+    setDayActionError("");
+    setPendingDeleteEdge(edge);
+  }
+
+  async function confirmDeleteEdge() {
+    if (!pendingDeleteEdge) return;
+    const { entry, edge, isSingleDay } = pendingDeleteEdge;
+    setIsSavingDayAction(true);
+    setDayActionError("");
+
+    if (isSingleDay) {
+      const response = await fetch(`/api/neu/periods/${entry.id}`, { method: "DELETE" }).catch(() => null);
+      setIsSavingDayAction(false);
+      if (!response?.ok) {
+        const body = await response?.json().catch(() => null);
+        setDayActionError(body?.error || "Der Periodentag konnte nicht gelöscht werden.");
+        return;
+      }
+      setPeriods((current) => current.filter((existing) => existing.id !== entry.id));
+      setPendingDeleteEdge(null);
+      closeDayDetail();
+      router.refresh();
+      return;
+    }
+
+    const nextStartDate = edge === "start" ? shiftDateByOneDay(entry.startDate, 1) : entry.startDate;
+    const nextEndDate = edge === "end" && entry.endDate ? shiftDateByOneDay(entry.endDate, -1) : entry.endDate;
+    const response = await fetch(`/api/neu/periods/${entry.id}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ startDate: nextStartDate, endDate: nextEndDate, expectedEndDate: entry.expectedEndDate }),
+    }).catch(() => null);
+    const result = (await response?.json().catch(() => null)) as { entry?: NewPeriodEntryOpen; error?: string } | null;
+    setIsSavingDayAction(false);
+    if (!response?.ok || !result?.entry) {
+      setDayActionError(result?.error || "Der Periodentag konnte nicht gelöscht werden.");
+      return;
+    }
+    setPeriods((current) =>
+      [...current.filter((existing) => existing.id !== entry.id), result.entry as NewPeriodEntryOpen].sort((first, second) =>
+        second.startDate.localeCompare(first.startDate),
+      ),
+    );
+    setPendingDeleteEdge(null);
+    closeDayDetail();
     router.refresh();
   }
 
@@ -873,14 +938,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     <>
     <div
       className="space-y-9 sm:space-y-10"
-      inert={
-        selectedDayDetail ||
-        historicalDayAction ||
-        (historicalSelection && historicalSelection.end !== null) ||
-        isPeriodHistoryOpen
-          ? true
-          : undefined
-      }
+      inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
       <section aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"} className="space-y-3">
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
@@ -960,27 +1018,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 })
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
-            const isDayDetailAvailable = Boolean(date && confirmedPeriodEntry);
-            const isPastNeutralDay = Boolean(
-              date &&
-                date < todayKey &&
-                !storedPeriod &&
-                !runningPeriod &&
-                !expectedPeriod &&
-                !plannedPeriod,
-            );
-            const isSelectionStart = Boolean(date && historicalSelection && date === historicalSelection.start);
-            const isInSelectionRange = Boolean(
-              date &&
-                historicalSelection &&
-                historicalSelection.end !== null &&
-                date >= historicalSelection.start &&
-                date <= historicalSelection.end,
-            );
-            const isHistoricalSelectionTarget = isSelectionStart || isInSelectionRange;
-            const isHistoricalPickAvailable = isPastNeutralDay;
             const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-base ${
-              storedPeriod || runningPeriod || isHistoricalSelectionTarget
+              storedPeriod || runningPeriod
                 ? "bg-[#6d153f] text-white"
                 : expectedPeriod
                   ? "bg-[#f3a9bd] text-[#831341]"
@@ -995,7 +1034,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
             const dayAriaLabel = date
-              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isSelectionStart ? ", ausgewählter Beginn, noch nicht gespeichert" : ""}`
+              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`
               : "";
             const dayChildren = (
               <>
@@ -1021,16 +1060,17 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
               </>
             );
+            const isDayActionAvailable = Boolean(date && !dayInfo?.isFuture);
             return (
               <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
-                {day && isDayDetailAvailable && (
+                {day && isDayActionAvailable && (
                   <button
                     type="button"
                     aria-label={dayAriaLabel}
                     onClick={() =>
                       setSelectedDayDetail({
                         date: date as string,
-                        periodDay: periodDayNumber(date as string, confirmedPeriodEntry!.startDate),
+                        periodDay: confirmedPeriodEntry ? periodDayNumber(date as string, confirmedPeriodEntry.startDate) : null,
                       })
                     }
                     className={dayClassName}
@@ -1038,17 +1078,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                     {dayChildren}
                   </button>
                 )}
-                {day && !isDayDetailAvailable && isHistoricalPickAvailable && (
-                  <button
-                    type="button"
-                    aria-label={dayAriaLabel}
-                    onClick={() => handlePastNeutralDayTap(date as string)}
-                    className={dayClassName}
-                  >
-                    {dayChildren}
-                  </button>
-                )}
-                {day && !isDayDetailAvailable && !isHistoricalPickAvailable && (
+                {day && !isDayActionAvailable && (
                   <div aria-label={dayAriaLabel} className={dayClassName}>
                     {dayChildren}
                   </div>
@@ -1142,47 +1172,32 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
 
       {isNoDataToastVisible && <NoDataToast onDismiss={() => setIsNoDataToastVisible(false)} />}
     </div>
-    {selectedDayDetail && (
-      <DayDetailModal
-        date={selectedDayDetail.date}
-        periodDay={selectedDayDetail.periodDay}
-        onClose={() => setSelectedDayDetail(null)}
-      />
-    )}
-    {historicalSelection && historicalSelection.end === null && !historicalDayAction && (
-      <div
-        role="status"
-        aria-live="polite"
-        className="fixed inset-x-4 top-[max(1.5rem,env(safe-area-inset-top))] z-40 mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#d8afbd] bg-white p-4 text-sm text-[#382631] shadow-lg"
-      >
-        <p className="flex-1">
-          Beginn: {formatPeriodDate(historicalSelection.start)}. Tippe jetzt auf den letzten Tag der Periode.
-        </p>
-        <button
-          type="button"
-          onClick={cancelHistoricalSelection}
-          aria-label="Auswahl abbrechen"
-          className="rounded-full px-2 py-1 text-lg leading-none text-[#6b5560] hover:bg-[#f4e4e3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
-        >
-          ×
-        </button>
-      </div>
-    )}
-    {historicalDayAction && (
-      <HistoricalDayActionModal
-        date={historicalDayAction.date}
-        action={historicalDayAction.action}
-        onConfirm={confirmHistoricalDayAction}
-        onCancel={cancelHistoricalDayAction}
-      />
-    )}
-    {historicalSelection && historicalSelection.end !== null && !historicalDayAction && (
-      <HistoricalReviewModal
-        selection={{ start: historicalSelection.start, end: historicalSelection.end }}
-        onSave={saveHistoricalSelection}
-        onCancel={cancelHistoricalSelection}
-        error={historicalError}
-        isSaving={isSavingHistorical}
+    {selectedDayDetail && !pendingDeleteEdge && (() => {
+      const actions = getPeriodDayActions(selectedDayDetail.date, todayKey, periods);
+      const isMiddleConfirmedDay = selectedDayDetail.periodDay !== null && !actions.deletableEdge && !actions.runningEntryToEnd;
+      return (
+        <DayDetailModal
+          date={selectedDayDetail.date}
+          periodDay={selectedDayDetail.periodDay}
+          actions={actions}
+          isMiddleConfirmedDay={isMiddleConfirmedDay}
+          isSaving={isSavingDayAction}
+          error={dayActionError}
+          onBegin={beginPeriodAtSelectedDay}
+          onEnd={() => actions.runningEntryToEnd && endPeriodAtSelectedDay(actions.runningEntryToEnd)}
+          onRequestDeleteEdge={() => actions.deletableEdge && requestDeleteEdge(actions.deletableEdge)}
+          onClose={closeDayDetail}
+        />
+      );
+    })()}
+    {pendingDeleteEdge && (
+      <DeleteEdgeConfirmModal
+        entry={pendingDeleteEdge.entry}
+        isSingleDay={pendingDeleteEdge.isSingleDay}
+        isSaving={isSavingDayAction}
+        error={dayActionError}
+        onConfirm={confirmDeleteEdge}
+        onCancel={() => setPendingDeleteEdge(null)}
       />
     )}
     {isPeriodHistoryOpen && (

@@ -1,10 +1,10 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 7
+package_revision: 8
 status: review
 created: 2026-09-07
-updated: 2026-09-09
+updated: 2026-09-13
 owner_approved: yes
 executor: claude
 product_area: "Neue Luma – Periodenverwaltung"
@@ -659,3 +659,126 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Abweichung: keine fachliche Abweichung. Der dokumentierte UI-Timing-Hinweis nach `router.refresh()` zeigte keine Dateninkonsistenz; die direkte Datenbankprüfung bestätigte den richtigen Endzustand.
 - Owner-Abnahme offen: `Meine Periode aktualisieren` öffnen, einen Zeitraum ändern und speichern; danach einen anderen Eintrag löschen, zuerst `Abbrechen` und dann bewusst `Endgültig löschen` prüfen.
 - Product-Map aktualisiert: ja
+
+## Version 8 – Tatsächliche Tage korrigieren eine Schätzung (13. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Du tippst im Kalender auf einen Tag und kannst den tatsächlichen Beginn oder das tatsächliche Ende deiner Periode eintragen. Eine Luma-Schätzung darf dich dabei nie blockieren.
+- **Beispiel:** Luma zeigt ein erwartetes Ende für heute. War deine Periode schon gestern zu Ende, tippst du auf gestern und wählst `Periode beendet`. Danach ist gestern das tatsächliche Ende.
+- **Löschen:** `Periodentag löschen` ist nur für den ersten oder letzten tatsächlich gespeicherten Periodentag möglich. So wird ein Zeitraum sicher kürzer, ohne ihn in zwei unklare Teile zu zerlegen.
+- **Was ändert sich danach?** Luma berechnet spätere Schätzungen wieder aus deinen tatsächlichen Daten. Erwartete Tage bleiben als Schätzung mit `Kann abweichen` sichtbar.
+
+### Entstehungsweg
+
+`Vorhergesagtes Ende kann von der Realität abweichen → die Schätzung darf echte Angaben nicht sperren → Tagesfenster korrigiert tatsächlichen Beginn, tatsächliches Ende oder einen Randtag → WP-003 Version 8`
+
+- bestätigtes Problem: Eine erwartete Periode kann früher oder später enden. Die Nutzerin muss ihren tatsächlichen Verlauf direkt im sichtbaren Kalender korrigieren können.
+- gewünschte Wirkung: Echte Periodendaten lassen sich einfach und sicher vor einer Schätzung speichern; nachfolgende Vorhersagen passen sich daran an.
+- gewählte Lösung: Das vorhandene Tagesfenster bietet für passende Tage klare Aktionen für tatsächlichen Beginn, tatsächliches Ende und die sichere Rand-Löschung.
+- wichtige Entscheidung: `DEC-125 – Tatsächliche Periodendaten korrigieren Schätzungen am Rand`.
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-012.md`, `C:\coden\CODEX\App-Luma-Assistent\control\DECISIONS.md#dec-125`.
+
+### Soll – von Codex
+
+- Ein Tipp auf einen Kalendertag öffnet weiterhin ein kleines Tagesfenster über dem abgedunkelten Home-Screen.
+- Für heutige und vergangene Tage bietet das Fenster die klaren Aktionen `Periode begonnen`, `Periode beendet` und – nur an einem bestätigten ersten oder letzten Periodentag – `Periodentag löschen`.
+- `Periode begonnen` speichert den gewählten heutigen oder vergangenen Tag als tatsächlichen Beginn. Ein erwarteter Kalendertag darf diesen Weg nicht blockieren.
+- `Periode beendet` ergänzt oder korrigiert das tatsächliche Ende der passenden laufenden Periode. Ein erwartetes Ende wird danach nicht weiter als aktiv gezeigt.
+- `Periodentag löschen` kürzt nur den gewählten bestätigten Randtag. Bei einem einzelnen tatsächlichen Tag muss Luma ausdrücklich erklären, dass damit der gesamte einzelne Eintrag gelöscht wird, und eine zweite Bestätigung verlangen.
+- Ein Tag in der Mitte eines bestätigten Zeitraums kann nicht einzeln gelöscht werden. Das Tagesfenster erklärt kurz: `Du kannst nur den ersten oder letzten Periodentag löschen.`
+- Für zukünftige Tage bleibt die bestehende getrennte Planungslogik erhalten: Sie dürfen niemals unbemerkt als tatsächliche Periode gespeichert werden. Diese Version erweitert keine Zukunftsplanung.
+- Nach jeder erfolgreichen tatsächlichen Korrektur aktualisieren Kalender, Zyklus-Kreis und spätere Schätzungen über die vorhandene echte Datenbasis. Eine Schätzung bleibt sichtbar als `Voraussichtlich` und `Kann abweichen`.
+
+### Abnahmekriterien
+
+1. Bei einer laufenden Periode mit erwartetem Ende heute kann die Nutzerin gestern als tatsächliches Ende speichern. Der heutige erwartete Tag ist danach nicht mehr als laufend bestätigt sichtbar.
+2. Ein tatsächlicher Beginn heute lässt sich auch dann speichern, wenn Luma an diesem Tag eine andere oder keine Schätzung zeigt.
+3. Der erste oder letzte bestätigte Periodentag lässt sich nur nach klarer Bestätigung löschen; die Periode wird am richtigen Rand gekürzt.
+4. Ein mittlerer bestätigter Tag wird nicht einzeln gelöscht und zeigt die kurze Erklärung.
+5. Erwartete Tage bleiben Schätzungen und werden nie als tatsächliche Daten übernommen.
+6. Ein anderes Konto kann keine Periodentage dieses Kontos sehen, ändern oder löschen.
+
+### Technischer Auftrag für Claude – Version 8
+
+#### Bestätigte Code-Ausgangslage
+
+- `src/components/NewCycleExample.tsx` enthält `DayDetailModal`, `HistoricalDayActionModal`, die Kalenderzellen und die Zustände `periods`, `historicalSelection` sowie `historicalDayAction`.
+- Die bestehende Tagesaktion legt derzeit eine Auswahl für Beginn/Ende an; `saveHistoricalSelection` sendet `POST /api/neu/periods`.
+- `src/app/api/neu/periods/[id]/route.ts` schützt vorhandene `PUT`- und `DELETE`-Änderungen durch Sitzung, Herkunftsprüfung, kontobezogene ID und Servervalidierung.
+- `src/lib/new-periods.ts` und `src/lib/new-period-validation.ts` speichern tatsächlichen Beginn, optionales tatsächliches Ende und optionales erwartetes Ende. Die Prediction- und Kreislogik liest diese bestehende Datenbasis bereits.
+
+#### Technisches Ziel
+
+- Erweitere den bestehenden interaktiven Tagesweg statt eines zweiten Kalenders oder einer separaten Verwaltungsseite.
+- Gib dem Tagesfenster eine zugängliche Aktionsauswahl. Die Aktion muss aus dem gewählten Datum, dem vorhandenen echten Eintrag und seinem Status sicher ableiten, welcher Eintrag geändert wird; niemals einen fremden oder mehrdeutigen Eintrag raten.
+- Nutze die vorhandenen geschützten `POST`, `PUT` und `DELETE`-Wege sowie ihre Serverprüfungen. Eine neue Datenbanktabelle oder Migration ist nicht nötig.
+- Bei einem tatsächlichen Ende muss ein vorhandenes `expectedEndDate` im selben Update geleert werden. Aktualisiere den lokalen Zustand erst nach erfolgreicher Serverantwort und rufe danach `router.refresh()` auf, damit Kreis und Vorhersage neu berechnet werden.
+- Für die Rand-Löschung: Bei erstem Tag `startDate` auf den Folgetag verschieben, bei letztem Tag `endDate` auf den Vortag verkürzen. Ist kein tatsächlicher Tag übrig, verwende erst nach zweiter Bestätigung den bestehenden `DELETE`-Weg. Ein mittlerer Tag bleibt unverändert.
+- Wende keine tatsächliche Zukunftseingabe an. Bestehende getrennte geplante/erwartete Daten und ihre Kennzeichnung bleiben unverändert.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Tatsächliche Nutzereingaben haben Vorrang vor einer Schätzung; Vorhersagen bleiben nie als Tatsache gespeichert.
+- Sitzungs-, Herkunfts-, Kontotrennungs-, Datums- und Überschneidungsprüfungen bleiben serverseitig wirksam.
+- Keine Schätzung, keine Partnerdaten, kein Bild, keine Anmeldung und keine alte Luma werden geändert.
+- Nur der erste oder letzte bestätigte Tag darf einzeln gelöscht werden. Kein Splitten eines Zeitraums, keine Sammellöschung.
+- Die bestehende Zukunftsplanung wird nicht erweitert und darf nicht still in tatsächliche Periodendaten überführt werden.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: nur gezielte `INSERT`, `UPDATE` oder `DELETE` auf den eigenen bestehenden Eintrag; keine Schemaänderung.
+- betroffene API-Routen: vorhandenes `POST /api/neu/periods`, `PUT /api/neu/periods/[id]`, `DELETE /api/neu/periods/[id]`.
+- Migration nötig: nein.
+
+#### Pflichtprüfungen
+
+- Laufende Periode: tatsächlicher Beginn, erwartetes Ende heute, tatsächliches Ende gestern speichern; `expectedEndDate` ist danach leer und der echte Zeitraum korrekt.
+- Tatsächlichen Beginn heute auf einem neutralen oder erwarteten Tag speichern; die Schätzung blockiert ihn nicht.
+- Ersten und letzten bestätigten Tag jeweils kürzen; mittleren Tag ablehnen; Einzeltag nur nach zweiter Bestätigung vollständig löschen.
+- Fremde, ungültige oder mehrdeutige Eintrags-ID wird nicht geändert oder gelöscht.
+- Erwartete Zukunftstage werden nicht als tatsächliche Daten gespeichert.
+- Nach einer Korrektur Seite neu laden: Kalender, Zyklus-Kreis und nächste Schätzung nutzen den neuen echten Stand.
+- TypeScript, gezielte Tests, mobile Browserprüfung, Produktions-Build und Entwicklungsledger-Validierung ausführen.
+
+#### Stoppbedingungen
+
+- Stoppe vor jeder Migration, einer neuen Datenart, einer Änderung der Partneransicht oder einer Erweiterung der Zukunftsplanung.
+- Stoppe und dokumentiere den Befund, wenn ein Tagesdatum nicht eindeutig zu genau einem eigenen tatsächlichen Eintrag zugeordnet werden kann; keine automatische Auswahl treffen.
+- Stoppe, wenn ein erwarteter Tag technisch als tatsächlich bestätigt gespeichert würde.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 8`, nenne Abweichungen sichtbar und belasse den Paketstatus auf `review`.
+- Ergänze das Entwicklungsledger und führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe nur die auftragsbezogenen Dateien. Kein manuelles Deployment.
+
+### Ist Version 8 – von Claude
+
+- **Umgesetzt:** Das bestehende Tagesfenster (`DayDetailModal` in `src/components/NewCycleExample.tsx`) öffnet sich jetzt für **jeden nicht-zukünftigen Kalendertag** (statt bisher nur für bereits bestätigte/laufende Tage) und bietet je nach abgeleitetem Zustand klare Aktionen: `Periode begonnen`, `Periode beendet` und – nur am ersten oder letzten bestätigten Tag eines Eintrags – `Periodentag löschen`. Ein mittlerer bestätigter Tag zeigt stattdessen den Hinweis „Du kannst nur den ersten oder letzten Periodentag löschen.“
+- Neue reine, testbare Ableitungsfunktion `getPeriodDayActions` (`src/lib/period-day-actions.ts`) bestimmt für ein Datum ausschließlich aus den bereits geladenen eigenen Einträgen, welche Aktionen sicher angeboten werden dürfen – niemals durch Raten. Ein Tag zählt nur dann als löschbarer Rand, wenn genau ein Eintrag ihn als Start oder Ende trifft (`edgeMatches.length === 1`); mehrdeutige Treffer (strukturell durch die bestehende Überschneidungsprüfung ausgeschlossen) führen bewusst zu keiner Löschoption statt einer geratenen Auswahl.
+- `Periode begonnen` sendet `POST /api/neu/periods` mit dem gewählten Tag als `startDate` und `endDate: null` (laufender Eintrag) – funktioniert unabhängig davon, ob an diesem Tag zuvor eine Schätzung, ein erwarteter oder ein neutraler Zustand angezeigt wurde; die Schätzung blockiert den echten Beginn nicht.
+- `Periode beendet` sendet `PUT /api/neu/periods/[id]` für den betroffenen laufenden Eintrag mit dem gewählten Tag als `endDate` und **setzt `expectedEndDate` im selben Update auf `null`** – ein vorheriges erwartetes Ende wird danach nicht weiter als aktiv angezeigt, exakt wie im Auftrag gefordert.
+- `Periodentag löschen` an einem Rand verschiebt bei `edge: "start"` den Start um einen Tag nach vorn bzw. verkürzt bei `edge: "end"` das Ende um einen Tag (reine Datums-String-Arithmetik über `shiftDateByOneDay`, `Date.UTC`, keine Zeitzonenverschiebung) und speichert per `PUT`. Ist der betroffene Eintrag ein Einzeltag (`isSingleDay`), erklärt eine zweite, eigene Bestätigungsebene (`DeleteEdgeConfirmModal`) ausdrücklich, dass damit der gesamte Eintrag gelöscht wird, und nutzt erst nach dieser zweiten Bestätigung `DELETE /api/neu/periods/[id]`.
+- Der bisherige, zweistufige „Start dann Ende“-Auswahlweg für vergangene neutrale Tage (`historicalSelection`/`historicalDayAction`, `HistoricalDayActionModal`, `HistoricalReviewModal` aus Version 5) wurde entfernt und durch den einheitlichen Tagesfenster-Weg ersetzt (Owner-Entscheidung, siehe Abweichungen) – derselbe Anwendungsfall (einen kompletten vergangenen Zeitraum erfassen) bleibt weiterhin möglich: zuerst am Starttag `Periode begonnen`, danach am echten Endtag `Periode beendet`.
+- Keine neue Datenbanktabelle, keine neue Migration, keine neue API-Route: ausschließlich die bereits vorhandenen, gesicherten `POST /api/neu/periods`, `PUT /api/neu/periods/[id]` und `DELETE /api/neu/periods/[id]` werden genutzt, mit ihren bestehenden Sitzungs-, Herkunfts-, Kontotrennungs- und Überschneidungsprüfungen unverändert wirksam.
+
+**Tests:**
+- Neue `tests/period-day-actions.test.ts` (11 Prüfungen, Node-eigener Testrunner) für `getPeriodDayActions`: zukünftiger Tag erlaubt keine Aktion; neutraler vergangener Tag erlaubt nur `Periode begonnen`; ein mittlerer Tag einer abgeschlossenen Periode erlaubt weder Beginn noch Löschen; erster/letzter Tag einer mehrtägigen Periode sind je für sich löschbare, aber keine Einzeltag-Ränder; eine abgeschlossene Periode mit genau einem Tag ist als Einzeltag löschbar; eine laufende Periode erlaubt am Starttag bis heute `Periode beendet`; eine heute erst begonnene laufende Periode ist am Starttag ein löschbarer Einzeltag, eine vor mehreren Tagen begonnene nicht; ein nur erwarteter (noch nicht bestätigter) Tag erlaubt keine der drei Aktionen; zwei unabhängige Einträge beeinflussen sich nicht. Alle 11 Prüfungen bestanden.
+- Neue `scripts/verify-period-day-actions.mts` (17 Prüfungen) gegen die lokale Testdatenbank auf Ebene der tatsächlichen Schreibpfade: laufende Periode mit echtem Ende gestern leert `expectedEndDate` im selben Update; ein heutiger Beginn auf einem neutralen Tag wird ohne Blockade akzeptiert; Start- und End-Randkürzung funktionieren unabhängig voneinander und lassen den jeweils anderen Rand unverändert; die Löschung eines Einzeltag-Eintrags entfernt ihn vollständig; ein fremdes Konto kann weder einen Rand kürzen noch löschen (`not_found`, kein Datenleck); eine nicht vorhandene ID wird bei Änderung und Löschung abgelehnt; kein zukünftiger tatsächlicher Start existiert nach dem Testlauf. Alle 17 Prüfungen bestanden.
+- `scripts/verify-day-detail.ts` aktualisiert: Die bisherige Quelltext-Prüfung „der klickbare Tag wird ausschließlich aus storedPeriod/runningPeriod abgeleitet“ beschrieb eine mit Version 8 bewusst geänderte Einschränkung (jetzt ist jeder nicht-zukünftige Tag klickbar) und wurde durch zwei präzisere Prüfungen ersetzt: der Periodentag-**Zähler** bleibt weiterhin ausschließlich aus `storedPeriod`/`runningPeriod` abgeleitet, und die **Klickbarkeit** ist neu korrekt auf `!dayInfo?.isFuture` begrenzt. Alle Prüfungen (inklusive der unveränderten Monats-/Jahresgrenzen- und Status-Prüfungen aus Version 4) weiterhin bestanden.
+- End-to-end über echten lokalen Dev-Server mit echten HTTP-Anfragen: das exakte WP-Beispiel nachgestellt (laufende Periode mit erwartetem Ende heute, dann tatsächliches Ende gestern gespeichert – `expectedEndDate` danach `null`); Start- und End-Randkürzung sowie Einzeltag-Löschung über die echte API bestätigt.
+- Mobile Sichtprüfung (Playwright temporär installiert, iPhone-Viewport 375×812, danach vollständig entfernt): Screenshots bestätigen das Tagesfenster auf einem neutralen Tag mit „Periode begonnen“ und der ehrlichen Meldung „Keine bestätigte Periode an diesem Tag.“; auf einem Start-Rand mit „Periodentag löschen“; auf einem mittleren Tag mit dem Erklärungstext statt einer Löschoption; kein horizontaler Überlauf, Hintergrund korrekt abgedunkelt und über `inert` blockiert.
+- Bestehende Regressionen erneut grün: `scripts/verify-my-periods.mts`, `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-estimated-period.mts`, `tests/new-cycle-prediction.test.ts`. `npx tsc --noEmit` fehlerfrei. `npm run build` erfolgreich, Routenliste unverändert (keine neue Route).
+- `scripts/verify-personal-cycle-view.ts` zeigt 7 Fehlschläge bei den Farbverlauf-Quelltextprüfungen – dieser Defekt ist **nicht** durch WP-003 Version 8 verursacht: Er entstand bereits durch die Extraktion der SVG-Farbverläufe aus `NewCycleExample.tsx` in `src/components/CyclePersonalRing.tsx` im vorher abgeschlossenen Paket WP-004 Version 6 (Commit `99ad662`, vor Beginn dieser Sitzung). Das Skript sucht die Gradient-Definitionen weiterhin nur in `NewCycleExample.tsx`. Alle funktionalen Prüfungen desselben Skripts (Median, Ringgeometrie, Markerposition, Phasenberechnung) bestehen weiterhin fehlerfrei; betroffen ist ausschließlich die veraltete Quelltext-Fundstelle der Sichtprüfung. Wird hier nur dokumentiert, nicht behoben, da außerhalb des WP-003-Auftragsumfangs (analog zum bereits bekannten, ebenfalls nicht behobenen Defekt in `tests/calendar-day-info.test.ts`).
+
+**Abweichungen:**
+- Der bisherige zweistufige „Start dann Ende“-Weg für vergangene neutrale Tage (Version 5) wurde durch den neuen, einheitlichen Tagesfenster-Weg **ersetzt**, nicht parallel dazu beibehalten. Dies wurde dem Owner vor der Umsetzung zur Klärung vorgelegt, da der Auftrag von „Erweitere den bestehenden interaktiven Tagesweg statt eines zweiten Kalenders“ sprach, ohne das Verhältnis der beiden bestehenden Wege explizit zu regeln. Entscheidung: Ersetzen, mit direktem Bestätigungsbutton statt einer zusätzlichen Zwischenanzeige (wie beim bisherigen `HistoricalDayActionModal`-Muster). Ein vollständiger vergangener Zeitraum bleibt weiterhin in zwei Schritten erfassbar (`Periode begonnen` am Start, später `Periode beendet` am echten Ende), nur nicht mehr in einem einzigen zusammenhängenden Auswahlfluss.
+- Der bereits vor dieser Version bestehende, unabhängige Defekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort.
+- Der oben beschriebene, ebenfalls vorbestehende (WP-004 v6) Quelltext-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` besteht unverändert fort.
+
+**Offene Punkte:**
+- Owner-Prüfschritt steht aus: `Meine Periode aktualisieren`/Kalender öffnen, auf einen neutralen Tag tippen und `Periode begonnen` prüfen, auf einen laufenden Tag tippen und `Periode beendet` prüfen, auf einen Rand-Tag tippen und `Periodentag löschen` mit Bestätigung prüfen, auf einen mittleren Tag tippen und den Erklärungstext prüfen.
+- Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
+- Der vorbestehende Quelltext-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` (Gradient-Suche zeigt noch auf `NewCycleExample.tsx` statt `CyclePersonalRing.tsx`) sollte ebenfalls in einem eigenen Paket korrigiert werden.
+- Kein Deploy ausgelöst – wie beauftragt.

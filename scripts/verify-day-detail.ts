@@ -96,7 +96,7 @@ console.log("\n== WP-003 V4: expected/planned/estimate/neutral erhalten keinen e
   assertEqual(neutral.status, "neutral", "ein neutraler Tag hat status 'neutral', nicht 'confirmed'/'running'");
 }
 
-console.log("\n== WP-003 V4: NewCycleExample.tsx öffnet das Tagesfenster nur für confirmed/running ==");
+console.log("\n== WP-003 V4/V8: NewCycleExample.tsx öffnet das Tagesfenster für jeden nicht-zukünftigen Tag ==");
 {
   const componentPath = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -107,10 +107,20 @@ console.log("\n== WP-003 V4: NewCycleExample.tsx öffnet das Tagesfenster nur f�
   );
   const source = readFileSync(componentPath, "utf8");
 
+  // Seit WP-003 Version 8 ist nicht mehr nur ein confirmed/running-Tag
+  // klickbar: jeder nicht-zukünftige Tag öffnet das Tagesfenster, damit
+  // dort "Periode begonnen"/"Periode beendet"/"Periodentag löschen" für
+  // neutrale, erwartete oder geschätzte Tage angeboten werden kann. Der
+  // Periodentag-Zähler selbst bleibt weiterhin ausschließlich aus
+  // storedPeriod/runningPeriod abgeleitet (confirmedPeriodEntry), nur die
+  // Klickbarkeits-Bedingung wurde erweitert.
   const hasConfirmedPeriodEntryLine = source.includes(
     "const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;",
   );
-  assertEqual(hasConfirmedPeriodEntryLine, true, "der klickbare Tag wird ausschließlich aus storedPeriod/runningPeriod abgeleitet (kein expected/planned/estimate)");
+  assertEqual(hasConfirmedPeriodEntryLine, true, "der Periodentag-Zähler wird weiterhin ausschließlich aus storedPeriod/runningPeriod abgeleitet");
+
+  const hasFutureGate = source.includes("const isDayActionAvailable = Boolean(date && !dayInfo?.isFuture);");
+  assertEqual(hasFutureGate, true, "die Klickbarkeit ist auf nicht-zukünftige Tage begrenzt (isDayActionAvailable)");
 
   const hasDialogRole = source.includes('role="dialog"') && source.includes('aria-modal="true"');
   assertEqual(hasDialogRole, true, "DayDetailModal trägt role=\"dialog\" und aria-modal=\"true\"");
