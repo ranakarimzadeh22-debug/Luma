@@ -3,13 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
-import { todayDateOnly, type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
+import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber } from "@/lib/calendar-day-info";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
+import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import CyclePersonalRing from "@/components/CyclePersonalRing";
+import CalendarTodayLine from "@/components/CalendarTodayLine";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -737,8 +739,9 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModal
 
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
   const router = useRouter();
-  const [today] = useState(() => new Date());
-  const [exampleMonth] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
+  const [todayKey] = useState(() => todayBerlinDateOnly());
+  const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
+  const exampleMonth = { year: todayYear, month: todayMonthIndex - 1 };
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
   const [activePhase, setActivePhase] = useState<Phase | null>(null);
   const [periods, setPeriods] = useState(initialPeriods);
@@ -759,9 +762,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   );
   const isExampleMonth =
     displayedMonth.year === exampleMonth.year && displayedMonth.month === exampleMonth.month;
-  const isCurrentMonth =
-    displayedMonth.year === today.getFullYear() && displayedMonth.month === today.getMonth();
-  const todayKey = todayDateOnly(today);
+  const isCurrentMonth = displayedMonth.year === todayYear && displayedMonth.month === todayMonthIndex - 1;
   const hasPersonalCircle = personalCycleView.status !== "no_data";
 
   function changeMonth(offset: number) {
@@ -899,6 +900,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       </section>
 
       <section aria-label="Kalender zur Orientierung" className="space-y-5">
+        <CalendarTodayLine today={todayKey} />
         <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
           <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">
@@ -927,7 +929,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   ? examplePhase(day)
                   : null
               : null;
-            const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
+            const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const storedPeriod = date
               ? periods.find((entry) => entry.endDate !== null && entry.startDate <= date && entry.endDate >= date)
               : null;
@@ -1002,7 +1004,20 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}
                 {!storedPeriod && !runningPeriod && expectedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Ca.</span>}
                 {!storedPeriod && !runningPeriod && !expectedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
-                {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && <span className="absolute right-1 top-0.5 text-[9px] font-bold" aria-label={phaseLabels[phase]}>{phaseLetters[phase]}</span>}
+                {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && (
+                  <span
+                    className="absolute right-1 top-0.5 text-[9px] font-bold"
+                    aria-label={phase === "period" ? "Geschätzte nächste Periode, kann abweichen" : phaseLabels[phase]}
+                  >
+                    {phase === "period" ? "Gsch." : phaseLetters[phase]}
+                  </span>
+                )}
+                {isToday && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-1/2 top-1 size-2 -translate-x-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
+                  />
+                )}
                 {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
               </>
             );
@@ -1051,6 +1066,21 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           >
             Meine Periode aktualisieren
           </button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-[#382631]" aria-label="Kalender-Kennzeichnung">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-full bg-[#6d153f]" aria-hidden="true" />
+            Bestätigt / Laufend
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-full bg-[#f3a9bd]" aria-hidden="true" />
+            Voraussichtliches Ende – kann abweichen
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-full bg-[#c9b3ea]" aria-hidden="true" />
+            Geschätzte nächste Periode – kann abweichen
+          </span>
         </div>
 
         <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">

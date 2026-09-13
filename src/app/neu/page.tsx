@@ -10,7 +10,7 @@ import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { predictCycle } from "@/lib/new-cycle-prediction";
 import { computePersonalCycleView } from "@/lib/personal-cycle-view";
 import { getNewPeriodPlans } from "@/lib/new-period-plans";
-import { todayDateOnly } from "@/lib/new-period-validation";
+import { todayBerlinDateOnly } from "@/lib/berlin-date";
 
 export const dynamic = "force-dynamic";
 
@@ -55,8 +55,9 @@ export default async function NewAppPage() {
     );
   }
 
-  const prediction = predictCycle(periodEntries, profile);
-  const personalCycleView = computePersonalCycleView(periodEntries, profile, todayDateOnly());
+  const today = todayBerlinDateOnly();
+  const prediction = predictCycle(periodEntries, profile, today);
+  const personalCycleView = computePersonalCycleView(periodEntries, profile, today);
 
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_15%_12%,rgba(250,220,225,0.58),transparent_34%),radial-gradient(circle_at_88%_44%,rgba(238,219,244,0.46),transparent_32%),#fff9f8] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-7">

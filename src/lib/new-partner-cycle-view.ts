@@ -4,7 +4,7 @@ import { getLumaCorePool } from "@/lib/new-auth-db";
 import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { computePersonalCycleView, type PersonalCycleView } from "@/lib/personal-cycle-view";
-import { todayDateOnly } from "@/lib/new-period-validation";
+import { todayBerlinDateOnly } from "@/lib/berlin-date";
 
 export interface PartnerCycleView {
   personalCycleView: PersonalCycleView;
@@ -31,7 +31,7 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
     getNewCycleProfile(ownerUserId),
   ]);
 
-  const today = todayDateOnly();
+  const today = todayBerlinDateOnly();
   const personalCycleView = computePersonalCycleView(periods, profile, today);
   const runningEntry = periods.find((entry) => entry.endDate === null && entry.startDate <= today);
 

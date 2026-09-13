@@ -1,7 +1,7 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 7
+package_revision: 8
 status: review
 created: 2026-09-10
 updated: 2026-09-13
@@ -12,6 +12,130 @@ brief_version: 1
 technical_brief: complete
 migration_approval: approved_2026-09-10
 ---
+
+## Version 8 – Klare aktuelle und nächste Periode im Kalender
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Der Kalender zeigt klar die aktuelle tatsächliche Periode, die nächste geschätzte Periode und den heutigen Tag.
+- **Heute:** Über dem Kalender steht `Heute · [Wochentag], [Datum]`. Ein deutlicher roter Punkt markiert zusätzlich genau diesen Kalendertag und wandert automatisch jeden Tag weiter.
+- **Eigene Ansicht:** Tatsächliche Periodentage sind klar von der nächsten geschätzten Periode unterscheidbar. Die Schätzung trägt immer `Kann abweichen`.
+- **Partneransicht:** Der Partner sieht ebenfalls Heute und die tatsächlich bestätigten Periodentage. Die nächste geschätzte Periode sieht er nur, wenn `Zyklus-Kreis für Partner freigeben` aktiv ist.
+- **Was bleibt gleich?** Der Partner kann nichts bearbeiten. Eine Vorhersage ist keine Tatsache und wird nie so dargestellt.
+
+### Entstehungsweg
+
+`Kalender enthält bereits echte Periodentage und einzelne Schätzlogik → aktuelle Orientierung ist noch nicht klar genug → aktuelles Datum und nächste Schätzung sichtbar und ehrlich ordnen → WP-004 Version 8`
+
+- bestätigtes Problem: Die aktuelle Periode, der heutige Tag und die nächste geschätzte Periode sind noch nicht in beiden Ansichten gleich klar erkennbar.
+- gewünschte Wirkung: Die Nutzerin und der berechtigte Partner sehen schnell, was heute tatsächlich gilt und was nur eine vorsichtige nächste Schätzung ist.
+- gewählte Lösung: Eine gemeinsame, datumsabhängige Kalenderkennzeichnung mit klar getrennten Zuständen für bestätigt, erwartetes Ende und nächste Schätzung.
+- wichtige Entscheidungen: DEC-121, DEC-123 und DEC-124.
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-013.md` und `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-014.md`.
+
+### Soll – von Codex
+
+- Über dem eigenen Kalender und dem Partnerkalender steht `Heute · [Wochentag], [Datum]` in einfachem Deutsch.
+- Der heutige echte Kalendertag erhält zusätzlich einen deutlichen roten Punkt. Die Position ergibt sich ausschließlich aus dem aktuellen Datum und wechselt automatisch am nächsten Kalendertag.
+- Tatsächlich bestätigte oder laufende Periodentage bleiben klar als echt erkennbar.
+- Die nächste geschätzte Periode des kommenden Zyklus ist in der eigenen Ansicht sichtbar und trägt immer `Geschätzt · Kann abweichen`.
+- Im Partnerkalender wird diese nächste Schätzung nur bei aktiver Kreisfreigabe gezeigt. Ohne Freigabe bleiben ausschließlich bisher erlaubte bestätigte und erwartete Tage sichtbar.
+- Das voraussichtliche Ende einer laufenden Periode bleibt von der nächsten Zyklus-Schätzung unterscheidbar, auch wenn beide nicht tatsächlich bestätigt sind.
+
+### Nicht enthalten
+
+- Keine neue Berechnung von Zykluslänge, PMS oder Eisprung und keine Änderung der bestehenden persönlichen Zykluslogik.
+- Keine neue Bildfunktion, Profilfunktion, Push-Nachricht, Echtzeitverbindung oder Änderung an alter Luma.
+- Keine Bearbeitungsfunktion für den Partner und keine Freigabe von Historie oder anderen privaten Daten.
+
+### Abnahmekriterien
+
+1. Heute steht in beiden Kalendern in der Form `Heute · [Wochentag], [Datum]`; der rote Punkt liegt auf genau demselben Tag.
+2. Der rote Punkt ist auch auf einem echten oder geschätzten Periodentag klar erkennbar und wird nicht durch dessen Hintergrund verdeckt.
+3. Die eigene Ansicht unterscheidet tatsächliche/laufende Tage, voraussichtliches Ende einer laufenden Periode und nächste geschätzte Periodentage verständlich per Text und visueller Kennzeichnung.
+4. Der Partner sieht die nächste geschätzte Periode ausschließlich bei aktiver Kreisfreigabe; nach Ausschalten und Neuladen sind diese Daten nicht mehr abrufbar.
+5. Ohne berechenbare Schätzung wird kein nächster Periodentag erfunden.
+6. Partner kann weiterhin keine Kalenderdaten eintragen, ändern oder löschen.
+
+### Technischer Auftrag für Claude – Version 8
+
+#### Bestätigte Ausgangslage im Code
+
+- `src/components/NewCycleExample.tsx` rendert den privaten Kalender. Es kennt tatsächliche/laufende Einträge, `expectedEndDate`, gespeicherte Pläne und `prediction` aus `src/lib/new-cycle-prediction.ts`. Heute wird derzeit über `isToday` mit Ring und Text markiert.
+- `src/lib/new-cycle-prediction.ts` liefert bereits `nextPeriodStart`, `nextPeriodEnd` und `futureCycles`. `phaseForDate(...)` markiert vorhandene geschätzte Phasen. Diese Logik ist wiederzuverwenden; keine zweite Berechnung.
+- `src/components/NewPartnerCalendar.tsx` rendert den lesenden Partnerkalender. `src/lib/new-partner-calendar.ts` liefert derzeit nur bestätigte Tage und erwartete Tage einer laufenden Periode.
+- `src/app/neu/partner/page.tsx` lädt die Partneransicht serverseitig. Der bestehende Kreis-Schalter ist als `cycle_ring_shared` auf der aktiven Partnerverbindung gespeichert und wird serverseitig für den Partnerkreis geprüft.
+
+#### Technisches Ziel
+
+- Ergänze eine kleine gemeinsame Präsentationshilfe für die deutsche Heute-Zeile und den roten Heute-Marker, sofern das die beiden Kalender ohne doppelte, abweichende Datumsformatierung ermöglicht.
+- Verwende für Owner- und Partnerkalender dieselbe klare, zeitzonenstabile Tagesgrundlage. Falls der bestehende Helfer das nicht zuverlässig für Europe/Berlin gewährleistet, extrahiere einen gemeinsamen, geprüften Datumshelfer statt lokaler `new Date()`-Abweichungen.
+- Erhalte im Ownerkalender die Priorität echter Daten: echte/laufende Periode steht immer vor einer gleichzeitigen Schätzung.
+- Ergänze für den Partner einen minimalen serverseitigen Kalender-View, der die vorhandene Owner-Prediction nur bei aktiver Verbindung **und** `cycle_ring_shared = true` in sichere, reine Datumslisten für die nächste geschätzte Periode übersetzt.
+- Trenne in der Darstellung mindestens: `Bestätigt`, `Voraussichtliches Ende – kann abweichen` und `Geschätzte nächste Periode – kann abweichen`. Nutze nicht nur Farbe, sondern auch verständlichen Text/Kürzel und Legende.
+- Rendere beim Partner ohne aktive Kreisfreigabe nie die geschätzte Liste, auch nicht versteckt in HTML, Props oder Client-State.
+
+#### Daten, Schnittstellen und Migrationen
+
+- **Migration nötig:** nein. Die bestehende serverseitige Kreisfreigabe `cycle_ring_shared` ist die Berechtigung für die Partner-Schätzung.
+- **Datenwirkung:** keine neuen gespeicherten Gesundheits- oder Profildaten; nur abgeleitete Datumslisten während des serverseitigen Renderns.
+- **API-Wirkung:** keine neue öffentliche API nötig. Eine vorhandene serverseitige Partner-View-Schicht darf minimal erweitert werden; falls Claude eine Route technisch benötigt, muss sie Sitzung, aktive Verbindung und Kreisfreigabe serverseitig prüfen.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Echte Periodendaten, `expectedEndDate` und Schätzungen bleiben semantisch getrennt.
+- Keine Vorhersage ohne bestehende berechenbare Grundlage. `no_data` bleibt neutral.
+- Partnerzugriff bleibt kontogebunden, lesend und nach Widerruf vollständig gesperrt.
+- Ohne Kreisfreigabe erhält der Partner keine nächste Periodenschätzung oder andere zusätzlich daraus abgeleitete Zyklusdaten.
+- Alte Luma, Verbindungscode, Anmeldung, Bildidee und Push-Auswahl bleiben unverändert.
+
+#### Pflichtprüfungen
+
+- Teste einen festen Zeitpunkt kurz vor und nach Mitternacht in `Europe/Berlin`: Heute-Zeile und roter Punkt müssen denselben Kalendertag zeigen.
+- Teste private Ansicht: echte laufende Periode, erwartetes Ende, vorhandene nächste Schätzung und fehlende Datenbasis.
+- Teste Partneransicht: aktive Verbindung mit Freigabe an/aus, zwei getrennte Paare, Widerruf und fehlende Sitzung. Geschätzte nächste Tage dürfen nur im erlaubten Zustand erscheinen.
+- Teste, dass heutige Markierung trotz bestätigtem oder geschätztem Hintergrund sichtbar bleibt.
+- Führe bestehende Partnerkalender-, Partnerkreis-, Perioden- und Zyklus-Prognose-Regressionsprüfungen, TypeScript, mobile Sichtprüfung und Produktions-Build aus.
+
+#### Stoppbedingungen
+
+- Stoppe, wenn die bestehende Vorhersagelogik keine sichere nächste Schätzung liefert; zeige dann keinen geschätzten Zeitraum.
+- Stoppe vor einer stillen Partnerfreigabe, einer Datenkopie, Echtzeit-/Push-Erweiterung oder jeder Änderung an alter Luma.
+- Stoppe, wenn der Partner-View die Freigabe nicht serverseitig vor jeder Datenableitung prüfen kann.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 8`, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus auf `review`.
+- Ergänze den Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-004` und danach `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe ausschließlich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 8 – von Claude
+
+- **Umgesetzt:** Neuer, zeitzonenstabiler Helfer `src/lib/berlin-date.ts` (`todayBerlinDateOnly`, `formatHeuteLine`) liefert „heute“ explizit über `Intl.DateTimeFormat` mit `timeZone: "Europe/Berlin"` statt über Server-lokale Zeit — nötig, weil der Produktions-Container (`node:20-alpine` ohne gesetzte `TZ`) sonst UTC verwendet und um Mitternacht in Berlin vom sichtbaren Kalendertag abweichen könnte. Eine neue gemeinsame Präsentationskomponente `CalendarTodayLine.tsx` rendert `Heute · [Wochentag], [Datum]` identisch in beiden Kalendern.
+- `src/components/NewCycleExample.tsx` (Owner) und `src/components/NewPartnerCalendar.tsx` (Partner) wurden auf `todayBerlinDateOnly()` statt eigener `new Date()`/`todayDateOnly()`-Berechnung umgestellt und zeigen jetzt beide die Heute-Zeile sowie einen deutlichen roten Punkt-Marker direkt auf dem heutigen Kalendertag – sichtbar auch auf dunklem (bestätigtem) Hintergrund durch weißen Rand und Schattenkontur.
+- `src/lib/new-cycle-prediction.ts`: `today` ist jetzt ein **Pflichtparameter** von `predictCycle` statt einer intern berechneten `new Date()` – erzwingt an jeder Aufrufstelle dieselbe, explizit übergebene Berlin-Tagesgrundlage. Beide bestehenden Aufrufer (`src/app/neu/page.tsx`, `src/lib/new-partner-calendar.ts`) übergeben jetzt denselben `todayBerlinDateOnly()`-Wert, den auch die Heute-Zeile nutzt. Keine zweite, abweichende Berechnung.
+- Der Owner-Kalender unterscheidet jetzt per Text/Kürzel klar `Bestätigt/Laufend`, `Voraussichtliches Ende – kann abweichen` und `Geschätzte nächste Periode – kann abweichen` (eigene Legende oberhalb der bestehenden Phasen-Legende; Kürzel `Gsch.` statt des mehrdeutigen `P` für reine Vorhersage-Tage). Die bestehende Priorität „echte/laufende Periode vor Schätzung“ war bereits durch die vorhandene Klassennamen-Kette (`storedPeriod || runningPeriod` zuerst) korrekt und wurde nicht verändert.
+- `src/lib/new-partner-calendar.ts` liefert jetzt zusätzlich `estimatedNextPeriodDates`: Die Freigabe (`cycle_ring_shared`) wird in derselben Abfrage wie die aktive Verbindung geprüft (kein zeitliches Fenster für ein Leck durch eine zwischenzeitlich geänderte Freigabe); nur bei `cycle_ring_shared = true` wird die vorhandene `predictCycle`-Logik auf die Owner-Perioden angewendet und der Zeitraum `nextPeriodStart`–`nextPeriodEnd` als reine Datumsliste zurückgegeben – ohne Freigabe bleibt die Liste immer leer, auch nicht versteckt in Props oder Client-State.
+- `src/components/NewPartnerCalendar.tsx` rendert die geschätzten Tage optisch klar getrennt (violett, Kürzel `Gsch.`) von bestätigten (schwarz, `B`) und erwarteten (grau, `E`) Tagen; die zugehörige Legende erscheint nur, wenn tatsächlich geschätzte Tage geliefert wurden.
+- Keine neue Migration (wie im Auftrag vorgesehen), keine neue öffentliche API-Route, keine Änderung an PMS-/Eisprung-/Zykluslängen-Berechnung, keine Änderung an alter Luma.
+
+**Tests:**
+- Neue `tests/new-cycle-prediction.test.ts` (5 Prüfungen, Node-eigener Testrunner): `predictCycle` nutzt konsequent den übergebenen `today`-Parameter statt eigener Zeitberechnung; an der Europe/Berlin-Tagesgrenze liefert die Funktion exakt den erwarteten nächsten Zeitraum; `phaseForDate` markiert ausschließlich die berechnete Vorhersage; der bestehende 28-Tage-Standardfall bei einer einzelnen Periode bleibt unverändert; ganz ohne Daten wird nichts erfunden. Alle 5 Prüfungen bestanden.
+- Neue `scripts/verify-cycle-today-and-estimate.mts` (6 Prüfungen): `todayBerlinDateOnly` bleibt exakt an der Europe/Berlin-Mitternachtsgrenze stabil, unabhängig davon, ob der zugrunde liegende UTC-Zeitstempel schon oder noch nicht über die eigene Mitternacht ist; `formatHeuteLine` liefert korrekte deutsche Wochentagsnamen inklusive Wochenende. Alle 6 Prüfungen bestanden.
+- Neue `scripts/verify-partner-estimated-period.mts` (9 Prüfungen) gegen die lokale Testdatenbank: ohne Freigabe liefert die Partner-Schätzung nachweislich eine leere Liste (nie die echte Schätzung, auch nicht teilweise); mit Freigabe stimmt die gelieferte Schätzung exakt mit der `predictCycle`-Berechnung überein; Ausschalten der Freigabe entfernt die Schätzung sofort; zwei unabhängige Paare beeinflussen sich nie; ein Widerruf der Verbindung entfernt die Schätzung zusätzlich zur reinen Freigabe. Alle 9 Prüfungen bestanden.
+- End-to-end über echten lokalen Dev-Server mit echten HTTP-Anfragen: Owner-Ansicht zeigt „Heute · Sonntag, 13.09.2026“ (korrekt für das echte Testdatum) und die „Geschätzte nächste Periode“-Legende; Partneransicht ohne Freigabe zeigt Heute-Zeile, aber keine Schätzungs-Legende; nach Einschalten der Freigabe erscheint sie, nach Ausschalten verschwindet sie sofort wieder beim nächsten Laden.
+- Mobile Sichtprüfung (Playwright temporär installiert, iPhone-Viewport 375×812, danach vollständig entfernt): Screenshots bestätigen roten Punkt-Marker auf dem heutigen Tag in beiden Kalendern (auch im Ring erkennbar, nicht vom Hintergrund verdeckt), korrekt getrennte Legende mit drei Zuständen im Ownerkalender, Schätzungs-Legende im Partnerkalender bei aktiver Freigabe. Kein horizontaler Überlauf in beiden Ansichten.
+- Bestehende Regressionen erneut grün: `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-my-periods.mts`, `scripts/verify-partner-notification-preference.mts`, `node scripts/verify-luma-core.mjs` (unverändertes Schema, keine Migration).
+- `npx tsc --noEmit` fehlerfrei. `npm run build` erfolgreich, Routenliste unverändert. Alle Testkonten nach der Prüfung aus `luma_core` gelöscht.
+- Der bereits bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (referenziert eine nicht existierende Funktion `applyPeriodDayAction`, dokumentiert seit WP-004 Version 4) besteht unverändert fort und wurde durch diese Version weder verursacht noch behoben.
+
+**Abweichungen:**
+- `predictCycle` wurde von einem optionalen auf einen **Pflicht**-`today`-Parameter umgestellt (statt eines Default-Werts `= todayBerlinDateOnly()`), da ein Default-Import von `berlin-date.ts` in `new-cycle-prediction.ts` mit Node's nativem ESM-Testrunner (genutzt von `tests/*.test.ts`) an dessen fehlender `@/`-Pfadalias-Auflösung gescheitert wäre. Ein Pflichtparameter ist zusätzlich strenger und macht die Zeitquelle an jeder Aufrufstelle explizit sichtbar, statt sie implizit zu verstecken – im Sinne der Auftragsvorgabe „keine zweite, abweichende Berechnung“.
+
+**Offene Punkte:**
+- Owner-Prüfschritt im Browser steht aus (Heute-Zeile, roter Punkt und Schätzungs-Kennzeichnung in beiden Ansichten selbst betrachten).
+- Kein Deploy ausgelöst – wie beauftragt.
 
 ## Version 7 – Zyklus-Kreis vor Partnerkalender
 

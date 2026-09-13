@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
-import { todayDateOnly } from "@/lib/new-period-validation";
+import { todayBerlinDateOnly } from "@/lib/berlin-date";
+import CalendarTodayLine from "@/components/CalendarTodayLine";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-type DayStatus = "confirmed" | "expected" | "none";
+type DayStatus = "confirmed" | "expected" | "estimated" | "none";
 
 interface NewPartnerCalendarProps {
   confirmedDates: string[];
   expectedDates: string[];
+  estimatedNextPeriodDates: string[];
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -29,6 +31,7 @@ function formatFullGermanDate(date: string): string {
 const statusLabel: Record<DayStatus, string> = {
   confirmed: "Bestätigt",
   expected: "Erwartet – kann abweichen",
+  estimated: "Geschätzte nächste Periode – kann abweichen",
   none: "Keine freigegebene Information",
 };
 
@@ -71,19 +74,20 @@ function DayDetailModal({ date, status, onClose }: DayDetailModalProps) {
   );
 }
 
-export default function NewPartnerCalendar({ confirmedDates, expectedDates }: NewPartnerCalendarProps) {
-  const [today] = useState(() => new Date());
-  const [displayedMonth, setDisplayedMonth] = useState({ year: today.getFullYear(), month: today.getMonth() });
+export default function NewPartnerCalendar({ confirmedDates, expectedDates, estimatedNextPeriodDates }: NewPartnerCalendarProps) {
+  const [todayKey] = useState(() => todayBerlinDateOnly());
+  const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
+  const [displayedMonth, setDisplayedMonth] = useState({ year: todayYear, month: todayMonthIndex - 1 });
   const [selectedDay, setSelectedDay] = useState<{ date: string; status: DayStatus } | null>(null);
 
   const confirmedSet = new Set(confirmedDates);
   const expectedSet = new Set(expectedDates);
+  const estimatedSet = new Set(estimatedNextPeriodDates);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
   );
-  const isCurrentMonth = displayedMonth.year === today.getFullYear() && displayedMonth.month === today.getMonth();
-  const todayKey = todayDateOnly(today);
+  const isCurrentMonth = displayedMonth.year === todayYear && displayedMonth.month === todayMonthIndex - 1;
 
   function changeMonth(offset: number) {
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
@@ -92,12 +96,14 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates }: Ne
   function statusFor(date: string): DayStatus {
     if (confirmedSet.has(date)) return "confirmed";
     if (expectedSet.has(date)) return "expected";
+    if (estimatedSet.has(date)) return "estimated";
     return "none";
   }
 
   return (
     <>
     <div className="space-y-5" inert={selectedDay ? true : undefined}>
+      <CalendarTodayLine today={todayKey} />
       <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
         <button
           type="button"
@@ -127,7 +133,7 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates }: Ne
         {cells.map((day, index) => {
           const date = day ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day) : null;
           const status = date ? statusFor(date) : "none";
-          const isToday = Boolean(day && isCurrentMonth && day === today.getDate());
+          const isToday = Boolean(day && isCurrentMonth && day === todayDay);
           return (
             <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
               {day && (
@@ -140,12 +146,21 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates }: Ne
                       ? "border-neutral-900 bg-neutral-900 text-white"
                       : status === "expected"
                         ? "border-neutral-300 bg-neutral-200 text-neutral-900"
-                        : "border-neutral-200 bg-white text-neutral-700"
+                        : status === "estimated"
+                          ? "border-purple-300 bg-purple-100 text-purple-900"
+                          : "border-neutral-200 bg-white text-neutral-700"
                   } ${isToday ? "ring-2 ring-offset-1" : ""}`}
                 >
                   <span>{day}</span>
                   {status === "confirmed" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">B</span>}
                   {status === "expected" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">E</span>}
+                  {status === "estimated" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">Gsch.</span>}
+                  {isToday && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-1/2 top-1 size-2 -translate-x-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
+                    />
+                  )}
                 </button>
               )}
             </div>
@@ -162,6 +177,12 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates }: Ne
           <span className="size-3 rounded-full bg-neutral-200" aria-hidden="true" />
           Erwartet – kann abweichen
         </span>
+        {estimatedNextPeriodDates.length > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-full bg-purple-200" aria-hidden="true" />
+            Geschätzte nächste Periode – kann abweichen
+          </span>
+        )}
       </div>
 
     </div>

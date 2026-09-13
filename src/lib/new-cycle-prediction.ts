@@ -58,9 +58,17 @@ interface ProfileFallback {
   lastPeriodStart: string | null;
 }
 
+/**
+ * `today` must be passed explicitly by every caller (Europe/Berlin, via
+ * todayBerlinDateOnly() from src/lib/berlin-date.ts) rather than defaulted
+ * here — the production container has no TZ set and defaults to UTC, so a
+ * silent `new Date()` fallback here would disagree with the calendar's own
+ * "Heute"-line and today-marker right around midnight.
+ */
 export function predictCycle(
   periods: NewPeriodEntryOpen[],
   profile: ProfileFallback | null,
+  today: string,
 ): CyclePrediction | null {
   const sorted = [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate));
   const completed = sorted.filter((entry): entry is NewPeriodEntryOpen & { endDate: string } => entry.endDate !== null);
@@ -118,7 +126,6 @@ export function predictCycle(
     };
   }
 
-  const today = new Date().toISOString().slice(0, 10);
   let nextPeriodStart = anchorStart;
   while (nextPeriodStart <= today) {
     nextPeriodStart = addDays(nextPeriodStart, cycleLengthDays);
