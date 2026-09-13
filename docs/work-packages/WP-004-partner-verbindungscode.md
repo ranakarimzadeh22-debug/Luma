@@ -1,10 +1,10 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 5
+package_revision: 6
 status: review
 created: 2026-09-10
-updated: 2026-09-11
+updated: 2026-09-13
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
@@ -158,6 +158,141 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
   - Der bereits aus WP-003 bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für dieses Paket nicht im Umfang.
   - Kein Deploy ohne gesonderte Owner-Freigabe – wie beauftragt nicht ausgelöst.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+---
+
+## Version 6 – Lesender Zyklus-Kreis für den Partner
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Der Partner sieht denselben Zyklus-Kreis wie die Nutzerin, aber nur als Ansicht. Er kann nichts ändern.
+- **Warum machen wir das?** Der Partner soll auf einen Blick verstehen, in welcher Zyklusphase die Nutzerin gerade ist und wann die laufende Periode voraussichtlich endet.
+- **Woher kam die Idee?** Aus dem bestätigten Partnerkalender und dem persönlichen Zyklus-Kreis der neuen Luma.
+- **Wo ist es in der App?** Im verbundenen neuen Partnerbereich unter `/neu/partner`. Die Nutzerin schaltet die Freigabe im eigenen Partner-Einstellungsbereich ein oder aus.
+- **Was sieht der Partner?** Den farbigen Kreis mit Heute-Marker, die aktuelle Phase und – nur wenn berechenbar – `Voraussichtliches Ende: [Datum]`. Jede Schätzung trägt den Hinweis `Kann abweichen`.
+- **Was bleibt privat?** Historie, Profil, Notizen, Bearbeitung, Einstellungen und alle nicht ausdrücklich freigegebenen Daten bleiben privat.
+- **Was kann die Nutzerin danach ausprobieren?** Freigabe einschalten, Partneransicht neu laden und den Kreis prüfen. Freigabe ausschalten: Der Kreis verschwindet wieder.
+
+### Entstehungsweg
+
+`Partner ist bereits sicher verbunden und sieht einen eingeschränkten Kalender → Partner braucht eine klare aktuelle Orientierung → derselbe vorsichtige Zyklus-Kreis auf derselben Datenbasis, aber nur nach sichtbarer Freigabe → WP-004 Version 6`
+
+- bestätigtes Problem: Der Partnerbereich zeigt bisher nur Kalenderdaten. Die aktuelle Zyklusphase und ein mögliches Ende einer laufenden Periode sind nicht als einfache Übersicht sichtbar.
+- gewünschte Wirkung: Der Partner versteht die aktuelle, ausdrücklich freigegebene Orientierung schnell, ohne private Daten bearbeiten oder weitere Details öffnen zu können.
+- gewählte Lösung: Wiederverwendung der bestehenden persönlichen Zykluslogik und Kreis-Darstellung als strikt lesende Partneransicht.
+- bestätigte Datenschutzentscheidung: Die Nutzerin schaltet `Zyklus-Kreis für Partner freigeben` bewusst ein und kann die Freigabe jederzeit wieder ausschalten (DEC-121).
+- bestätigte Kennzeichnung: Ein erwartetes Ende enthält immer `Kann abweichen` und wird nie als tatsächliches Ende dargestellt (DEC-122).
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-014.md`, DEC-121 und DEC-122.
+
+### Soll – von Codex
+
+- Der Umfang gilt ausschließlich für die **Neue Luma** und eine bereits aktive Verbindung unter `/neu/partner`.
+- Die Nutzerin erhält im bestehenden eigenen Partner-/Einstellungsbereich einen klaren Schalter `Zyklus-Kreis für Partner freigeben`.
+- Standard ist **nicht freigegeben**. Ohne aktive Freigabe werden keine Zyklus-Kreis-Daten an die Partneransicht geliefert.
+- Nach Freigabe zeigt der Partner denselben aktuellen Zyklusstand wie die Nutzerin: Periode, mögliche PMS-Phase, mögliche Eisprungphase oder neutraler Zustand; ein roter Heute-Marker zeigt die heutige Position.
+- Der Partnerkreis verwendet dieselbe Datenbasis und dieselbe Berechnungslogik wie der persönliche Kreis. Nach einer Änderung durch die Nutzerin zeigt ein Neuöffnen oder Neuladen der Partneransicht den aktuellen Stand.
+- Für eine laufende Periode darf der Partner die bisher bestätigten Periodentage sehen und zusätzlich ein mögliches Ende als `Voraussichtliches Ende: [Datum] · Kann abweichen`.
+- Bei zu wenigen Daten oder ohne berechenbaren Kreis zeigt der Partner einen neutralen Hinweis. Luma erfindet weder Phase noch Datum.
+- Die Partneransicht ist vollständig lesend: kein Eintragen, Ändern, Löschen, Tagesfenster mit Bearbeitungsaktionen oder Zugriff auf die private Historie.
+
+### Nicht enthalten
+
+- Keine neue Push-Benachrichtigung, Gerätefreigabe oder Änderung der vorhandenen Benachrichtigungsauswahl.
+- Keine Freigabe von Profil, Historie, Notizen, Symptomen, Stimmung, Zykluslänge als zusätzlichem Detail oder anderen Gesundheitsdaten.
+- Keine Echtzeitverbindung, Websocket oder automatische Aktualisierung in einer bereits offen gelassenen Partneransicht; ein Neuöffnen oder Neuladen genügt in dieser Version.
+- Keine Änderung an alter Luma, Verbindungscode, Rollenwahl, Anmeldung oder bestehenden Perioden-Editierfunktionen.
+
+### Abnahmekriterien
+
+1. Ohne aktive Verbindung oder ohne Freigabe liefert und zeigt die Partneransicht keine Phase, keinen Marker, kein erwartetes Ende und keine anderen Zyklus-Kreis-Daten.
+2. Mit aktiver Freigabe sieht genau der verbundene Partner den lesenden Kreis mit derselben Phase und Heute-Position wie im privaten Bereich der Nutzerin.
+3. Ein erwartetes Ende erscheint nur, wenn die bestehende Logik es liefern kann, und immer mit `Kann abweichen`.
+4. Zu wenige Daten führen zu einer neutralen, verständlichen Ansicht statt zu einer erfundenen Phase oder Vorhersage.
+5. Nach Ausschalten der Freigabe ist der Kreis beim nächsten Laden des Partnerbereichs nicht mehr abrufbar, obwohl die Verbindung bestehen bleibt.
+6. Der Partner kann keine Zyklus-, Perioden- oder Freigabedaten ändern. Andere Partnerkonten erhalten nie die Daten eines fremden Paars.
+
+### Technischer Auftrag für Claude – Version 6
+
+#### Bestätigte Ausgangslage im Code
+
+- `src/app/neu/page.tsx` lädt bereits die echten Periodeneinträge, das Zyklusprofil und die Periodenpläne des angemeldeten Owner-Kontos. Dort entstehen `personalCycleView` durch `computePersonalCycleView(...)` aus `src/lib/personal-cycle-view.ts` und die Kreisansicht `NewCycleExample`.
+- `src/lib/personal-cycle-view.ts` ist die bestehende fachliche Quelle für die persönliche Zyklusansicht. Sie liefert vorsichtig `personal`, `profile_estimate` oder `no_data`, die heutige Phase, den Zyklustag, die Periodenlänge und den Anker. `src/lib/cycle-ring-geometry.ts` baut daraus die Ringsegmente und die Position des Heute-Markers.
+- `src/app/neu/partner/page.tsx` prüft die Partner-Sitzung und aktive Verbindung. Der Bereich lädt ausschließlich über serverseitige Helfer; `NewPartnerCalendar` ist bereits eine lesende Client-Komponente.
+- `src/lib/new-partner-calendar.ts` löst die aktive Owner-Zuordnung serverseitig auf und gibt nur die freigegebenen Kalenderdaten zurück. Dieses Muster ist für eine weitere, strikt begrenzte Partneransicht wiederzuverwenden.
+- `new_partner_connections` liegt getrennt in `luma_core`; `src/lib/new-partner.ts` enthält den Verbindungskern. `new_partner_notification_preferences` betrifft nur die separate Ja/Nein-Auswahl für spätere Benachrichtigungen und ist nicht für die Kreisfreigabe umzudeuten.
+
+#### Technisches Ziel
+
+- Ergänze eine serverseitig erzwungene, standardmäßig deaktivierte Freigabe für den Zyklus-Kreis der **Neuen Luma**. Die Freigabe gehört zur aktiven Verbindung oder zu einer gleichwertig klar kontogebundenen Berechtigung; Claude wählt den kleinsten sicheren Platz im bestehenden Datenmodell.
+- Ergänze im bestehenden Owner-Einstellungs-/Partnerbereich eine verständliche Umschaltmöglichkeit. Ausschalten muss den Zugriff sofort für spätere Partner-Abfragen sperren, ohne die Partnerverbindung zu beenden.
+- Ergänze einen serverseitigen Partner-View-Helper, der erst die aktive Verbindung und die Kreisfreigabe prüft, dann ausschließlich die bereits vorhandenen Owner-Perioden, das Owner-Profil und die vorhandene persönliche Berechnung verwendet.
+- Teile Berechnung oder Darstellung nur über wiederverwendbare Komponenten/Helfer. Es darf keine zweite, abweichende Berechnung für PMS, Eisprung, Zyklustag, Ring-Geometrie oder erwartetes Ende entstehen.
+- Rendere im Partnerbereich eine reine Anzeigevariante des Kreises. Sie enthält keine Owner-IDs, Eintrags-IDs, E-Mail-Adressen, Rohdaten oder Schreibaktionen.
+- Wenn die Freigabe aktiv ist, aber `personalCycleView` keine verlässliche Orientierung liefert, rendere eine neutrale Ansicht. Erwartetes Ende nur aus der bestehenden, vorsichtigen Logik ableiten und immer sichtbar als abweichende Erwartung markieren.
+
+#### Daten, Schnittstellen und Migrationen
+
+- **Migration nötig:** voraussichtlich ja, ausschließlich in `luma_core`, um die explizite Kreisfreigabe dauerhaft und kontogebunden zu speichern. Die bestehende WP-004-Migrationsfreigabe gilt für getrennte Änderungen im Partnerbereich der neuen Luma.
+- **Datenwirkung:** ein sicherer Boolescher Freigabezustand mit Default `false`; keine Kopie von Perioden, Profilen oder Berechnungsergebnissen.
+- **API-Wirkung:** eine geschützte Owner-Route zum Lesen/Ändern der eigenen Freigabe, mit Sitzung und Herkunftsprüfung. Partnerkreis-Daten ausschließlich über den serverseitig geschützten Render-/Helper-Weg oder eine gleichwertig streng geprüfte Lese-Route; nie über einen frei abrufbaren Owner-Endpunkt.
+- **Keine Änderung:** `app_luma`, Verbindungscode-Tabellen, Codes, Auth-Daten, vorhandene Partner-Benachrichtigungspräferenz und reale Periodeneinträge bleiben unverändert.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Ohne aktive Verbindung und ausdrückliche Freigabe gelangen keinerlei Kreiswerte in HTML, API-Antworten, Props oder Client-State des Partnerbereichs.
+- Die Freigabe ist serverseitig durchzusetzen; ein verstecktes Client-Element oder eine URL darf sie nicht umgehen.
+- Der Partner hat nur Lesezugriff. Die Owner-Ansicht und alle bestehenden Periodenfunktionen bleiben unverändert nutzbar.
+- `no_data` bleibt ehrlich: keine erfundene Phase, kein erfundener Zyklustag und kein erfundenes Ende.
+- Geschätzte Werte bleiben als möglich/abweichend gekennzeichnet. Kein medizinischer Rat und keine Diagnose.
+- Konten und Paare bleiben vollständig getrennt. Widerruf der Verbindung sperrt die Kreisansicht ebenfalls.
+
+#### Pflichtprüfungen
+
+- Teste mindestens zwei unabhängige Owner-/Partner-Paare: Freigabe eines Paars darf nie für das andere sichtbar sein.
+- Prüfe aktiv verbunden + Freigabe aus, aktiv verbunden + Freigabe an und nachträgliches Ausschalten; serverseitig dürfen im gesperrten Zustand keine Kreiswerte geliefert werden.
+- Prüfe gleiche Berechnung mit kontrollierten Daten: Owner- und Partneransicht haben dieselbe Phase, denselben Heute-Marker und denselben vorsichtig gekennzeichneten Erwartungszustand.
+- Prüfe `no_data`, Profil-Schätzung, persönliche Berechnung und laufende Periode. Nur tatsächlich bestätigte und klar erwartete Daten dürfen wie im Ownerbereich erscheinen.
+- Prüfe Widerruf, fremdes Partnerkonto sowie fehlende Sitzung als Negativfälle.
+- Führe bestehende Partnerkalender-, Partnerverbindungs-, Perioden- und persönlicher-Zyklus-Kreis-Regressionen, TypeScript, Produktions-Build und Ledger-/Work-Package-Validierung aus.
+- Prüfe den Partnerbereich mobil: Kreis, neutraler Zustand und Freigabewechsel sind ohne horizontalen Überlauf verständlich.
+
+#### Stoppbedingungen
+
+- Stoppe, wenn die Freigabe nicht serverseitig und kontogebunden durchsetzbar ist.
+- Stoppe, wenn die Kreisberechnung nur durch eine zweite, abweichende Fachlogik möglich wäre. Extrahiere stattdessen zuerst einen gemeinsamen geprüften Helfer.
+- Stoppe vor einer stillen Freigabe, Datenkopie, Echtzeit-/Push-Erweiterung, Freigabe von Historie oder jeder Änderung an alter Luma.
+- Stoppe, wenn der erwartete Endtag aus den vorhandenen Daten nicht eindeutig und vorsichtig ableitbar ist; zeige dann keinen Endtag.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 6`, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus auf `review`.
+- Ergänze den Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-004` und danach `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe ausschließlich auftragsbezogene Dateien. Ein manuelles Deployment ist nicht Teil dieses Pakets.
+
+### Ist Version 6 – von Claude
+
+- **Umgesetzt:** Der Owner erhält im bestehenden Einstellungsbereich (`/neu/einstellungen`) einen neuen Schalter `Zyklus-Kreis für Partner freigeben` (`NewPartnerCycleRingSharingToggle.tsx`), nur sichtbar bei aktiver Verbindung. Default ist **nicht freigegeben**. Die Freigabe wird als `cycle_ring_shared BOOLEAN NOT NULL DEFAULT FALSE` auf der bestehenden `new_partner_connections`-Zeile gespeichert (`database/luma-core/migrations/202609131000_partner_cycle_ring_sharing.sql`, angewendet) — bewusst kein neues Tabellenkonstrukt, sondern der kleinste sichere Platz auf der bereits kontogebunden eindeutigen aktiven Verbindung. Ein Widerruf der Verbindung (`endPartnerConnection`) macht die Freigabe automatisch mit ungültig, ohne eigene Zusatzlogik.
+- Die Owner-Route `POST /api/neu/partner/cycle-ring-sharing` (`src/app/api/neu/partner/cycle-ring-sharing/route.ts`) prüft Herkunft und Sitzung und ändert über `setPartnerCycleRingShared` (`src/lib/new-partner.ts`) ausschließlich die eigene aktive Verbindung des angemeldeten Owners.
+- Der neue serverseitige Helper `getPartnerCycleView` (`src/lib/new-partner-cycle-view.ts`) prüft zuerst aktive Verbindung **und** Freigabe in einer einzigen Datenbankabfrage; ohne beides liefert er `null`, und `/neu/partner` (`src/app/neu/partner/page.tsx`) rendert dann keinerlei Kreiswerte. Bei Freigabe lädt er ausschließlich die bereits vorhandenen Owner-Perioden und das Owner-Profil und ruft die bestehende, unveränderte `computePersonalCycleView` aus `src/lib/personal-cycle-view.ts` auf — exakt dieselbe Fachlogik wie die eigene Zyklusansicht des Owners unter `/neu`, keine zweite abweichende Berechnung.
+- Der SVG-Kreis selbst wurde aus `NewCycleExample.tsx` in eine gemeinsame, reine Präsentationskomponente `CyclePersonalRing.tsx` extrahiert (Ring-Geometrie, Phasenfarben, Heute-Marker, Statustexte identisch, keine Duplizierung). `NewCycleExample.tsx` (Owner) nutzt sie unverändert weiter; die neue `NewPartnerCycleRing.tsx` (Partner) nutzt dieselbe Komponente, ergänzt aber ausschließlich lesende Elemente: keine Bearbeitungsknöpfe, keine Modals, kein Zugriff auf Historie, Profil oder Notizen.
+- Für eine laufende Periode zeigt die Partneransicht zusätzlich `Voraussichtliches Ende: [Datum] · Kann abweichen`, abgeleitet aus dem bereits vorhandenen `expectedEndDate` des laufenden Periodeneintrags (derselbe Wert, den auch der bestehende Partnerkalender für „erwartete“ Tage nutzt) — keine neue Schätzlogik.
+- `no_data` bleibt ehrlich: ohne ausreichende Owner-Daten liefert `getPartnerCycleView` den Status `no_data` mit `todayPhase: null`; die Partneransicht zeigt dann nur den neutralen Hinweis „Noch nicht genügend Daten für eine Orientierung.“, nie eine erfundene Phase oder ein erfundenes Datum.
+- Keine Push-Benachrichtigung, keine Geräteberechtigung, keine Änderung an der bestehenden Benachrichtigungsauswahl, keine Freigabe von Profil/Historie/Notizen/Stimmung/Zykluslänge als Zusatzdetail, keine Echtzeitverbindung (ein Neuladen genügt) und keine Änderung an alter Luma, Verbindungscode, Rollenwahl oder Anmeldung.
+
+**Tests:**
+- Neue `scripts/verify-partner-cycle-ring.mts` (20 Prüfungen) gegen die lokale `luma_core`-Testdatenbank: ohne Verbindung liefert die Ansicht `null`; verbunden ohne Freigabe liefert `null`; nach Einschalten der Freigabe mit vier echten Perioden liefert sie `status: "personal"`, korrekt erkannte laufende Periode, dieselbe heutige Phase wie beim Owner und das erwartete Ende der laufenden Periode; nach Ausschalten liefert sie sofort wieder `null`, während die Verbindung selbst bestehen bleibt; zwei unabhängige Paare beeinflussen sich nie gegenseitig; ein Konto ohne eigene aktive Owner-Verbindung kann keine Freigabe setzen; ein frisch verbundenes Paar ohne Perioden liefert ehrlich `no_data` ohne erfundene Phase; ein Widerruf der Verbindung sperrt die Kreisansicht zusätzlich zur reinen Freigabe. Alle 20 Prüfungen bestanden.
+- End-to-end über echten lokalen Dev-Server (`npm run dev`, Port 3000) mit echten HTTP-Requests und Sitzungscookies: Verbindung über Registrierung/Code/Einlösung hergestellt; Partnerseite zeigt vor Freigabe keinen „Zyklus-Kreis“-Text; nach `POST /api/neu/partner/cycle-ring-sharing` mit `shared:true` erscheint der Kreis-Abschnitt; nach `shared:false` verschwindet er beim nächsten Laden wieder; Route lehnt fehlende Sitzung (401) und falsche Herkunft (403) korrekt ab. Testkonten danach aus `luma_core` gelöscht.
+- Mobile Sichtprüfung (Playwright temporär installiert, iPhone-Viewport 375×812, danach vollständig entfernt): Screenshot zeigt Kreis mit drei farblich unterscheidbaren Phasen (Periode, PMS, Eisprung), rotem Heute-Marker, „Zyklus: 28 Tage“ und „Voraussichtliches Ende: … · Kann abweichen“ unterhalb des Kreises, ohne Bearbeitungsknöpfe im Kreisbereich. `document.documentElement.scrollWidth > clientWidth` ist `false` — kein horizontaler Überlauf.
+- Bestehende Regressionen erneut grün: `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-my-periods.mts`, `scripts/verify-partner-notification-preference.mts`, `scripts/verify-no-real-push.mts`, `node scripts/verify-luma-core.mjs` (unverändert 12 Tabellen, da diese Version nur eine Spalte ergänzt, keine neue Tabelle).
+- `npx tsc --noEmit` fehlerfrei. `npm run build` erfolgreich; die Routenliste zeigt die neue `/api/neu/partner/cycle-ring-sharing`-Route und bestätigt, dass keine sonstigen Routen entfallen sind oder sich geändert haben.
+
+**Abweichungen:**
+- Keine. Die Freigabe wurde bewusst als zusätzliche Spalte auf `new_partner_connections` statt als eigene Tabelle umgesetzt, da sie exakt 1:1 an die aktive Verbindung gebunden ist (kleinster sicherer Platz im bestehenden Datenmodell, wie im Auftrag ausdrücklich zur Wahl gestellt) und ein Verbindungswiderruf die Freigabe dadurch automatisch mit beendet, ohne zusätzliche Lösch- oder Kaskadenlogik.
+
+**Offene Punkte:**
+- Owner-Prüfschritt im Browser steht aus (Schalter in den Einstellungen bedienen, Partneransicht auf einem zweiten Konto/Browser prüfen).
+- Kein Deploy ausgelöst – wie beauftragt.
 
 ## Version 5 – Auswahl für spätere Benachrichtigungen
 

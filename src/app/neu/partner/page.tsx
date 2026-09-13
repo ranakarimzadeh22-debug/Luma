@@ -2,10 +2,13 @@ import Link from "next/link";
 import { getNewAuthSession } from "@/lib/new-auth";
 import { getPartnerConnectionStatusForPartner } from "@/lib/new-partner";
 import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
+import { getPartnerCycleView } from "@/lib/new-partner-cycle-view";
 import { getPartnerNotificationPreference } from "@/lib/new-partner-notification-preference";
+import { todayDateOnly } from "@/lib/new-period-validation";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerEndButton from "@/components/NewPartnerEndButton";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
+import NewPartnerCycleRing from "@/components/NewPartnerCycleRing";
 import NewPartnerNotificationPreference from "@/components/NewPartnerNotificationPreference";
 import NewLogoutButton from "@/components/NewLogoutButton";
 
@@ -49,6 +52,7 @@ export default async function NewPartnerPage() {
 
   const status = await getPartnerConnectionStatusForPartner(session.userId);
   const calendarView = status.connected ? await getPartnerCalendarView(session.userId) : null;
+  const cycleView = status.connected ? await getPartnerCycleView(session.userId) : null;
   const notificationPreference = status.connected ? await getPartnerNotificationPreference(session.userId) : null;
 
   return (
@@ -67,6 +71,13 @@ export default async function NewPartnerPage() {
               <NewPartnerCalendar confirmedDates={calendarView.confirmedDates} expectedDates={calendarView.expectedDates} />
             ) : (
               <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
+            )}
+            {cycleView && (
+              <NewPartnerCycleRing
+                personalCycleView={cycleView.personalCycleView}
+                runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
+                today={todayDateOnly()}
+              />
             )}
             <NewPartnerNotificationPreference initialPreference={notificationPreference} />
             <NewPartnerEndButton />

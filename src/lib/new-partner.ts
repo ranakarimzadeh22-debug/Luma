@@ -26,7 +26,7 @@ function generateConnectionCode(): string {
 }
 
 export type PartnerConnectionStatus =
-  | { role: "owner"; connected: true; connectionId: string; connectedAt: Date }
+  | { role: "owner"; connected: true; connectionId: string; connectedAt: Date; cycleRingShared: boolean }
   | { role: "owner"; connected: false }
   | { role: "partner"; connected: true; connectionId: string; connectedAt: Date }
   | { role: "partner"; connected: false };
@@ -107,13 +107,38 @@ export async function redeemPartnerCode(
 }
 
 export async function getPartnerConnectionStatusForOwner(ownerUserId: string): Promise<PartnerConnectionStatus> {
-  const result = await getLumaCorePool().query<{ id: string; created_at: Date }>(
-    `SELECT id, created_at FROM new_partner_connections WHERE owner_user_id = $1 AND status = 'active' LIMIT 1`,
+  const result = await getLumaCorePool().query<{ id: string; created_at: Date; cycle_ring_shared: boolean }>(
+    `SELECT id, created_at, cycle_ring_shared FROM new_partner_connections WHERE owner_user_id = $1 AND status = 'active' LIMIT 1`,
     [ownerUserId],
   );
   const row = result.rows[0];
   if (!row) return { role: "owner", connected: false };
-  return { role: "owner", connected: true, connectionId: row.id, connectedAt: row.created_at };
+  return {
+    role: "owner",
+    connected: true,
+    connectionId: row.id,
+    connectedAt: row.created_at,
+    cycleRingShared: row.cycle_ring_shared,
+  };
+}
+
+export type SetCycleRingSharedResult = { ok: true } | { ok: false; reason: "not_connected" };
+
+/**
+ * Owner-only toggle for WP-004 Version 6. Scoped to the owner's own active
+ * connection so it can never affect another pair's row.
+ */
+export async function setPartnerCycleRingShared(
+  ownerUserId: string,
+  shared: boolean,
+): Promise<SetCycleRingSharedResult> {
+  const result = await getLumaCorePool().query(
+    `UPDATE new_partner_connections SET cycle_ring_shared = $1
+     WHERE owner_user_id = $2 AND status = 'active'`,
+    [shared, ownerUserId],
+  );
+  if ((result.rowCount ?? 0) === 0) return { ok: false, reason: "not_connected" };
+  return { ok: true };
 }
 
 export async function getPartnerConnectionStatusForPartner(partnerUserId: string): Promise<PartnerConnectionStatus> {

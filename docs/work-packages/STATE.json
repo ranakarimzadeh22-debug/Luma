@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "revision": 48,
+  "revision": 49,
   "reviewedRevision": 22,
-  "updatedAt": "2026-09-12",
+  "updatedAt": "2026-09-13",
   "changedPackages": [
     "WP-001",
     "WP-003",
