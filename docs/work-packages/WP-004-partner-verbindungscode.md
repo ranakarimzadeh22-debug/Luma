@@ -1,7 +1,7 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 6
+package_revision: 7
 status: review
 created: 2026-09-10
 updated: 2026-09-13
@@ -12,6 +12,45 @@ brief_version: 1
 technical_brief: complete
 migration_approval: approved_2026-09-10
 ---
+
+## Version 7 – Zyklus-Kreis vor Partnerkalender
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** In der Partneransicht steht der Zyklus-Kreis ganz oben. Direkt darunter folgt der Kalender.
+- **Warum machen wir das?** Der Partner soll zuerst die aktuelle Orientierung sehen und danach die einzelnen Kalendertage.
+- **Wo ist es in der App?** Ausschließlich im verbundenen Bereich der Neuen Luma unter `/neu/partner`.
+- **Was bleibt gleich?** Freigabe, Daten, Kreis-Inhalt und der vollständig lesende Kalender bleiben unverändert.
+
+### Soll – von Codex
+
+- Wenn die Kreisfreigabe aktiv ist, rendert `/neu/partner` zuerst den lesenden Zyklus-Kreis und direkt danach den Partnerkalender.
+- Ohne Kreisfreigabe bleibt der Kalender an seiner bisherigen Stelle sichtbar; der Kreis erscheint nicht.
+- Keine neue Interaktion, Berechnung, API, Datenbankänderung, Berechtigung oder Gestaltungsexpansion.
+
+### Technischer Auftrag für Claude – Version 7
+
+- **Startpunkt:** `src/app/neu/partner/page.tsx` rendert den bestehenden Kreis- und Kalenderbereich.
+- **Änderung:** Passe ausschließlich die Reihenfolge der vorhandenen Komponenten an: `NewPartnerCycleRing` vor `NewPartnerCalendar`.
+- **Invarianten:** Der Kreis bleibt rein lesend und nur nach der bestehenden serverseitigen Freigabe sichtbar. Kalenderdaten und Kalenderverhalten bleiben unverändert.
+- **Prüfung:** Prüfe beide Zustände (Freigabe an/aus) mobil und auf normaler Breite. Bei Freigabe muss der Kreis oberhalb des Kalenders sichtbar sein; ohne Freigabe darf nur der Kalender erscheinen. Führe mindestens TypeScript und eine gezielte sichtbare Prüfung aus.
+- **Abschluss:** Ergänze `Ist Version 7`, markiere WP-004 aktualisiert, validiere den Work-Package-Status, committe und pushe nur die betroffene Änderung. Kein manuelles Deployment.
+
+### Ist Version 7 – von Claude
+
+- **Umgesetzt:** In `src/app/neu/partner/page.tsx` wurde ausschließlich die Reihenfolge der beiden bestehenden bedingten Blöcke im verbundenen Zustand vertauscht: `NewPartnerCycleRing` (bei aktiver Freigabe) wird jetzt vor `NewPartnerCalendar` gerendert. Keine Komponente, keine Props, keine Berechnung, keine API und keine Datenbank wurden verändert.
+- Ohne Kreisfreigabe erscheint weiterhin ausschließlich der Kalender an seiner bisherigen Stelle; der Kreis-Block wird gar nicht gerendert (`{cycleView && (...)}` unverändert).
+
+**Tests:**
+- `npx tsc --noEmit` fehlerfrei.
+- Gezielte sichtbare Prüfung über echten lokalen Dev-Server mit echten HTTP-Anfragen: Ohne Freigabe enthält die gerenderte Partnerseite keinen „Zyklus-Kreis“-Text, nur den Kalender. Nach Einschalten der Freigabe (`POST /api/neu/partner/cycle-ring-sharing`) erscheint „Zyklus-Kreis“ im HTML nachweislich vor der Kalender-Legende (Byte-Position 2947 vs. 15314).
+- Mobile (375×812) und normale Breite (1280×900) per Screenshot geprüft (Playwright temporär installiert, danach vollständig entfernt): in beiden Breiten steht der Kreis oben, der Kalender direkt darunter, kein horizontaler Überlauf (`scrollWidth > clientWidth` ist `false` in beiden Fällen).
+- `npm run build` erfolgreich, Routenliste unverändert (reine Reihenfolgenänderung ohne neue Route).
+- Testkonten nach der Prüfung aus `luma_core` gelöscht.
+
+**Abweichungen:** keine.
+
+**Commit:** siehe unmittelbar folgenden Commit.
 
 # Aufgabe: Sichere Partnerverbindung mit persönlichem Code
 

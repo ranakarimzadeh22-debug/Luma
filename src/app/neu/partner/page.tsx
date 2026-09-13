@@ -67,17 +67,17 @@ export default async function NewPartnerPage() {
 
         {status.connected ? (
           <>
-            {calendarView ? (
-              <NewPartnerCalendar confirmedDates={calendarView.confirmedDates} expectedDates={calendarView.expectedDates} />
-            ) : (
-              <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
-            )}
             {cycleView && (
               <NewPartnerCycleRing
                 personalCycleView={cycleView.personalCycleView}
                 runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
                 today={todayDateOnly()}
               />
+            )}
+            {calendarView ? (
+              <NewPartnerCalendar confirmedDates={calendarView.confirmedDates} expectedDates={calendarView.expectedDates} />
+            ) : (
+              <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
             )}
             <NewPartnerNotificationPreference initialPreference={notificationPreference} />
             <NewPartnerEndButton />
