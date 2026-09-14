@@ -2,9 +2,9 @@
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
 package_revision: 9
-status: review
+status: completed
 created: 2026-09-07
-updated: 2026-09-13
+updated: 2026-09-14
 owner_approved: yes
 executor: claude
 product_area: "Neue Luma – Periodenverwaltung"
@@ -884,6 +884,10 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
   - Der bereits in Version 8 dokumentierte, vorbestehende Quelltext-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` (Gradient-Suche zeigt noch auf `NewCycleExample.tsx` statt `CyclePersonalRing.tsx`, WP-004 v6) besteht unverändert fort.
   - Der in Version 8 durch das Ersetzen des zweistufigen „Start dann Ende“-Wegs (Version 5) entstandene, bereits dokumentierte Fehlschlag mehrerer Quelltext-Prüfungen in `scripts/verify-historical-entry.ts` besteht unverändert fort; per `git stash` gegen den Stand vor dieser Version bestätigt, dass Version 9 daran nichts geändert hat.
 - **offene Punkte:**
-  - Owner-Prüfschritt für Version 9 steht aus: einen abgeschlossenen Zeitraum im Tagesfenster öffnen und `"N. Periodentag von M Tagen"` prüfen, die Periodenhistorie öffnen und `"Dauer: N Tage"` zusätzlich zur Zykluslänge prüfen, eine laufende Periode ohne echtes Ende prüfen (keine erfundene Gesamtdauer), nach einer Endkorrektur die aktualisierte Dauer prüfen.
   - Die drei oben genannten, vorbestehenden Testdefekte (`tests/calendar-day-info.test.ts`, `scripts/verify-personal-cycle-view.ts`, `scripts/verify-historical-entry.ts`) sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
 - **Commit:** folgt unmittelbar nach diesem Eintrag.
+
+### Owner-Abnahme
+
+- Der Owner hat den Prüfschritt für Version 9 durchgeführt und bestätigt. Claude setzt daraufhin den Paketstatus auf `completed`.
+- Ein formeller Soll-Ist-Abgleich (Abschnitt „Soll-Ist-Prüfung – von Codex“) für die Versionen 3–9 wurde von Claude nicht ergänzt; dieser bleibt wie in CLAUDE.md festgelegt bei Codex.
