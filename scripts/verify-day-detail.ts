@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCalendarDayInfo, periodDayNumber } from "../src/lib/calendar-day-info";
+import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "../src/lib/calendar-day-info";
 
 let failures = 0;
 
@@ -22,6 +22,14 @@ console.log("\n== WP-003 V4: periodDayNumber – Monats- und Jahresgrenze ==");
 {
   assertEqual(periodDayNumber("2026-10-01", "2026-09-29"), 3, "Monatsgrenze September -> Oktober wird korrekt zwei Tage später als Tag 3 gezählt");
   assertEqual(periodDayNumber("2027-01-01", "2026-12-30"), 3, "Jahresgrenze Dezember -> Januar wird korrekt als Tag 3 gezählt");
+}
+
+console.log("\n== WP-003 V9: actualPeriodDurationDays – inklusive tatsächliche Dauer ==");
+{
+  assertEqual(actualPeriodDurationDays("2026-09-07", "2026-09-09"), 3, "7.-9. September ergibt 3 Tage");
+  assertEqual(actualPeriodDurationDays("2026-09-07", "2026-09-11"), 5, "7.-11. September ergibt 5 Tage");
+  assertEqual(actualPeriodDurationDays("2026-09-07", "2026-09-07"), 1, "ein Einzeltag ergibt 1 Tag");
+  assertEqual(actualPeriodDurationDays("2026-12-30", "2027-01-02"), 4, "30. Dezember bis 2. Januar ergibt 4 Tage (Jahresgrenze)");
 }
 
 console.log("\n== WP-003 V4: confirmed und running öffnen das Tagesfenster (dayInfo.status) ==");
@@ -131,6 +139,29 @@ console.log("\n== WP-003 V4/V8: NewCycleExample.tsx öffnet das Tagesfenster fü
 
   const hasEscapeHandling = source.includes('event.key === "Escape"');
   assertEqual(hasEscapeHandling, true, "DayDetailModal schließt mit Escape");
+}
+
+console.log("\n== WP-003 V9: Tagesfenster zeigt die Gesamtdauer nur bei echtem Ende ==");
+{
+  const componentPath = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "src",
+    "components",
+    "NewCycleExample.tsx",
+  );
+  const source = readFileSync(componentPath, "utf8");
+
+  const totalDaysIndex = source.indexOf("totalDays:", source.indexOf("setSelectedDayDetail({"));
+  const totalDaysBlock = totalDaysIndex !== -1 ? source.slice(totalDaysIndex, totalDaysIndex + 200) : "";
+  const totalDaysOnlyFromRealEnd =
+    totalDaysBlock.includes("storedPeriod && storedPeriod.endDate") &&
+    totalDaysBlock.includes("actualPeriodDurationDays(storedPeriod.startDate, storedPeriod.endDate)") &&
+    !totalDaysBlock.includes("runningPeriod");
+  assertEqual(totalDaysOnlyFromRealEnd, true, "totalDays wird ausschließlich aus einem echten endDate (storedPeriod) abgeleitet, nie aus einer laufenden Periode");
+
+  const showsDurationText = source.includes("`${periodDay}. Periodentag von ${totalDays} Tagen`");
+  assertEqual(showsDurationText, true, "DayDetailModal zeigt bei bekannter Dauer 'N. Periodentag von M Tagen'");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

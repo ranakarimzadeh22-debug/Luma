@@ -29,6 +29,16 @@ export function periodDayNumber(date: string, startDate: string): number {
   return Math.round((dateMs - startMs) / 86400000) + 1;
 }
 
+/**
+ * Inclusive day count between an actual start and an actual end, e.g.
+ * 7.-9. September is 3 days. Only meaningful for a real endDate — never
+ * call this with an expectedEndDate. Pure string-date arithmetic, no Date
+ * object, no timezone shift.
+ */
+export function actualPeriodDurationDays(startDate: string, endDate: string): number {
+  return periodDayNumber(endDate, startDate);
+}
+
 export function getCalendarDayInfo({
   date,
   today,

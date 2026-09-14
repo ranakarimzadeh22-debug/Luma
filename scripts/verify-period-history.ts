@@ -65,6 +65,20 @@ console.log("\n== WP-003 V6: laufender Eintrag ohne echtes Ende zeigt kein erfun
   const rows = computePeriodHistory([entry("1", "2026-09-07", null, "2026-09-12")]);
   assertEqual(rows[0].endDate, null, "endDate bleibt null für einen laufenden Eintrag, auch mit gesetztem expectedEndDate");
   assertEqual(rows[0].cycleLengthDays, null, "einziger/neuester Eintrag hat keine Zykluslänge");
+  assertEqual(rows[0].durationDays, null, "ein laufender Eintrag ohne echtes Ende zeigt keine endgültige tatsächliche Dauer");
+}
+
+console.log("\n== WP-003 V9: durationDays – inklusive tatsächliche Dauer, nur bei echtem Ende ==");
+{
+  const rows = computePeriodHistory([
+    entry("1", "2026-09-07", "2026-09-09"),
+    entry("2", "2026-09-30", "2026-10-04"),
+  ]);
+  assertEqual(rows.find((r) => r.id === "1")?.durationDays, 3, "7.-9. September ergibt Dauer 3 Tage");
+  assertEqual(rows.find((r) => r.id === "2")?.durationDays, 5, "30.09.-04.10. ergibt Dauer 5 Tage (Monatsgrenze)");
+
+  const withExpectedOnly = computePeriodHistory([entry("3", "2026-09-07", null, "2026-09-12")]);
+  assertEqual(withExpectedOnly[0].durationDays, null, "ein expectedEndDate wird nie als tatsächliche Dauer verwendet");
 }
 
 console.log("\n== WP-003 V6: leere Historie liefert eine leere Liste ohne Fehler ==");
@@ -108,6 +122,11 @@ console.log("\n== WP-003 V6: NewCycleExample.tsx bindet die Historie rein lesend
   const inertBlockMatch = source.match(/inert=\{([\s\S]*?)\}\s*\n\s*>/);
   const backgroundBlocked = Boolean(inertBlockMatch?.[1].includes("isPeriodHistoryOpen"));
   assert(backgroundBlocked, "der Hintergrund wird bei offener Historie über inert deaktiviert");
+
+  const showsDurationSeparateFromCycle =
+    source.includes("Zyklus: {row.cycleLengthDays !== null") &&
+    source.includes("row.durationDays !== null && ` · Dauer: ${row.durationDays} Tage`");
+  assert(showsDurationSeparateFromCycle, "die Historie zeigt Dauer zusätzlich zur Zykluslänge, klar getrennt formatiert");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

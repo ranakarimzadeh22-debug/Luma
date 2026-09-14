@@ -6,7 +6,7 @@ import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
-import { getCalendarDayInfo, periodDayNumber } from "@/lib/calendar-day-info";
+import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
@@ -512,6 +512,7 @@ function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
 interface DayDetailModalProps {
   date: string;
   periodDay: number | null;
+  totalDays: number | null;
   actions: PeriodDayActions;
   isMiddleConfirmedDay: boolean;
   isSaving: boolean;
@@ -534,6 +535,7 @@ function formatFullGermanDate(date: string): string {
 function DayDetailModal({
   date,
   periodDay,
+  totalDays,
   actions,
   isMiddleConfirmedDay,
   isSaving,
@@ -563,7 +565,11 @@ function DayDetailModal({
           {formatFullGermanDate(date)}
         </h2>
         <p className="mt-3 text-base text-[#382631]">
-          {periodDay !== null ? `${periodDay}. Periodentag` : "Keine bestätigte Periode an diesem Tag."}
+          {periodDay !== null
+            ? totalDays !== null
+              ? `${periodDay}. Periodentag von ${totalDays} Tagen`
+              : `${periodDay}. Periodentag`
+            : "Keine bestätigte Periode an diesem Tag."}
         </p>
         {isMiddleConfirmedDay && (
           <p className="mt-2 text-sm text-[#6b5560]">Du kannst nur den ersten oder letzten Periodentag löschen.</p>
@@ -735,6 +741,7 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModal
               </p>
               <p className="mt-1 text-sm text-[#6b5560]">
                 Zyklus: {row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"}
+                {row.durationDays !== null && ` · Dauer: ${row.durationDays} Tage`}
               </p>
             </button>
           ))}
@@ -765,7 +772,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
-  const [selectedDayDetail, setSelectedDayDetail] = useState<{ date: string; periodDay: number | null } | null>(null);
+  const [selectedDayDetail, setSelectedDayDetail] = useState<{ date: string; periodDay: number | null; totalDays: number | null } | null>(null);
   const [isSavingDayAction, setIsSavingDayAction] = useState(false);
   const [dayActionError, setDayActionError] = useState("");
   const [pendingDeleteEdge, setPendingDeleteEdge] = useState<{
@@ -1071,6 +1078,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                       setSelectedDayDetail({
                         date: date as string,
                         periodDay: confirmedPeriodEntry ? periodDayNumber(date as string, confirmedPeriodEntry.startDate) : null,
+                        totalDays:
+                          storedPeriod && storedPeriod.endDate
+                            ? actualPeriodDurationDays(storedPeriod.startDate, storedPeriod.endDate)
+                            : null,
                       })
                     }
                     className={dayClassName}
@@ -1179,6 +1190,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <DayDetailModal
           date={selectedDayDetail.date}
           periodDay={selectedDayDetail.periodDay}
+          totalDays={selectedDayDetail.totalDays}
           actions={actions}
           isMiddleConfirmedDay={isMiddleConfirmedDay}
           isSaving={isSavingDayAction}

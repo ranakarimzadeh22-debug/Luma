@@ -1,7 +1,7 @@
 ---
 id: WP-003
 title: "Gespeicherte Perioden sicher bearbeiten und löschen"
-package_revision: 8
+package_revision: 9
 status: review
 created: 2026-09-07
 updated: 2026-09-13
@@ -782,3 +782,108 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
 - Der vorbestehende Quelltext-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` (Gradient-Suche zeigt noch auf `NewCycleExample.tsx` statt `CyclePersonalRing.tsx`) sollte ebenfalls in einem eigenen Paket korrigiert werden.
 - Kein Deploy ausgelöst – wie beauftragt.
+
+## Version 9 – Tatsächliche Periodendauer sichtbar machen (13. September 2026)
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Nach einem echten Beginn und Ende zeigt Luma klar, wie lange genau diese Periode gedauert hat.
+- **Beispiel:** Beginn am 7. September und Ende am 9. September zeigt `Dauer: 3 Tage`.
+- **Wo erscheint es?** Im kleinen Tagesfenster und in der Periodenhistorie.
+- **Wichtig:** Solange eine Periode noch läuft, zeigt Luma keine erfundene endgültige Dauer.
+
+### Entstehungsweg
+
+`Perioden können unterschiedlich lang dauern → tatsächlicher Beginn und Ende sind bereits speicherbar → Dauer aus beiden echten Daten berechnen und verständlich zeigen → WP-003 Version 9`
+
+- bestätigtes Problem: Die Nutzerin kann die tatsächliche Länge einer einzelnen Periode noch nicht klar sehen, obwohl Beginn und Ende gespeichert sind.
+- gewünschte Wirkung: Sie erkennt bei jeder abgeschlossenen Periode die reale Dauer und kann sie durch eine spätere Korrektur des Endes ändern.
+- gewählte Lösung: Luma leitet die Dauer inklusive Start- und Endtag aus den vorhandenen bestätigten Daten ab und zeigt sie nur bei einem echten Ende.
+- wichtige Entscheidung: `DEC-126 – Tatsächliche Periodendauer dynamisch ableiten`.
+- Quellen/Akten: `C:\coden\CODEX\App-Luma-Assistent\control\records\APP-IDEA-012.md`, `C:\coden\CODEX\App-Luma-Assistent\control\DECISIONS.md#dec-126`.
+
+### Soll – von Codex
+
+- Das Tagesfenster einer abgeschlossenen, bestätigten Periode zeigt den aktuellen Tag im Zeitraum und die gesamte tatsächliche Dauer, zum Beispiel `3. Periodentag von 3 Tagen`.
+- Die Periodenhistorie zeigt zusätzlich zur bestehenden Zykluslänge pro abgeschlossener Periode `Dauer: [n] Tage`.
+- Die Periodendauer zählt Start- und Endtag mit. Beispiel: 7.–9. September sind drei Tage.
+- Eine laufende Periode ohne echtes Ende zeigt keine endgültige Dauer. `Läuft noch` bleibt klar erkennbar.
+- Nach einer Änderung des echten Endes oder einer Rand-Löschung passt die sichtbare Dauer sofort zum neuen tatsächlichen Zeitraum.
+- `Zyklus: [n] Tage` bleibt die Länge zwischen zwei Periodenanfängen und wird nicht mit der Periodendauer verwechselt.
+
+### Abnahmekriterien
+
+1. Ein Zeitraum 7.–9. September zeigt im Tagesfenster am 9. September `3. Periodentag von 3 Tagen`.
+2. Die Historie derselben Periode zeigt `Dauer: 3 Tage` zusätzlich zu ihrer vorhandenen Zykluslänge.
+3. Nach einer Änderung auf 7.–11. September zeigt Luma fünf Tage.
+4. Eine laufende Periode ohne echtes Ende zeigt keine erfundene Gesamtdauer.
+5. Start- und Endtag werden inklusive gezählt, auch über Monats- oder Jahresgrenzen.
+
+### Technischer Auftrag für Claude – Version 9
+
+#### Bestätigte Code-Ausgangslage
+
+- `src/components/NewCycleExample.tsx` rendert `DayDetailModal` mit `periodDay` und `PeriodHistoryModal` mit `computePeriodHistory(periods)`.
+- `src/lib/period-history.ts` liefert pro Historienzeile `startDate`, `endDate` und `cycleLengthDays`; diese Zykluslänge beschreibt den Abstand bis zum nächsten tatsächlichen Beginn, nicht die Blutungsdauer.
+- `periodDayNumber` aus `src/lib/calendar-day-info.ts` bestimmt bereits den laufenden Tag ab dem tatsächlichen Start.
+
+#### Technisches Ziel
+
+- Ergänze eine kleine, testbare Datumsberechnung für die inklusive tatsächliche Dauer zwischen bestätigtem `startDate` und `endDate`; sie darf weder eine Schätzung noch `expectedEndDate` verwenden.
+- Reiche die berechnete Dauer nur für den passenden abgeschlossenen Eintrag an `DayDetailModal` weiter. Zeige bei einer laufenden Periode keine endgültige Gesamtdauer.
+- Ergänze `PeriodHistoryRow` oder eine gleichwertige reine Anzeigeableitung um die tatsächliche Dauer; `cycleLengthDays` bleibt unverändert und klar getrennt.
+- Aktualisiere nur die bestehende Owner- und Historienansicht. Keine neue Route, API, Datenbankmigration, Eingabemethode oder Partneransicht.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Nur ein echtes `endDate` liefert eine endgültige tatsächliche Dauer.
+- Erwartete Enddaten und Vorhersagen werden niemals für eine tatsächliche Dauer benutzt.
+- Beginn und Ende zählen inklusive; die Berechnung ist zeitzonenfest.
+- Die bestehende Korrektur, Rand-Löschung, Kontotrennung und Tagesfenster-Aktionslogik bleiben unverändert funktionsfähig.
+- Keine Änderung an Zykluslängenberechnung, Schätzlogik, Partnerbereich, Datenbank oder alter Luma.
+
+#### Pflichtprüfungen
+
+- 7.–9. September ergibt drei Tage; 7.–11. September ergibt fünf Tage.
+- Monats- und Jahresgrenze korrekt prüfen, zum Beispiel 30. Dezember bis 2. Januar sind vier Tage.
+- Laufender Eintrag und erwartetes Ende liefern keine endgültige tatsächliche Dauer.
+- Tagesfenster und Historie zeigen Dauer und Zykluslänge klar getrennt.
+- Nach einer bestehenden Rand-Löschung oder Endkorrektur aktualisiert die Dauer korrekt.
+- TypeScript, gezielte Tests, mobile Sichtprüfung, Produktions-Build und Entwicklungsledger-Validierung ausführen.
+
+#### Stoppbedingungen
+
+- Stoppe vor einer Änderung an Tabellen, APIs, Vorhersagen, der Partneransicht oder der Bedeutung von `cycleLengthDays`.
+- Stoppe, wenn eine erwartete oder geschätzte Dauer als tatsächliche Dauer angezeigt würde.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 9`, nenne Abweichungen sichtbar und belasse den Paketstatus auf `review`.
+- Ergänze das Entwicklungsledger und führe `node scripts/work-package-state.mjs mark-updated WP-003` sowie `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe nur die auftragsbezogenen Dateien. Kein manuelles Deployment.
+
+### Ist Version 9 – von Claude
+
+- **Umgesetzt:**
+  - Neue reine Funktion `actualPeriodDurationDays(startDate, endDate)` in `src/lib/calendar-day-info.ts` (wiederverwendet `periodDayNumber` – reine Datums-String-Arithmetik über `Date.UTC`, keine Zeitzonenverschiebung). Sie zählt Start- und Endtag inklusive, z. B. 7.–9. September ergibt 3.
+  - `src/lib/period-history.ts`: `PeriodHistoryRow` um `durationDays: number | null` erweitert. `computePeriodHistory` setzt `durationDays` ausschließlich, wenn ein echtes `endDate` vorhanden ist (`actualPeriodDurationDays(entry.startDate, entry.endDate)`); bei einem laufenden Eintrag (auch mit gesetztem `expectedEndDate`) bleibt `durationDays: null`. `cycleLengthDays` bleibt unverändert und bedeutet weiterhin ausschließlich den Abstand bis zum nächsten tatsächlichen Start.
+  - `src/components/NewCycleExample.tsx`: Der lokale Zustand `selectedDayDetail` trägt jetzt zusätzlich `totalDays: number | null`, gesetzt beim Öffnen des Tagesfensters ausschließlich aus `storedPeriod` (dem abgeschlossenen Eintrag mit echtem `endDate`) über `actualPeriodDurationDays(storedPeriod.startDate, storedPeriod.endDate)`; ein `runningPeriod` (kein echtes Ende) liefert bewusst `null`. `DayDetailModal` zeigt bei bekannter Dauer `"{periodDay}. Periodentag von {totalDays} Tagen"`, sonst wie bisher nur `"{periodDay}. Periodentag"`.
+  - `PeriodHistoryModal` zeigt pro Zeile zusätzlich zur bestehenden Zykluslänge `· Dauer: {n} Tage`, wenn `row.durationDays` vorhanden ist; bei einem laufenden Eintrag ohne echtes Ende erscheint kein Dauer-Zusatz.
+  - Nach einer bestehenden Endkorrektur oder Rand-Löschung (Version 8, `PUT`/`DELETE`) wird `router.refresh()` unverändert aufgerufen, wodurch die neu berechnete Dauer automatisch zum korrigierten tatsächlichen Zeitraum passt – keine eigene Zusatzlogik nötig, da die Dauer bei jedem Rendern neu aus den aktuellen `periods` abgeleitet wird.
+  - Keine neue Route, keine API-Änderung, keine Datenbankmigration, keine Änderung an `cycleLengthDays`, der Schätz-/Vorhersagelogik oder der Partneransicht.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - `scripts/verify-day-detail.ts` um zwei neue Prüfblöcke ergänzt: `actualPeriodDurationDays` (7.–9. September = 3 Tage, 7.–11. September = 5 Tage, Einzeltag = 1 Tag, 30. Dezember bis 2. Januar = 4 Tage über die Jahresgrenze) sowie Quelltext-Prüfungen, dass `totalDays` ausschließlich aus einem echten `endDate` (`storedPeriod`) und nie aus `runningPeriod` abgeleitet wird und dass das Tagesfenster den Dauer-Text korrekt anzeigt. Alle Prüfungen (neu und bestehend) bestanden.
+  - `scripts/verify-period-history.ts` um `durationDays`-Prüfungen ergänzt: 7.–9. September = 3 Tage, 30.09.–04.10. = 5 Tage (Monatsgrenze), ein `expectedEndDate` ohne echtes Ende liefert `durationDays: null`; zusätzliche Quelltext-Prüfung, dass Dauer und Zykluslänge in der Historie klar getrennt formatiert erscheinen. Alle Prüfungen (neu und bestehend) bestanden.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, alle 34 Routen erzeugt, keine neue Route.
+  - `scripts/verify-period-day-actions.mts` (Regression für Version 8, DB-Integration) erneut ausgeführt: alle 17 Prüfungen weiterhin bestanden.
+  - `scripts/verify-historical-entry.ts` und `scripts/verify-history-month-jump.ts` erneut ausgeführt: `verify-history-month-jump.ts` vollständig grün; `verify-historical-entry.ts` zeigt weiterhin denselben, bereits vor dieser Version bestehenden Fehlschlag bei 6 Quelltext-Prüfungen (siehe Abweichungen) – per `git stash` gegen den unveränderten Stand von Version 8 bestätigt identisch, also nicht durch Version 9 verursacht.
+  - Mobile Sichtprüfung mit Playwright (Chromium, 375×812, temporär installiert und danach vollständig wieder entfernt) gegen den lokalen Next.js-Dev-Server: Testkonto registriert, zwei abgeschlossene Perioden angelegt (01.–05.08.2026, 5 Tage; 25.–27.08.2026, 3 Tage). Tagesfenster am 05.08. zeigt `"5. Periodentag von 5 Tagen"`. Periodenhistorie zeigt beide Zeilen mit `"Zyklus: … · Dauer: N Tage"` klar getrennt (u. a. `"Zyklus: Noch nicht bekannt · Dauer: 3 Tage"` für den neuesten Eintrag). Kein horizontaler Overflow (per `document.documentElement.scrollWidth`-Prüfung bestätigt). Screenshots geprüft. Playwright und Testkonto (inkl. beider angelegter Perioden) danach vollständig entfernt.
+- **Abweichungen:** keine fachliche Abweichung.
+  - Der bereits in Version 3–8 dokumentierte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für diese Version nicht im Umfang.
+  - Der bereits in Version 8 dokumentierte, vorbestehende Quelltext-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` (Gradient-Suche zeigt noch auf `NewCycleExample.tsx` statt `CyclePersonalRing.tsx`, WP-004 v6) besteht unverändert fort.
+  - Der in Version 8 durch das Ersetzen des zweistufigen „Start dann Ende“-Wegs (Version 5) entstandene, bereits dokumentierte Fehlschlag mehrerer Quelltext-Prüfungen in `scripts/verify-historical-entry.ts` besteht unverändert fort; per `git stash` gegen den Stand vor dieser Version bestätigt, dass Version 9 daran nichts geändert hat.
+- **offene Punkte:**
+  - Owner-Prüfschritt für Version 9 steht aus: einen abgeschlossenen Zeitraum im Tagesfenster öffnen und `"N. Periodentag von M Tagen"` prüfen, die Periodenhistorie öffnen und `"Dauer: N Tage"` zusätzlich zur Zykluslänge prüfen, eine laufende Periode ohne echtes Ende prüfen (keine erfundene Gesamtdauer), nach einer Endkorrektur die aktualisierte Dauer prüfen.
+  - Die drei oben genannten, vorbestehenden Testdefekte (`tests/calendar-day-info.test.ts`, `scripts/verify-personal-cycle-view.ts`, `scripts/verify-historical-entry.ts`) sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+- **Commit:** folgt unmittelbar nach diesem Eintrag.

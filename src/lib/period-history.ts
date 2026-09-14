@@ -1,10 +1,12 @@
 import type { NewPeriodEntryOpen } from "@/lib/new-period-validation";
+import { actualPeriodDurationDays } from "@/lib/calendar-day-info";
 
 export interface PeriodHistoryRow {
   id: string;
   startDate: string;
   endDate: string | null;
   cycleLengthDays: number | null;
+  durationDays: number | null;
 }
 
 function daysBetween(from: string, to: string): number {
@@ -30,6 +32,7 @@ export function computePeriodHistory(periods: NewPeriodEntryOpen[]): PeriodHisto
       startDate: entry.startDate,
       endDate: entry.endDate,
       cycleLengthDays: next ? daysBetween(entry.startDate, next.startDate) : null,
+      durationDays: entry.endDate ? actualPeriodDurationDays(entry.startDate, entry.endDate) : null,
     };
   });
 }
