@@ -77,7 +77,6 @@ export default async function NewPartnerPage() {
             {calendarView ? (
               <NewPartnerCalendar
                 confirmedDates={calendarView.confirmedDates}
-                expectedDates={calendarView.expectedDates}
                 estimatedNextPeriodDates={calendarView.estimatedNextPeriodDates}
               />
             ) : (

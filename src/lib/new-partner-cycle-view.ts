@@ -15,12 +15,13 @@ export interface PartnerCycleView {
  * Read-only cycle ring view for a connected, ring-sharing partner. Reuses
  * the exact same computePersonalCycleView() logic as the owner's own /neu
  * page — no second, divergent phase/ring calculation. The expected-end
- * date is read directly from the already-loaded period entries, the same
- * source getPartnerCalendarView() uses for its own "expected" days — not
- * a separate estimate. Returns null when there is no active connection
- * for this partner account, or when the owner has not (or no longer)
- * turned sharing on; callers must never fall back to any other data source
- * in that case.
+ * date is read directly from the already-loaded period entries, gated only
+ * by cycle_ring_shared — independent from the separate calendar_shared
+ * grant that getPartnerCalendarView() checks for its base calendar (WP-004
+ * Version 9 removed expected days from that base calendar entirely).
+ * Returns null when there is no active connection for this partner
+ * account, or when the owner has not (or no longer) turned sharing on;
+ * callers must never fall back to any other data source in that case.
  */
 export async function getPartnerCycleView(partnerUserId: string): Promise<PartnerCycleView | null> {
   const ownerUserId = await resolveSharingOwnerUserId(partnerUserId);

@@ -1,10 +1,10 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 8
+package_revision: 9
 status: review
 created: 2026-09-10
-updated: 2026-09-13
+updated: 2026-09-26
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
@@ -12,6 +12,137 @@ brief_version: 1
 technical_brief: complete
 migration_approval: approved_2026-09-10
 ---
+
+## Version 9 – Grundkalender nur nach ausdrücklicher Freigabe
+
+### Owner-Ansicht – einfach erklärt
+
+- **Kurz gesagt:** Der eigene Bereich erhält einen separaten Schalter `Periodenkalender für Partner freigeben`. Er ist anfangs ausgeschaltet.
+- **Wenn der Schalter aus ist:** Der Partner sieht keine Kalenderdaten und keinen Zeitraum der Periode.
+- **Wenn der Schalter an ist:** Der Partner sieht weiterhin nur den einfachen, nicht bearbeitbaren Kalender mit tatsächlich bestätigten Periodentagen. Eine laufende Periode zeigt bestätigte Tage vom echten Beginn bis heute.
+- **Was der Partner nicht sieht:** Kein erwartetes Ende, keine geschätzte nächste Periode, keine Zykluslänge, keine Historie und keine Bearbeitungsfunktion.
+- **Wichtig:** Diese Kalenderfreigabe ist getrennt von `Zyklus-Kreis für Partner freigeben`. Der Kreis bleibt nur nach seiner eigenen Freigabe sichtbar.
+- **Sofort wirksam:** Schaltet die Eigentümerin den Kalender aus oder beendet sie die Verbindung, verschwinden die Kalenderdaten beim Partner beim nächsten Laden sofort.
+
+### Entstehungsweg
+
+`Partnerkalender zeigt bisher bestätigte und erwartete Tage nach einer aktiven Verbindung → die Eigentümerin soll selbst entscheiden, ob überhaupt Kalenderdaten geteilt werden → eigener standardmäßig ausgeschalteter Freigabeschalter mit minimaler reiner Ansicht → WP-004 Version 9`
+
+- bestätigtes Problem: Die Partneransicht benötigt eine eigene, klare Datenschutzentscheidung für den einfachen Periodenkalender.
+- gewünschte Wirkung: Die Eigentümerin kontrolliert getrennt, ob der Partner tatsächliche Periodentage sehen darf.
+- gewählte Lösung: Eine kontogebundene serverseitige Kalenderfreigabe pro aktiver Partnerverbindung, Standardwert aus.
+- bestätigte Grenzen: Der Partner bleibt vollständig lesend. Zyklus-Kreis, Schätzungen und Kalenderfreigabe sind getrennte Entscheidungen.
+
+### Soll – von Codex
+
+- In `/neu/einstellungen` gibt es für eine aktive Partnerverbindung den Schalter `Periodenkalender für Partner freigeben`.
+- Der Standard für eine neue Verbindung ist aus.
+- Der Partner erhält Kalenderdaten ausschließlich bei aktiver Verbindung **und** aktiver Kalenderfreigabe. Ohne diese Kombination enthält weder Server-HTML, Client-Props noch eine Route Periodentage.
+- Bei Freigabe zeigt der Partner nur tatsächlich bestätigte Periodentage. Bei einer laufenden Periode sind die Tage vom echten Start bis einschließlich heute bestätigt.
+- Erwartete Tage, voraussichtliches Ende, geschätzte nächste Periode und sonstige Zyklusdaten gehören nicht zum freigegebenen Grundkalender.
+- Der Partner kann weiterhin nichts eintragen, ändern oder löschen.
+- Die vorhandene Kreisfreigabe bleibt unverändert und unabhängig: Sie darf nicht automatisch die Kalenderfreigabe einschalten oder umgekehrt.
+
+### Nicht enthalten
+
+- Keine neue Vorhersage, Zyklusberechnung, PMS-/Eisprunginformation, Historie, Profilbild oder Push-Nachricht.
+- Keine Freigabe für die alte Luma.
+- Keine Bearbeitung von Periodendaten durch den Partner.
+- Keine automatische Aktivierung einer Freigabe oder Datenkopie zwischen Konten.
+
+### Abnahmekriterien
+
+1. Eine neue oder bestehende aktive Verbindung hat die Kalenderfreigabe standardmäßig aus, bis die Eigentümerin sie bewusst einschaltet.
+2. Bei ausgeschaltetem Schalter zeigt `/neu/partner` keine Kalendertage, keinen erwarteten Zeitraum und keine versteckten Periodendaten.
+3. Bei eingeschaltetem Schalter sieht nur der verbundene Partner tatsächliche bestätigte Tage; bei einer laufenden Periode reicht die Bestätigung vom echten Start bis heute.
+4. Erwartete und geschätzte Tage erscheinen im Grundkalender nie.
+5. Ausschalten oder Verbindungswiderruf sperrt den Zugriff sofort beim nächsten serverseitigen Laden.
+6. Kreisfreigabe und Kalenderfreigabe funktionieren unabhängig voneinander.
+7. Partneransicht enthält keine schreibende Kalenderaktion und bleibt mobil ohne horizontalen Überlauf.
+
+### Technischer Auftrag für Claude – Version 9
+
+#### Bestätigte Ausgangslage im Code
+
+- `src/app/neu/partner/page.tsx` rendert die lesende Partneransicht mit `NewPartnerCalendar`; `src/lib/new-partner-calendar.ts` liefert dafür bestätigte Tage, erwartete Tage und – aus Version 8 – bei Kreisfreigabe geschätzte nächste Tage.
+- Die aktive Verbindung liegt in `new_partner_connections`. Die vorhandene Spalte `cycle_ring_shared` steuert ausschließlich den Partnerkreis und die daraus erlaubte Schätzung.
+- `/neu/einstellungen` enthält bereits die Eigentümer-Einstellungen und die bestehende Kreisfreigabe. Die Verbindung, Sitzungen und Widerruf werden serverseitig über die bestehenden neuen Partner-Helfer geprüft.
+- Tatsächliche Periodendaten stammen aus `new_period_entries`: `startDate` und optionales echtes `endDate`; `expectedEndDate` ist ausdrücklich nur vorläufig.
+
+#### Technisches Ziel
+
+- Ergänze auf der aktiven Verbindung eine **eigene** boolesche Kalenderfreigabe, zum Beispiel `calendar_shared`, mit Default `false`. Sie darf nicht für die Kreisfreigabe wiederverwendet werden.
+- Ergänze in den Eigentümer-Einstellungen einen klar beschrifteten Schalter. Nur die Eigentümerin der aktiven Verbindung darf ihn lesen oder verändern; Route und Speicherung prüfen Sitzung, Herkunft und Eigentümerschaft serverseitig.
+- Ändere den Partner-Kalender-View so, dass er vor jeder Datenableitung in derselben serverseitigen Abfrage aktive Verbindung und `calendar_shared = true` prüft. Ohne Freigabe liefert der View keine Kalenderdaten.
+- Reduziere den freigegebenen Grundkalender auf echte bestätigte Tage. Bei einer laufenden echten Periode darf die bestehende Ableitung Start bis heute weiterverwendet werden. `expectedEndDate`, geschätzte nächste Tage und sämtliche Vorhersagewerte gehören nicht in diesen Grundkalender.
+- Behalte die Kreisfreigabe getrennt: Der Partnerkreis und dessen erlaubte Inhalte werden weiterhin ausschließlich über `cycle_ring_shared` gesteuert. Die neue Kalenderfreigabe darf keine Kreislogik verändern.
+- Zeige bei fehlender Kalenderfreigabe eine neutrale, datensparsame Erklärung statt eines leeren oder fehlerhaften Kalenders. Der Partner darf daraus keinen Gesundheitszustand ableiten.
+
+#### Daten, Schnittstellen und Migrationen
+
+- **Migration nötig:** ja, ausschließlich in `luma_core`: eine nicht-nullbare boolesche Freigabespalte mit sicherem Standardwert `false` auf der aktiven Verbindungsstruktur. Keine Datenkopie und keine Änderung der alten Luma.
+- Die bereits vom Owner genehmigte getrennte WP-004-Datenbankmigration gilt nur für diesen minimalen Freigabestatus. Keine weiteren Tabellen oder Gesundheitsdaten speichern.
+- Eine geschützte neue-Luma-Route für die Eigentümer-Einstellung ist erlaubt. Sie darf nur den eigenen Schalter ändern und keine Partner- oder Periodendaten zurückgeben.
+- Der Partner-View darf intern angepasst werden, aber keine neue öffentliche Periodendaten-API eröffnen.
+
+#### Invarianten – müssen unverändert bleiben
+
+- Ohne aktive Verbindung oder ohne Kalenderfreigabe gelangen keine Kalenderdaten zur Partneransicht.
+- Partnerzugriff bleibt lesend, paargebunden und nach Widerruf gesperrt.
+- `expectedEndDate` und Schätzungen werden nie als echte Daten ausgegeben.
+- Die Kreisfreigabe `cycle_ring_shared` bleibt getrennt und standardmäßig unverändert.
+- Alte Luma, Authentifizierung, Verbindungscode, Periodenspeicherung, Bildidee, Push-Auswahl und Zyklusberechnung bleiben außerhalb der nötigen Einhängepunkte unverändert.
+
+#### Pflichtprüfungen
+
+- Prüfe neue und bestehende aktive Verbindungen: Standardwert aus und bewusster Wechsel an/aus nur durch die Eigentümerin.
+- Prüfe Partnerdaten streng serverseitig: ohne Sitzung, ohne Verbindung, mit fremdem Partnerkonto, mit ausgeschaltetem Schalter und nach Widerruf sind keine Periodentage abrufbar oder gerendert.
+- Prüfe die erlaubte Ansicht: abgeschlossene und laufende echte Perioden zeigen nur bestätigte Tage; erwartete Enden und geschätzte nächste Perioden fehlen vollständig.
+- Prüfe die Unabhängigkeit beider Schalter in allen vier Kombinationen (Kreis an/aus × Kalender an/aus).
+- Prüfe, dass der Partner keine schreibende Kalenderaktion erhält.
+- Führe gezielte Partnerkalender-/Partnerkreis-/Verbindungsregressionen, TypeScript, mobile Sichtprüfung, Produktions-Build und `node scripts/work-package-state.mjs validate` aus. Testdaten danach löschen.
+
+#### Stoppbedingungen
+
+- Stoppe vor einer stillen Aktivierung für bestehende Paare, einer Datenkopie, einer Freigabe über Client-Filter oder jeder Erweiterung um Vorhersagen, Push oder private Profile.
+- Stoppe, wenn die Freigabe nicht in derselben serverseitigen Prüfung wie die Verbindungsauflösung nachweisbar ist.
+- Stoppe vor einer Änderung an alter Luma oder vor einem manuellen Deployment.
+
+#### Abschluss durch Claude
+
+- Ergänze `Ist Version 9`, Tests, Abweichungen und offene Punkte sichtbar.
+- Lasse den Paketstatus auf `review`.
+- Ergänze den Entwicklungsledger, führe `node scripts/work-package-state.mjs mark-updated WP-004` und danach `node scripts/work-package-state.mjs validate` aus.
+- Committe und pushe ausschließlich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 9 – von Claude
+
+- **Umgesetzt:**
+  - Neue Migration `database/luma-core/migrations/202609261200_partner_calendar_sharing.sql` (ausschließlich `luma_core`): `ALTER TABLE new_partner_connections ADD COLUMN calendar_shared BOOLEAN NOT NULL DEFAULT FALSE`. Bewusst eine eigene Spalte, getrennt von `cycle_ring_shared`. Lokal angewendet und per `node scripts/apply-luma-core-migrations.mjs` (prüft die Zieldatenbank selbst) sowie `scripts/verify-luma-core.mjs` bestätigt; `app_luma` unverändert.
+  - `src/lib/new-partner.ts`: `PartnerConnectionStatus` (Owner-Zweig) trägt jetzt zusätzlich `calendarShared`; `getPartnerConnectionStatusForOwner` liest die neue Spalte in derselben Abfrage. Neue Funktion `setPartnerCalendarShared(ownerUserId, shared)` – eigenständig, keine Wiederverwendung von `setPartnerCycleRingShared` –, aktualisiert ausschließlich die aktive Verbindung der aufrufenden Eigentümerin.
+  - Neue geschützte Route `POST /api/neu/partner/calendar-sharing` (analog zu `cycle-ring-sharing`): prüft Herkunft, Sitzung und Eigentümerschaft serverseitig, ändert ausschließlich den eigenen Schalter, gibt keine Partner- oder Periodendaten zurück.
+  - Neue Client-Komponente `NewPartnerCalendarSharingToggle` in `src/app/neu/einstellungen/page.tsx` ergänzt, direkt neben (nicht anstelle) der bestehenden `NewPartnerCycleRingSharingToggle` – beide Schalter unabhängig voneinander bedienbar.
+  - `src/lib/new-partner-calendar.ts`: `resolveActiveConnection` liest jetzt zusätzlich `calendar_shared` in derselben Verbindungsabfrage. `getPartnerCalendarView` liefert `null`, sobald keine aktive Verbindung besteht **oder** `calendar_shared` nicht aktiv ist – geprüft in derselben Abfrage wie die Verbindung selbst, kein zeitliches Fenster für einen veralteten Freigabestatus. Der freigegebene Grundkalender wurde wie im Auftrag gefordert auf echte bestätigte Tage reduziert: `expectedEndDate`-Tage wurden aus `PartnerCalendarView` und der Berechnung vollständig entfernt (`expectedDates` existiert nicht mehr); eine laufende Periode zeigt weiterhin bestätigte Tage vom echten Start bis einschließlich heute. Die geschätzte nächste Periode (`estimatedNextPeriodDates`) bleibt unverändert ausschließlich an `cycle_ring_shared` gekoppelt, in derselben Abfrage geprüft – beide Freigaben sind vollständig unabhängig voneinander.
+  - `src/components/NewPartnerCalendar.tsx`: `expectedDates`-Prop und der `"expected"`-Tagesstatus vollständig entfernt (Typ, Ableitung, Darstellung, Legende); die Komponente kennt jetzt nur noch `confirmed`, `estimated` und `none`. Keine schreibende Aktion vorhanden (unverändert rein lesend).
+  - `src/app/neu/partner/page.tsx`: übergibt `NewPartnerCalendar` nicht mehr `expectedDates`. Der bereits vorhandene Fallback `„Keine freigegebene Information.“` bei `calendarView === null` erfüllt unverändert die geforderte neutrale, datensparsame Erklärung – er greift jetzt zusätzlich, wenn eine aktive Verbindung besteht, aber `calendar_shared` aus ist.
+  - Kommentar in `src/lib/new-partner-cycle-view.ts` aktualisiert, da er auf die entfernte `expectedDates`-Logik verwiesen hatte; die Funktion selbst (Kreis-Freigabe, `runningPeriodExpectedEndDate`) wurde inhaltlich nicht verändert.
+  - Keine neue Tabelle, keine Datenkopie, keine Änderung an `cycle_ring_shared`, an der Vorhersagelogik, an alter Luma oder an der Verbindungslogik selbst.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - `scripts/verify-partner-calendar.mts` grundlegend überarbeitet (spiegelt weiterhin `getPartnerCalendarView` server-seitig gegen die echte Datenbank, da die Originaldatei `import "server-only"` nutzt): neue Fälle für Standardwert aus bei neuer Verbindung, keine Kalenderdaten ohne Freigabe, nur bestätigte Tage nach Freigabe (kein `expectedDates`-Feld mehr im Rückgabetyp), sofortiger Entzug beim Ausschalten und beim Widerruf, sowie alle vier Kombinationen aus Kalender- und Kreisfreigabe unabhängig voneinander. Alle Prüfungen bestanden.
+  - `scripts/verify-partner-estimated-period.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-partner-notification-preference.mts`, `scripts/verify-cycle-today-and-estimate.mts`, `scripts/verify-my-periods.mts` erneut ausgeführt (Regression): alle weiterhin grün, unverändert durch diese Version betroffen.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, neue Route `/api/neu/partner/calendar-sharing` erscheint in der Routenliste, alle übrigen Routen unverändert.
+  - `node scripts/apply-luma-core-migrations.mjs` und `node scripts/verify-luma-core.mjs`: Migration erfolgreich auf `luma_core` angewendet und in der Migrationsliste bestätigt; `app_luma` unverändert.
+  - Mobile Sichtprüfung mit Playwright (Chromium, 375×812, temporär installiert und danach vollständig wieder entfernt) gegen den lokalen Dev-Server mit zwei echten Testkonten (Owner + Partner, verbunden über echten Code): Partneransicht zeigt vor der Freigabe „Keine freigegebene Information.“ (keine Kalenderzellen, keine Legende); nach Einschalten der Kalenderfreigabe erscheinen Kalender und Legende „Bestätigt“, keine Legende „Erwartet“ mehr; ein bestätigter Tag zeigt im Tagesdetail „Bestätigt“; nach Ausschalten der Freigabe verschwindet der Kalender beim nächsten Laden sofort wieder zugunsten der neutralen Meldung. Owner-Einstellungen zeigen beide Schalter (`Zyklus-Kreis für Partner freigeben`, `Periodenkalender für Partner freigeben`) unabhängig und unbeeinflusst voneinander. Kein horizontaler Überlauf in Partneransicht oder Einstellungen. Screenshots geprüft. Playwright und beide Testkonten (inkl. Verbindung und Perioden) danach vollständig entfernt.
+- **Abweichungen:**
+  - Der Auftrag verlangt ausdrücklich, dass `expectedEndDate` nicht mehr Teil des freigegebenen Grundkalenders ist (Soll-Text und Abnahmekriterium 4: „Erwartete und geschätzte Tage erscheinen im Grundkalender nie“). Das bedeutet gegenüber dem vorherigen Stand (Version 3) eine Verengung des Partnerkalenders: die bisherige `expectedDates`-Anzeige (voraussichtliches Ende einer laufenden Periode) ist im Grundkalender jetzt vollständig entfernt, nicht nur bei fehlender Freigabe. Dies ist keine eigene Interpretation, sondern die wörtliche Umsetzung des expliziten Auftragstexts; das bereits getrennt bestehende `runningPeriodExpectedEndDate` im Zyklus-Kreis (`cycle_ring_shared`-gesteuert) ist davon nicht betroffen und bleibt unverändert.
+  - Der bereits bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: in den Einstellungen den neuen Schalter `Periodenkalender für Partner freigeben` prüfen (Standard aus), einschalten und in der Partneransicht den Grundkalender mit ausschließlich bestätigten Tagen sehen, ausschalten und den sofortigen Entzug beim nächsten Laden prüfen, Unabhängigkeit von der bestehenden Kreisfreigabe prüfen.
+  - Der vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` sollte weiterhin in einem eigenen, dafür vorgesehenen Paket behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** folgt unmittelbar nach diesem Eintrag.
+
 
 ## Version 8 – Klare aktuelle und nächste Periode im Kalender
 

@@ -7,11 +7,10 @@ import CalendarTodayLine from "@/components/CalendarTodayLine";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-type DayStatus = "confirmed" | "expected" | "estimated" | "none";
+type DayStatus = "confirmed" | "estimated" | "none";
 
 interface NewPartnerCalendarProps {
   confirmedDates: string[];
-  expectedDates: string[];
   estimatedNextPeriodDates: string[];
 }
 
@@ -30,7 +29,6 @@ function formatFullGermanDate(date: string): string {
 
 const statusLabel: Record<DayStatus, string> = {
   confirmed: "Bestätigt",
-  expected: "Erwartet – kann abweichen",
   estimated: "Geschätzte nächste Periode – kann abweichen",
   none: "Keine freigegebene Information",
 };
@@ -74,14 +72,13 @@ function DayDetailModal({ date, status, onClose }: DayDetailModalProps) {
   );
 }
 
-export default function NewPartnerCalendar({ confirmedDates, expectedDates, estimatedNextPeriodDates }: NewPartnerCalendarProps) {
+export default function NewPartnerCalendar({ confirmedDates, estimatedNextPeriodDates }: NewPartnerCalendarProps) {
   const [todayKey] = useState(() => todayBerlinDateOnly());
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
   const [displayedMonth, setDisplayedMonth] = useState({ year: todayYear, month: todayMonthIndex - 1 });
   const [selectedDay, setSelectedDay] = useState<{ date: string; status: DayStatus } | null>(null);
 
   const confirmedSet = new Set(confirmedDates);
-  const expectedSet = new Set(expectedDates);
   const estimatedSet = new Set(estimatedNextPeriodDates);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
@@ -95,7 +92,6 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates, esti
 
   function statusFor(date: string): DayStatus {
     if (confirmedSet.has(date)) return "confirmed";
-    if (expectedSet.has(date)) return "expected";
     if (estimatedSet.has(date)) return "estimated";
     return "none";
   }
@@ -144,16 +140,13 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates, esti
                   className={`relative grid h-full w-full place-items-center rounded-xl border text-sm ${
                     status === "confirmed"
                       ? "border-neutral-900 bg-neutral-900 text-white"
-                      : status === "expected"
-                        ? "border-neutral-300 bg-neutral-200 text-neutral-900"
-                        : status === "estimated"
-                          ? "border-purple-300 bg-purple-100 text-purple-900"
-                          : "border-neutral-200 bg-white text-neutral-700"
+                      : status === "estimated"
+                        ? "border-purple-300 bg-purple-100 text-purple-900"
+                        : "border-neutral-200 bg-white text-neutral-700"
                   } ${isToday ? "ring-2 ring-offset-1" : ""}`}
                 >
                   <span>{day}</span>
                   {status === "confirmed" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">B</span>}
-                  {status === "expected" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">E</span>}
                   {status === "estimated" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">Gsch.</span>}
                   {isToday && (
                     <span
@@ -172,10 +165,6 @@ export default function NewPartnerCalendar({ confirmedDates, expectedDates, esti
         <span className="inline-flex items-center gap-1.5">
           <span className="size-3 rounded-full bg-neutral-900" aria-hidden="true" />
           Bestätigt
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-full bg-neutral-200" aria-hidden="true" />
-          Erwartet – kann abweichen
         </span>
         {estimatedNextPeriodDates.length > 0 && (
           <span className="inline-flex items-center gap-1.5">
