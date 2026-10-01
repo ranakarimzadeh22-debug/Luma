@@ -164,3 +164,40 @@ export function currentCyclePeriodStart(anchorStart: string, cycleLengthDays: nu
   }
   return periodStart;
 }
+
+export interface TodayCardText {
+  headline: string;
+  showsEstimateNotice: boolean;
+}
+
+/**
+ * Pure text derivation for the WP-006 "Heute" card shown above the cycle
+ * ring on /neu. Deliberately reads only the already-computed
+ * PersonalCycleView — no second cycle/date/phase calculation, and no
+ * fallback that could invent a phase, cycle day, or medical claim beyond
+ * what the view already established.
+ */
+export function deriveTodayCardText(view: PersonalCycleView): TodayCardText {
+  const showsEstimateNotice = view.isEstimate;
+
+  if (view.isRunning && view.todayCycleDay !== null) {
+    return { headline: `Heute: ${view.todayCycleDay}. Periodentag`, showsEstimateNotice };
+  }
+
+  if (view.todayPhase === "pms") {
+    return { headline: "Heute: PMS-Phase", showsEstimateNotice };
+  }
+
+  if (view.todayPhase === "ovulation") {
+    return { headline: "Heute: mögliche Ovulationsphase", showsEstimateNotice };
+  }
+
+  if (view.todayCycleDay !== null) {
+    return { headline: `Heute: Zyklustag ${view.todayCycleDay}`, showsEstimateNotice };
+  }
+
+  return {
+    headline: "Noch keine ausreichenden Daten für eine persönliche Einordnung.",
+    showsEstimateNotice: false,
+  };
+}

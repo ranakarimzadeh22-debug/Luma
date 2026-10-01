@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
 import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
-import type { PersonalCycleView } from "@/lib/personal-cycle-view";
+import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
@@ -759,6 +759,21 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModal
   );
 }
 
+/**
+ * Read-only "Heute" card shown above the cycle ring (WP-006). Pure
+ * presentation over the already-derived PersonalCycleView — no own
+ * calculation, no button, no API call, no stored state.
+ */
+function TodayCard({ personalCycleView }: { personalCycleView: PersonalCycleView }) {
+  const { headline, showsEstimateNotice } = deriveTodayCardText(personalCycleView);
+  return (
+    <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 text-center shadow-sm">
+      <p className="text-base font-semibold text-[#28101f]">{headline}</p>
+      {showsEstimateNotice && <p className="mt-1 text-sm text-[#a52b5d]">Kann abweichen</p>}
+    </div>
+  );
+}
+
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
   const router = useRouter();
   const [todayKey] = useState(() => todayBerlinDateOnly());
@@ -947,6 +962,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       className="space-y-9 sm:space-y-10"
       inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
+      <TodayCard personalCycleView={personalCycleView} />
+
       <section aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"} className="space-y-3">
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
