@@ -102,6 +102,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction }: NewPa
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
   const [displayedMonth, setDisplayedMonth] = useState({ year: todayYear, month: todayMonthIndex - 1 });
   const [selectedDay, setSelectedDay] = useState<{ date: string; status: PrimaryDayStatus; isFertile: boolean } | null>(null);
+  const [isCalendarLegendOpen, setIsCalendarLegendOpen] = useState(false);
 
   const confirmedSet = new Set(confirmedDates);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
@@ -206,37 +207,55 @@ export default function NewPartnerCalendar({ confirmedDates, prediction }: NewPa
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-neutral-600" aria-label="Legende">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-full bg-neutral-900" aria-hidden="true" />
-          Bestätigt
-        </span>
-        {hasAnyPrediction && (
-          <>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-purple-200" aria-hidden="true" />
-              Geschätzte nächste Periode – kann abweichen
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-violet-200" aria-hidden="true" />
-              Möglicher Eisprung – kann abweichen
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-pink-200" aria-hidden="true" />
-              Mögliche PMS-Phase – kann abweichen
-            </span>
-          </>
-        )}
-        {hasFertileWindowSomewhere && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
-            Mögliches fruchtbares Zeitfenster – kann abweichen
-          </span>
-        )}
-      </div>
-
       {prediction?.isUncertain && (
         <p className="text-center text-xs font-semibold text-pink-700">Vorhersage unsicher - Kann abweichen</p>
+      )}
+
+      <div className="flex justify-center">
+        <button
+          type="button"
+          aria-expanded={isCalendarLegendOpen}
+          aria-controls="partner-calendar-legend-panel"
+          onClick={() => setIsCalendarLegendOpen((current) => !current)}
+          className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500"
+        >
+          {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
+        </button>
+      </div>
+
+      {isCalendarLegendOpen && (
+        <div
+          id="partner-calendar-legend-panel"
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-neutral-600"
+          aria-label="Legende"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-full bg-neutral-900" aria-hidden="true" />
+            Bestätigt
+          </span>
+          {hasAnyPrediction && (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full bg-purple-200" aria-hidden="true" />
+                Geschätzte nächste Periode – kann abweichen
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full bg-violet-200" aria-hidden="true" />
+                Möglicher Eisprung – kann abweichen
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full bg-pink-200" aria-hidden="true" />
+                Mögliche PMS-Phase – kann abweichen
+              </span>
+            </>
+          )}
+          {hasFertileWindowSomewhere && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
+              Mögliches fruchtbares Zeitfenster – kann abweichen
+            </span>
+          )}
+        </div>
       )}
     </div>
     {selectedDay && (

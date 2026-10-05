@@ -1,7 +1,7 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 11
+package_revision: 12
 status: review
 created: 2026-09-10
 updated: 2026-10-05
@@ -1235,6 +1235,139 @@ Einzelne Kalender- und Kreisfreigaben erzeugen wiederholte Einstellungen. Die Ow
   - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: einen neuen Verbindungscode erzeugen, mit einem zweiten Testkonto einlösen und ohne jede weitere Einstellung sofort die vollständige Kernansicht (Zyklus-Kreis, Kalender mit allen Vorhersagemarkern) beim Partner sehen; einen Monat mit Überlappung von geschätzter Periode und fruchtbarem Zeitfenster ansehen; die Owner-Einstellungen auf das Fehlen der beiden alten Schalter prüfen; mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** f2b2704.
+
+
+### Soll-Ist-Pruefung - von Codex Version 11
+
+- Ergebnis: Soll erfuellt. Die feste, rein lesende Kernansicht erscheint nach aktiver Verbindung ohne die alten Einzel-Schalter.
+- Nachschaerfung: keine fachliche. Die vorbestehenden unabh�ngigen Testdefekte bleiben ausserhalb dieses Auftrags.
+- Product-Map aktualisiert: ja.
+
+
+## Version 12 - Einklappbare Kalendererklaerungen in der Partneransicht
+
+### Owner-Ansicht - einfach erklaert
+
+- Kurz gesagt: Auch der Partnerkalender bleibt auf der Startansicht ruhiger. Direkt unter dem Kalender erscheint nur ein kleiner Button: \`Erklaerungen zum Kalender anzeigen\`.
+- Nach dem Antippen erklaert die Ansicht die sichtbaren Farben und Markierungen: bestaetigte Periode, geschaetzte naechste Periode, moeglicher Eisprung, moegliche PMS-Phase und moegliches fruchtbares Zeitfenster.
+- Die Erklaerungen sind nur Hilfe zum Verstehen. Der Partner kann weiterhin nichts bearbeiten.
+- \`Vorhersage unsicher - Kann abweichen\` bleibt, falls vorhanden, immer sichtbar. Es wird nicht im einklappbaren Bereich versteckt.
+- Die bereits vereinbarte feste Partneransicht nach aktiver Verbindung bleibt unveraendert. Es entsteht kein neuer Freigabe-Schalter.
+
+### Entstehungsweg
+
+Die Kalenderlegende macht die Partneransicht verstaendlich, nimmt aber in der dauerhaft sichtbaren Form unnoetig Platz ein. Die Ownerin moechte dieselbe ruhige, einklappbare Erklaerung wie im eigenen Kalender auch fuer ihren Partner.
+
+- bestaetigtes Problem: Die dauerhaft sichtbaren Partner-Kalendererklaerungen lassen die Ansicht unruhiger wirken.
+- gewuenschte Wirkung: Der Partner sieht zuerst den Kalender klar und kann die Bedeutung der Markierungen bei Bedarf einfach nachlesen.
+- gewaehlte Loesung: Die vorhandenen Erklaerungen werden standardmaessig eingeklappt und sind ueber einen klaren Button erreichbar. Der Unsicherheitshinweis bleibt sichtbar.
+- bestaetigte Grenzen: Keine Aenderung der Kalender-, Zyklus- oder Datenfreigabelogik und keine neue Einstellung.
+- Quellen/Akten: APP-IDEA-014, Owner-Entscheidung vom 2026-10-05.
+
+### Soll - von Codex
+
+- Im verbundenen Partnerkalender sind die vorhandenen Kalendererklaerungen standardmaessig eingeklappt.
+- Ein klar beschrifteter, zugaenglicher Button wechselt zwischen \`Erklaerungen zum Kalender anzeigen\` und \`Erklaerungen ausblenden\`.
+- Nach dem Oeffnen sind alle vorhandenen Partner-Erklaerungen sichtbar: \`Bestaetigt\`, \`Geschaetzte naechste Periode - kann abweichen\`, \`Moeglicher Eisprung - kann abweichen\`, \`Moegliche PMS-Phase - kann abweichen\` und \`Moegliches fruchtbares Zeitfenster - kann abweichen\`.
+- Der Hinweis \`Vorhersage unsicher - Kann abweichen\` bleibt bei unsicherer Vorhersage ausserhalb des einklappbaren Bereichs und immer sichtbar.
+- Markierungen, Tagesfenster, Reihenfolge, Ueberlappungen und der rein lesende Charakter des Partnerkalenders bleiben unveraendert.
+- Die aktive Verbindung bleibt die alleinige serverseitige Voraussetzung fuer die gesamte Partneransicht. Es entsteht kein einzelner Freigabe-Schalter.
+
+### Nicht enthalten
+
+- Keine Aenderung an Berechnungen, Periodendaten, Vorhersagen, Zeitzonen, Tagesfenstern oder der Darstellung einzelner Kalendertage.
+- Keine Datenbankmigration, Route, API, Speicherung, neue Freigabe-Einstellung oder neue Benachrichtigung.
+- Keine Aenderung am Owner-Kalender, an alter Luma, Anmeldung, Verbindungscode oder WP-005.
+- Keine Erweiterung der Partneransicht um Profile, Symptome, Notizen, Historie oder Bearbeiten.
+
+### Abnahmekriterien
+
+1. Im verbundenen Partnerkalender ist die Legende beim ersten Laden geschlossen und der Button sichtbar.
+2. Der Button ist per Tastatur bedienbar und verwendet passende zugaengliche Zustandsangaben; nach Oeffnen und Schliessen stimmen Text und sichtbarer Zustand ueberein.
+3. Nach Oeffnen sind alle vereinbarten Erklaerungen lesbar; nach Schliessen nehmen sie keinen sichtbaren Platz ein.
+4. Bei unsicherer Vorhersage bleibt der Unsicherheitshinweis vor, waehrend und nach dem Oeffnen sichtbar.
+5. Kalenderdaten, Marker, Ueberlappungen, Tagesfenster und die rein lesende Partneransicht bleiben funktional unveraendert.
+6. Ohne aktive Verbindung, nach Widerruf oder mit fremdem Konto werden weiterhin keine Partnerdaten angezeigt.
+7. Mobile und breite Ansicht bleiben ohne horizontalen Ueberlauf nutzbar.
+
+### Technischer Auftrag fuer Claude - Version 12
+
+#### Bestaetigte Ausgangslage im Code
+
+- WP-004 Version 11 hat \`src/components/NewPartnerCalendar.tsx\` als rein lesenden Kalender der festen Partneransicht umgesetzt.
+- Die Komponente rendert die Partnerlegende derzeit dauerhaft unter dem Kalender. Sie nutzt bereits dieselben zentralen Vorhersage- und Darstellungshelfer wie der Owner-Kalender.
+- \`src/components/NewCycleExample.tsx\` besitzt aus WP-007 Version 2 bereits das erprobte Muster fuer einklappbare Kalendererklaerungen mit \`isCalendarLegendOpen\`, \`aria-expanded\` und \`aria-controls\`.
+- Der Hinweis zu \`prediction.isUncertain\` ist im Partnerkalender bereits separat sichtbar.
+- Die Serverpruefung der aktiven Verbindung und die minimale Datenuebergabe erfolgen ausserhalb dieser rein lesenden Client-Komponente und duerfen nicht gelockert werden.
+
+#### Technisches Ziel
+
+- Uebertrage ausschliesslich das bestehende, zugaengliche Ein-/Ausklappmuster fuer Kalendererklaerungen auf \`NewPartnerCalendar.tsx\`.
+- Die Partnerlegende startet geschlossen. Verwende klare deutsche Beschriftungen fuer Oeffnen und Schliessen sowie passende \`aria-expanded\`- und \`aria-controls\`-Angaben.
+- Verschiebe nur die vorhandenen Legendeninhalte in den bedingten Bereich. Aendere weder deren Bedeutung noch Kalender- oder Vorhersagewerte.
+- Lasse den vorhandenen Unsicherheitshinweis ausserhalb des einklappbaren Bereichs, sodass er unabhaengig vom Legendenstatus sichtbar bleibt.
+- Wiederverwende vorhandene Stile und das Owner-Muster, ohne eine zweite Darstellungs- oder Vorhersagelogik einzufuehren.
+
+#### Invarianten - muessen unveraendert bleiben
+
+- Aktive Verbindung bleibt die alleinige serverseitige Datenzugriffsgrenze; diese Version aendert keine Sicherheitsabfrage.
+- Partneransicht bleibt vollstaendig rein lesend; kein neuer Button darf Daten speichern, aendern, loeschen oder freigeben.
+- Partner sehen weiterhin nur die fest vereinbarten abgeleiteten Kalenderdaten, keine Profile, Symptome, Notizen, IDs, E-Mails oder vollstaendige Historie.
+- Bestehende WP-007-Regeln bleiben bindend: Vorhersagen sind moeglich/geschaetzt und koennen abweichen; sie sind keine medizinische Aussage.
+- Markierungsprioritaet, Mehrfachphasen, Ueberlappungen, Tagesfenster, Berlin-Tagesgrundlage und bestehende Kalenderbeschriftungen bleiben unveraendert.
+- Keine Aenderung an Owner-Kalender, alter Luma, Datenbank, API, Push, Verbindungscode, Authentifizierung oder Dokploy.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: keine.
+- API-Wirkung: keine.
+- Keine Migration, keine neue Route, keine neue gespeicherte Einstellung und keine neue Client-zu-Server-Anfrage.
+
+#### Pflichtpruefungen
+
+- Pruefe im verbundenen Partnerkalender den geschlossenen Anfangszustand, Oeffnen, Schliessen, Tastaturbedienung und die zugehoerigen aria-Zustaende.
+- Pruefe nach Oeffnen alle vorhandenen Partnerlegenden, einschliesslich bestaetigter Periode, geschaetzter Periode, moeglichem Eisprung, moeglicher PMS-Phase und moeglichem fruchtbaren Zeitfenster.
+- Pruefe stabile und unsichere Vorhersage: Der Unsicherheitshinweis bleibt bei Unsicherheit in jedem Legendenzustand sichtbar.
+- Pruefe bestaetigte Periodentage, Vorhersagemarker, mindestens einen Ueberlappungsfall und das bestehende rein lesende Tagesfenster auf unveraendertes Verhalten.
+- Pruefe ohne Verbindung, nach Widerruf, mit fremdem Partnerkonto und ohne Sitzung weiterhin auf fehlende Partnerdaten.
+- Fuehre betroffene Partner-, Kalender- und Zyklus-Regressionen, TypeScript, Produktions-Build sowie mobile und breite Sichtpruefung aus. Entferne Testkonten und temporaere Werkzeuge danach.
+
+#### Stoppbedingungen
+
+- Stoppe vor jeder Aenderung der Datenfreigabe, Verbindungspruefung, Kalender-/Zyklusberechnung, Vorhersagelogik, Datenbank, API, Push, Anmeldung oder alter Luma.
+- Stoppe, wenn der Unsicherheitshinweis nicht mehr unabhaengig vom einklappbaren Bereich sichtbar bleiben kann.
+- Stoppe, wenn die Partneransicht durch die UI-Aenderung eine schreibende oder neue Freigabeaktion erhalten wuerde.
+
+#### Abschluss durch Claude
+
+- Ergaenze Ist Version 12, Tests, Abweichungen und offene Punkte sichtbar.
+- Lasse den Paketstatus nach Abschluss auf review.
+- Ergaenze den Entwicklungsledger, fuehre \`node scripts/work-package-state.mjs mark-updated WP-004\` und danach \`node scripts/work-package-state.mjs validate\` aus.
+- Committe und pushe ausschliesslich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 12 - von Claude
+
+- **umgesetzt:**
+  - `src/components/NewPartnerCalendar.tsx`: neuer Client-State `isCalendarLegendOpen` (Default `false` – geschlossen), 1:1 nach dem in WP-007 Version 2 erprobten Muster aus `NewCycleExample.tsx`. Die bisher dauerhaft sichtbare Legende (`Bestätigt`, `Geschätzte nächste Periode – kann abweichen`, `Möglicher Eisprung – kann abweichen`, `Mögliche PMS-Phase – kann abweichen`, `Mögliches fruchtbares Zeitfenster – kann abweichen`) wurde unverändert in einen bedingt gerenderten Bereich (`id="partner-calendar-legend-panel"`) verschoben.
+  - Neuer Steuerbutton direkt darüber: Text „Erklärungen zum Kalender anzeigen“ im geschlossenen und „Erklärungen ausblenden“ im geöffneten Zustand, mit `aria-expanded={isCalendarLegendOpen}` und `aria-controls="partner-calendar-legend-panel"`.
+  - Der bestehende „Vorhersage unsicher - Kann abweichen“-Hinweis (`prediction?.isUncertain`) steht bewusst **vor** dem neuen Steuerbutton, außerhalb des Einklappbereichs – er bleibt unabhängig vom Öffnungszustand sichtbar.
+  - Keine Änderung an Markierungen, Prioritäten, Überlappungserkennung, Tagesfenster (`DayDetailModal`) oder Berechnungen: `primaryCalendarPhase`, `showsFertileMarker`, `phasesForDate` sowie alle Kalenderzellen, `aria-label`s und die rein lesende `DayDetailModal`-Komponente sind unverändert. Es wurden ausschließlich vorhandene Texte in eine neue, bedingt sichtbare Hülle verschoben.
+  - Keine Änderung an der serverseitigen Zugriffsprüfung (`new-partner-calendar.ts`/`new-partner-cycle-view.ts`, aktive Verbindung bleibt alleinige Voraussetzung), an `src/app/neu/partner/page.tsx`, an der Owner-Einstellungsseite, an Verbindungscode, Authentifizierung, Datenbank, API oder alter Luma. Kein neuer Freigabe-Schalter.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - Neues `scripts/verify-partner-calendar-legend-collapsible.ts`: Quelltext-Prüfungen bestätigen den geschlossenen Anfangszustand, `aria-expanded`/`aria-controls` am Steuerbutton samt passender Panel-`id`, beide Button-Textzustände, dass der Unsicherheitshinweis im Quelltext vor dem Einklappbereich steht und unverändert an `prediction?.isUncertain` gebunden bleibt, dass alle fünf vereinbarten Partner-Erklärungen im geöffneten Bereich vollständig enthalten sind, und dass die zentrale WP-007-Marker-Logik (`primaryCalendarPhase`, `showsFertileMarker`, `phasesForDate`) unverändert eingebunden bleibt, keine schreibende Aktion und kein alter/neuer Freigabe-Schalter referenziert wird. Alle Prüfungen bestanden.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-estimated-period.mts`, `scripts/verify-partner-fixed-view.ts`, `scripts/verify-partner-view-no-status-card.ts`, `scripts/verify-calendar-legend-collapsible.ts` (Owner-Kalender, WP-007 Version 2), `scripts/verify-day-detail.ts`.
+  - `scripts/verify-personal-cycle-view.ts` zeigt weiterhin dieselben, bereits seit mehreren vorherigen Versionen dokumentierten 9 Fehlschläge bei den Farbverlauf-Quelltextprüfungen (Gradient-Fundstelle seit WP-004 Version 6) – unverändert vorbestehend, nicht durch diese Version verursacht.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, Routenliste unverändert (keine neue Route).
+  - Mobile (375×812) und breite (1280×900) Sichtprüfung mit Playwright (temporär installiert, danach vollständig entfernt) gegen den lokalen Dev-Server mit zwei echten, verbundenen Testkonten und einer stark schwankenden echten Zyklushistorie (löst `isUncertain` aus): Anfangszustand zeigt `aria-expanded="false"`, Panel nicht im DOM, Unsicherheitshinweis bereits sichtbar. Nach dem Öffnen (`aria-expanded="true"`) sind alle fünf Legendentexte vorhanden, der Unsicherheitshinweis bleibt sichtbar. Das Tagesfenster öffnet sich weiterhin korrekt und bleibt nachweislich rein lesend (kein Speichern-/Löschen-/Bearbeiten-Element). Nach dem Schließen ist das Panel aus dem DOM entfernt, der Unsicherheitshinweis bleibt weiterhin sichtbar. Nach Widerruf der Verbindung zeigt die Partneransicht wieder den Code-Eingabeweg, keine Kalender- oder Kreisdaten mehr. Kein horizontaler Überlauf in beiden Ansichten. Screenshots geprüft (geschlossener und geöffneter Zustand). Playwright und beide Testkonten (inkl. Verbindung, Code und Perioden) danach vollständig entfernt.
+- **Abweichungen:**
+  - Zu Beginn dieser Version zeigte das WP-004-Frontmatter `status: review` statt `approved` (Stand nach dem Abschluss von Version 11, noch nicht erneut freigegeben). Dies wurde dem Owner transparent gemeldet; die ausdrückliche Anweisung war, Version 12 trotzdem umzusetzen. Keine fachliche Abweichung vom Auftragsinhalt selbst.
+  - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: als verbundener Partner `/neu/partner` öffnen, prüfen dass unter dem Kalender nur der kompakte Button sichtbar ist, öffnen und alle fünf Erklärungen prüfen, bei einem Konto mit unsicherer Vorhersage prüfen, dass der Hinweis unabhängig vom Öffnungszustand sichtbar bleibt, mobil auf fehlenden horizontalen Überlauf prüfen.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
 - **Commit:** folgt unmittelbar nach diesem Eintrag.
