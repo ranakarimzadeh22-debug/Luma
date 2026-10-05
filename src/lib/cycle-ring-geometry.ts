@@ -1,5 +1,6 @@
 import type { CyclePrediction } from "@/lib/new-cycle-prediction";
 import { currentCyclePeriodStart, type PersonalCycleView } from "@/lib/personal-cycle-view";
+import { calculateOvulationDate, calculateFertileWindow } from "@/lib/cycle-fertility";
 
 export interface RingSegment {
   key: "period" | "fertile" | "pms" | "rest";
@@ -81,7 +82,6 @@ export function buildRingGeometry(prediction: CyclePrediction, today: string): R
   return { segments, todayAngle };
 }
 
-const OVULATION_WINDOW_HALF_DAYS = 1;
 const PMS_LEAD_DAYS = 5;
 
 /**
@@ -97,9 +97,10 @@ export function buildPersonalRingGeometry(view: PersonalCycleView, today: string
   const cycleStartDay = periodStart;
   const dayOffset = (date: string) => daysBetween(cycleStartDay, date);
 
-  const ovulationDate = shiftDate(periodStart, cycleLengthDays - 14);
-  const fertileWindowStart = shiftDate(ovulationDate, -OVULATION_WINDOW_HALF_DAYS);
-  const fertileWindowEnd = shiftDate(ovulationDate, OVULATION_WINDOW_HALF_DAYS);
+  const ovulationDate = calculateOvulationDate(shiftDate(periodStart, cycleLengthDays));
+  const fertileWindow = calculateFertileWindow(ovulationDate);
+  const fertileWindowStart = fertileWindow.start;
+  const fertileWindowEnd = fertileWindow.end;
   const pmsStart = shiftDate(periodStart, cycleLengthDays - PMS_LEAD_DAYS);
   const pmsEnd = shiftDate(periodStart, cycleLengthDays - 1);
 

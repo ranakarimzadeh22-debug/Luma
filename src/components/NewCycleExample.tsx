@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
-import { phaseForDate, type CyclePrediction } from "@/lib/new-cycle-prediction";
+import { phasesForDate, type CyclePrediction, type DatePhases } from "@/lib/new-cycle-prediction";
 import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
@@ -23,13 +23,36 @@ function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
   return null;
 }
 
+/**
+ * Primary background phase for a calendar day: period takes visual
+ * priority over a same-day predicted phase (storedPeriod/runningPeriod
+ * checks elsewhere already take priority over this). "fertile" never wins
+ * the background on its own — a fertile-window day gets a neutral/period/
+ * pms background and is marked only through showsFertileMarker, so it
+ * never gets confused with the single ovulation day's own marker.
+ */
 function predictedPhaseForCalendarDay(
   date: string,
   prediction: CyclePrediction,
 ): "period" | "pms" | "ovulation" | null {
-  const phase = phaseForDate(date, prediction);
-  if (phase === "fertile") return null;
-  return phase;
+  const phases = phasesForDate(date, prediction);
+  if (phases.period) return "period";
+  if (phases.ovulation) return "ovulation";
+  if (phases.pms) return "pms";
+  return null;
+}
+
+/**
+ * WP-007: the fertile window must stay visible even on a day whose
+ * primary marker is already claimed by something else (a period day, a
+ * predicted period day, or storedPeriod/runningPeriod) — callers render
+ * this as a small secondary marker, never hiding the primary marking. Only
+ * suppressed when the primary phase marker shown for this day is already
+ * "ovulation" itself, so the single ovulation day's own letter marker
+ * isn't duplicated by the secondary dot.
+ */
+function showsFertileMarker(phases: DatePhases, primaryPhase: "period" | "pms" | "ovulation" | null): boolean {
+  return phases.fertile && primaryPhase !== "ovulation";
 }
 
 const phaseStyles = {
@@ -1011,6 +1034,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   ? examplePhase(day)
                   : null
               : null;
+            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date, prediction), phase));
             const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const storedPeriod = date
               ? periods.find((entry) => entry.endDate !== null && entry.startDate <= date && entry.endDate >= date)
@@ -1058,7 +1082,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
             const dayAriaLabel = date
-              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}`
+              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
               : "";
             const dayChildren = (
               <>
@@ -1082,6 +1106,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   />
                 )}
                 {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
+                {isFertileDay && (
+                  <span
+                    aria-label="Mögliches fruchtbares Zeitfenster, kann abweichen"
+                    className="absolute bottom-1 left-1 size-2.5 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]"
+                  />
+                )}
               </>
             );
             const isDayActionAvailable = Boolean(date && !dayInfo?.isFuture);
@@ -1139,7 +1169,16 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             <span className="size-3 rounded-full bg-[#c9b3ea]" aria-hidden="true" />
             Geschätzte nächste Periode – kann abweichen
           </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
+            Mögliches fruchtbares Zeitfenster – kann abweichen
+          </span>
         </div>
+        {prediction?.isUncertain && (
+          <p className="text-center text-xs font-semibold text-[#a52b5d]">
+            Vorhersage unsicher - Kann abweichen
+          </p>
+        )}
 
         <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">

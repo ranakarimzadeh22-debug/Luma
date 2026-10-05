@@ -105,28 +105,28 @@ console.log("\n== bestätigte Periodentage haben Vorrang ==");
 // Phasen-Unit-Tests
 // ---------------------------------------------------------------------------
 
-console.log("\n== dreitägige mögliche Eisprungphase ==");
+console.log("\n== WP-007: genau ein Eisprungtag und ein sechstägiges fruchtbares Zeitfenster ==");
 {
-  // Zyklusstart 2026-08-01, Länge 28 (Median-Abstände 28/28/31) -> geschätzter Eisprung
-  // = addDays(periodStart, cycleLengthDays - 14) = addDays(2026-08-01, 14) = 2026-08-15
-  // Fenster (Tag -1 bis +1 = 3 Tage): 2026-08-14 bis 2026-08-16
+  // Zyklusstart 2026-08-01, Länge 28 (Median-Abstände 28/28/31) -> nächster
+  // Periodenbeginn 2026-08-29 -> Eisprung = addDays(nextStart, -14) = 2026-08-15.
+  // Fruchtbares Zeitfenster: 2026-08-10 bis einschließlich 2026-08-15 (6 Tage).
   const periods = [
     period("1", "2026-05-06", "2026-05-10"),
     period("2", "2026-06-03", "2026-06-07"),
     period("3", "2026-07-01", "2026-07-05"),
     period("4", "2026-08-01", "2026-08-05"),
   ];
-  const dayBefore = computePersonalCycleView(periods, null, "2026-08-13");
-  const start = computePersonalCycleView(periods, null, "2026-08-14");
-  const mid = computePersonalCycleView(periods, null, "2026-08-15");
-  const end = computePersonalCycleView(periods, null, "2026-08-16");
-  const dayAfter = computePersonalCycleView(periods, null, "2026-08-17");
+  const dayBeforeWindow = computePersonalCycleView(periods, null, "2026-08-09");
+  const windowStart = computePersonalCycleView(periods, null, "2026-08-10");
+  const windowMid = computePersonalCycleView(periods, null, "2026-08-12");
+  const ovulationDay = computePersonalCycleView(periods, null, "2026-08-15");
+  const dayAfterWindow = computePersonalCycleView(periods, null, "2026-08-16");
 
-  assertEqual(dayBefore.todayPhase, null, "Tag vor dem Eisprungfenster ist keine Eisprungphase");
-  assertEqual(start.todayPhase, "ovulation", "erster Tag des dreitägigen Eisprungfensters");
-  assertEqual(mid.todayPhase, "ovulation", "mittlerer Tag des Eisprungfensters (geschätzter Eisprung)");
-  assertEqual(end.todayPhase, "ovulation", "letzter Tag des dreitägigen Eisprungfensters");
-  assertEqual(dayAfter.todayPhase, null, "Tag nach dem Eisprungfenster ist keine Eisprungphase");
+  assertEqual(dayBeforeWindow.todayPhase, null, "Tag vor dem fruchtbaren Zeitfenster ist keine Phase");
+  assertEqual(windowStart.todayPhase, "fertile", "erster Tag des fruchtbaren Zeitfensters (Eisprung minus fünf Tage)");
+  assertEqual(windowMid.todayPhase, "fertile", "ein mittlerer Tag des fruchtbaren Zeitfensters ist 'fertile', nicht 'ovulation'");
+  assertEqual(ovulationDay.todayPhase, "ovulation", "genau der letzte Tag des Fensters ist der Eisprungtag");
+  assertEqual(dayAfterWindow.todayPhase, null, "Tag nach dem fruchtbaren Zeitfenster ist keine Phase");
 }
 
 console.log("\n== fünf PMS-Tage ==");
@@ -202,7 +202,11 @@ console.log("\n== Markerprüfung: Ringposition für Periode, PMS, mögliche Eisp
     }
   }
 
-  // Eisprungtag (2026-08-15, Mitte des Eisprungfensters)
+  // Eisprungtag (2026-08-15, letzter Tag des sechstägigen fruchtbaren
+  // Zeitfensters - WP-007 macht den Eisprung zu genau einem Tag am
+  // Fensterende, nicht mehr zur Mitte eines (vormals dreitägigen)
+  // Fensters; der Marker liegt daher näher am Rand als an der Mitte des
+  // jetzt breiteren Segments, die Toleranz berücksichtigt das.
   const ovulationDayView = computePersonalCycleView(periods, null, "2026-08-15");
   const ovulationGeometry = buildPersonalRingGeometry(ovulationDayView, "2026-08-15");
   assertEqual(ovulationDayView.todayPhase, "ovulation", "2026-08-15 wird als Eisprungphase erkannt (Voraussetzung für Markertest)");
@@ -213,7 +217,7 @@ console.log("\n== Markerprüfung: Ringposition für Periode, PMS, mögliche Eisp
     if (fertileSegment) {
       const segmentMid = ringPointAt(fertileSegment.labelAngle);
       const distance = Math.hypot(marker.x - segmentMid.x, marker.y - segmentMid.y);
-      assert(distance < 40, `Marker am Eisprungtag liegt nahe am Eisprung-Segment (Abstand ${distance.toFixed(1)}px)`);
+      assert(distance < 70, `Marker am Eisprungtag (Fensterende) liegt innerhalb des Fruchtbarkeits-Segments (Abstand zur Segmentmitte ${distance.toFixed(1)}px)`);
     }
   }
 }

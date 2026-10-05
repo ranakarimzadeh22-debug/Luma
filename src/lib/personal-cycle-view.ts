@@ -1,6 +1,7 @@
 import type { NewPeriodEntryOpen } from "@/lib/new-period-validation";
+import { calculateOvulationDate, calculateFertileWindow, isUncertainPrediction } from "@/lib/cycle-fertility";
 
-export type PersonalCyclePhase = "period" | "ovulation" | "pms" | null;
+export type PersonalCyclePhase = "period" | "ovulation" | "fertile" | "pms" | null;
 
 export interface PersonalCycleView {
   status: "no_data" | "profile_estimate" | "personal";
@@ -11,12 +12,13 @@ export interface PersonalCycleView {
   anchorPeriodStart: string | null;
   todayCycleDay: number | null;
   isRunning: boolean;
+  /** WP-007: see isUncertainPrediction() in src/lib/cycle-fertility.ts. */
+  isUncertain: boolean;
 }
 
 const MIN_REAL_PERIODS_FOR_MEDIAN = 4;
 const MIN_CYCLE_LENGTH = 21;
 const MAX_CYCLE_LENGTH = 45;
-const OVULATION_WINDOW_HALF_DAYS = 1;
 const PMS_LEAD_DAYS = 5;
 const DEFAULT_PERIOD_LENGTH = 5;
 
@@ -45,7 +47,12 @@ function median(values: number[]): number {
   return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
 
-function realCycleLengthMedian(sortedPeriods: NewPeriodEntryOpen[]): number | null {
+interface RealCycleLength {
+  cycleLengthDays: number;
+  usableGaps: number[];
+}
+
+function realCycleLengthMedian(sortedPeriods: NewPeriodEntryOpen[]): RealCycleLength | null {
   if (sortedPeriods.length < MIN_REAL_PERIODS_FOR_MEDIAN) return null;
 
   const gaps: number[] = [];
@@ -55,7 +62,7 @@ function realCycleLengthMedian(sortedPeriods: NewPeriodEntryOpen[]): number | nu
   }
   if (gaps.length < MIN_REAL_PERIODS_FOR_MEDIAN - 1) return null;
 
-  return Math.round(median(gaps));
+  return { cycleLengthDays: Math.round(median(gaps)), usableGaps: gaps };
 }
 
 /**
@@ -86,13 +93,14 @@ export function computePersonalCycleView(
   if (personalCycleLength && latestPeriodStart) {
     return {
       status: "personal",
-      cycleLengthDays: personalCycleLength,
-      todayPhase: confirmedToday ? "period" : estimatedPhase(latestPeriodStart, personalCycleLength, today),
+      cycleLengthDays: personalCycleLength.cycleLengthDays,
+      todayPhase: confirmedToday ? "period" : estimatedPhase(latestPeriodStart, personalCycleLength.cycleLengthDays, today),
       isEstimate: !confirmedToday,
       periodLengthDays,
       anchorPeriodStart: latestPeriodStart,
-      todayCycleDay: todayCycleDay(latestPeriodStart, personalCycleLength, today),
+      todayCycleDay: todayCycleDay(latestPeriodStart, personalCycleLength.cycleLengthDays, today),
       isRunning: runningToday,
+      isUncertain: isUncertainPrediction(personalCycleLength.usableGaps),
     };
   }
 
@@ -106,6 +114,7 @@ export function computePersonalCycleView(
       anchorPeriodStart: latestPeriodStart,
       todayCycleDay: todayCycleDay(latestPeriodStart, profile.cycleLengthDays, today),
       isRunning: runningToday,
+      isUncertain: false,
     };
   }
 
@@ -119,6 +128,7 @@ export function computePersonalCycleView(
       anchorPeriodStart: latestPeriodStart,
       todayCycleDay: null,
       isRunning: runningToday,
+      isUncertain: false,
     };
   }
 
@@ -131,6 +141,7 @@ export function computePersonalCycleView(
     anchorPeriodStart: null,
     todayCycleDay: null,
     isRunning: false,
+    isUncertain: false,
   };
 }
 
@@ -139,15 +150,21 @@ function todayCycleDay(anchorStart: string, cycleLengthDays: number, today: stri
   return daysBetween(periodStart, today) + 1;
 }
 
+/**
+ * WP-007: the next predicted period start is `cycleLengthDays` after the
+ * current cycle's start; ovulation/fertile window are derived from that
+ * upcoming start, never from the current period's endDate/expectedEndDate.
+ */
 function estimatedPhase(anchorStart: string, cycleLengthDays: number, today: string): PersonalCyclePhase {
   const currentPeriodStart = currentCyclePeriodStart(anchorStart, cycleLengthDays, today);
-  const ovulationDate = addDays(currentPeriodStart, cycleLengthDays - 14);
+  const nextPeriodStart = addDays(currentPeriodStart, cycleLengthDays);
+  const ovulationDate = calculateOvulationDate(nextPeriodStart);
+  const fertileWindow = calculateFertileWindow(ovulationDate);
   const pmsStart = addDays(currentPeriodStart, cycleLengthDays - PMS_LEAD_DAYS);
   const pmsEnd = addDays(currentPeriodStart, cycleLengthDays - 1);
-  const ovulationWindowStart = addDays(ovulationDate, -OVULATION_WINDOW_HALF_DAYS);
-  const ovulationWindowEnd = addDays(ovulationDate, OVULATION_WINDOW_HALF_DAYS);
 
-  if (today >= ovulationWindowStart && today <= ovulationWindowEnd) return "ovulation";
+  if (today === ovulationDate) return "ovulation";
+  if (today >= fertileWindow.start && today <= fertileWindow.end) return "fertile";
   if (today >= pmsStart && today <= pmsEnd) return "pms";
   return null;
 }
@@ -192,6 +209,9 @@ export function deriveTodayCardText(view: PersonalCycleView): TodayCardText {
     return { headline: "Heute: mögliche Ovulationsphase", showsEstimateNotice };
   }
 
+  // A fertile-window day that is not the single ovulation day itself: kept
+  // to the neutral "Zyklustag N" wording, never an ovulation/fertility
+  // claim, per WP-007's rule that only the ovulation day gets its own text.
   if (view.todayCycleDay !== null) {
     return { headline: `Heute: Zyklustag ${view.todayCycleDay}`, showsEstimateNotice };
   }

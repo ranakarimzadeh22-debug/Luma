@@ -4,12 +4,22 @@ import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometr
 const personalPhaseLabel: Record<Exclude<PersonalCycleView["todayPhase"], null>, string> = {
   period: "Periode",
   ovulation: "Mögliche Eisprungphase",
+  fertile: "Mögliches fruchtbares Zeitfenster",
   pms: "Mögliche PMS-Phase",
 };
 
 interface CyclePersonalRingProps {
   personalCycleView: PersonalCycleView;
   today: string;
+}
+
+/**
+ * WP-007: the "Vorhersage unsicher" notice only applies to today's
+ * ovulation/fertile-window estimate, per the Soll text — a PMS or neutral
+ * day keeps its normal cycle-length text even when isUncertain is true.
+ */
+function isUncertainOvulationOrFertile(view: PersonalCycleView): boolean {
+  return view.isUncertain && (view.todayPhase === "ovulation" || view.todayPhase === "fertile");
 }
 
 /**
@@ -30,7 +40,7 @@ export default function CyclePersonalRing({ personalCycleView, today }: CyclePer
         </title>
         <desc id="cycle-ring-description">
           {hasPersonalCircle
-            ? "Segmente für Periode, mögliche Eisprungphase und mögliche PMS-Phase sowie ein Heute-Marker."
+            ? "Segmente für Periode, mögliches fruchtbares Zeitfenster mit Eisprungtag und mögliche PMS-Phase sowie ein Heute-Marker."
             : "Neutraler Kreis ohne persönliche Phase, solange keine ausreichenden Daten vorliegen."}
         </desc>
         <defs>
@@ -117,9 +127,15 @@ export default function CyclePersonalRing({ personalCycleView, today }: CyclePer
                     ? `Heute: ${personalPhaseLabel[personalCycleView.todayPhase]}`
                     : "Heute: neutrale Phase"}
               </text>
-              <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">
-                Zyklus: {personalCycleView.cycleLengthDays} Tage
-              </text>
+              {isUncertainOvulationOrFertile(personalCycleView) ? (
+                <text x="160" y="226" fill="#a52b5d" fontFamily="Georgia, serif" fontSize="12" fontWeight="600">
+                  Vorhersage unsicher - Kann abweichen
+                </text>
+              ) : (
+                <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">
+                  Zyklus: {personalCycleView.cycleLengthDays} Tage
+                </text>
+              )}
             </>
           )}
           {personalCycleView.status === "profile_estimate" && (

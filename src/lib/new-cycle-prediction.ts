@@ -1,4 +1,8 @@
 import type { NewPeriodEntryOpen } from "@/lib/new-period-validation";
+// @ts-expect-error TS5097: noEmit is used; Node's native test runner (used by
+// tests/new-cycle-prediction.test.ts) requires the .ts suffix on this
+// relative import, since @/ path aliases don't resolve there.
+import { calculateOvulationDate, calculateFertileWindow, isUncertainPrediction } from "./cycle-fertility.ts";
 
 export interface PredictedCycle {
   periodStart: string;
@@ -21,6 +25,13 @@ export interface CyclePrediction {
   fertileWindowEnd: string;
   pmsStart: string;
   pmsEnd: string;
+  /**
+   * WP-007: true when the usable real cycle-length gaps vary too much for
+   * a single predicted day to be shown with the usual confidence. See
+   * isUncertainPrediction() in src/lib/cycle-fertility.ts for the
+   * reproducible, percentage-free threshold rule.
+   */
+  isUncertain: boolean;
   futureCycles: PredictedCycle[];
 }
 
@@ -77,6 +88,7 @@ export function predictCycle(
   let periodLengthDays: number;
   let anchorStart: string;
   let source: CyclePrediction["source"];
+  let usableGaps: number[] = [];
 
   if (sorted.length >= 2) {
     const gaps: number[] = [];
@@ -87,6 +99,7 @@ export function predictCycle(
     if (gaps.length === 0) return null;
     if (completed.length === 0) return null;
 
+    usableGaps = gaps;
     cycleLengthDays = Math.round(median(gaps));
     const latest = sorted[sorted.length - 1];
     periodLengthDays = Math.round(
@@ -114,13 +127,14 @@ export function predictCycle(
   }
 
   function cycleForPeriodStart(periodStart: string): PredictedCycle {
-    const ovulationDate = addDays(periodStart, -14);
+    const ovulationDate = calculateOvulationDate(periodStart);
+    const fertileWindow = calculateFertileWindow(ovulationDate);
     return {
       periodStart,
       periodEnd: addDays(periodStart, periodLengthDays - 1),
       ovulationDate,
-      fertileWindowStart: addDays(ovulationDate, -5),
-      fertileWindowEnd: addDays(ovulationDate, 1),
+      fertileWindowStart: fertileWindow.start,
+      fertileWindowEnd: fertileWindow.end,
       pmsStart: addDays(periodStart, -PMS_LEAD_DAYS),
       pmsEnd: addDays(periodStart, -1),
     };
@@ -151,19 +165,49 @@ export function predictCycle(
     fertileWindowEnd: first.fertileWindowEnd,
     pmsStart: first.pmsStart,
     pmsEnd: first.pmsEnd,
+    isUncertain: isUncertainPrediction(usableGaps),
     futureCycles,
   };
 }
 
-export function phaseForDate(
-  date: string,
-  prediction: CyclePrediction,
-): "period" | "pms" | "ovulation" | "fertile" | null {
+export type CyclePhase = "period" | "pms" | "ovulation" | "fertile";
+
+export interface DatePhases {
+  period: boolean;
+  ovulation: boolean;
+  fertile: boolean;
+  pms: boolean;
+}
+
+/**
+ * WP-007: a date can carry more than one predicted phase at once (e.g. a
+ * predicted period day that also falls inside the fertile window). Unlike
+ * the legacy phaseForDate() below, this never hides one phase behind
+ * another — callers decide how to layer the UI. `ovulation` is reported
+ * separately from `fertile` even though the ovulation day is always the
+ * last day of the fertile window, so callers can mark it distinctly.
+ */
+export function phasesForDate(date: string, prediction: CyclePrediction): DatePhases {
+  const result: DatePhases = { period: false, ovulation: false, fertile: false, pms: false };
   for (const cycle of prediction.futureCycles) {
-    if (date >= cycle.periodStart && date <= cycle.periodEnd) return "period";
-    if (date === cycle.ovulationDate) return "ovulation";
-    if (date >= cycle.fertileWindowStart && date <= cycle.fertileWindowEnd) return "fertile";
-    if (date >= cycle.pmsStart && date <= cycle.pmsEnd) return "pms";
+    if (date >= cycle.periodStart && date <= cycle.periodEnd) result.period = true;
+    if (date === cycle.ovulationDate) result.ovulation = true;
+    if (date >= cycle.fertileWindowStart && date <= cycle.fertileWindowEnd) result.fertile = true;
+    if (date >= cycle.pmsStart && date <= cycle.pmsEnd) result.pms = true;
   }
+  return result;
+}
+
+/**
+ * Legacy single-phase view, kept for callers that can only show one
+ * marker. Priority order matches the pre-WP-007 behavior: an overlapping
+ * period always wins over a same-day fertile/ovulation/pms marker.
+ */
+export function phaseForDate(date: string, prediction: CyclePrediction): CyclePhase | null {
+  const phases = phasesForDate(date, prediction);
+  if (phases.period) return "period";
+  if (phases.ovulation) return "ovulation";
+  if (phases.fertile) return "fertile";
+  if (phases.pms) return "pms";
   return null;
 }
