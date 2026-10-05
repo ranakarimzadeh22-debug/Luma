@@ -1,10 +1,10 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 9
+package_revision: 10
 status: review
 created: 2026-09-10
-updated: 2026-09-26
+updated: 2026-10-05
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
@@ -12,6 +12,109 @@ brief_version: 1
 technical_brief: complete
 migration_approval: approved_2026-09-10
 ---
+
+## Version 10 - Partneransicht ohne grosse Statuskarte
+
+### Owner-Ansicht - einfach erklaert
+
+- Kurz gesagt: Nach einer aktiven Verbindung sieht der Partner direkt den freigegebenen Zyklus-Kreis und den Kalender.
+- Die grosse Anzeige Verbindung aktiv verschwindet vollstaendig.
+- Die Buttons Verbindung beenden und Abmelden verschwinden ebenfalls aus der Partneransicht.
+- Kreis, Kalender und die vorhandene neutrale Meldung bei fehlender Freigabe bleiben unveraendert.
+
+### Soll - von Codex
+
+- Im verbundenen Zustand von /neu/partner erscheint kein grosser Statusbereich mit Verbindung aktiv.
+- Im verbundenen Zustand erscheinen weder Verbindung beenden noch Abmelden.
+- Der Partner sieht zuerst nur die bereits erlaubten Inhalte: Zyklus-Kreis bei Kreisfreigabe und Kalender bei Kalenderfreigabe.
+- Ohne Kalenderfreigabe bleibt die neutrale Meldung Keine freigegebene Information sichtbar.
+- Die nicht verbundene Ansicht mit Verbindungscode eingeben, Registrierung und Anmeldung bleibt unveraendert.
+- Die Eigentuemerin kann die Verbindung weiterhin in ihrem eigenen Bereich verwalten. Diese Version fuegt keine neue Partneraktion hinzu.
+
+### Nicht enthalten
+
+- Keine Aenderung an Verbindungscode, Sitzung, Widerruf, Freigaben, Periodendaten, Kreis, Kalender, Benachrichtigungs-Auswahl oder alter Luma.
+- Keine neue Route, Migration oder Datenbankaenderung.
+
+### Abnahmekriterien
+
+1. Ein verbundener Partner sieht keinen Text Verbindung aktiv.
+2. Ein verbundener Partner sieht weder Verbindung beenden noch Abmelden.
+3. Zyklus-Kreis, Kalender und die neutrale Freigabe-Meldung funktionieren in ihren bisherigen Freigabe-Zustaenden weiter.
+4. Ein nicht verbundener Partner sieht weiterhin den bestehenden Code-Eingabeweg.
+5. Die mobile Ansicht bleibt ohne horizontalen Ueberlauf.
+
+### Technischer Auftrag fuer Claude - Version 10
+
+#### Bestaetigte Ausgangslage im Code
+
+- src/app/neu/partner/page.tsx rendert im verbundenen Zustand derzeit den Kopf Fuer meinen Partner / meine Partnerin mit Verbindung aktiv, NewPartnerEndButton und NewLogoutButton.
+- Derselbe Bereich rendert bereits NewPartnerCycleRing, NewPartnerCalendar, die neutrale Freigabe-Meldung und NewPartnerNotificationPreference.
+- Die Verbindung, Freigaben und Datenzugriffe werden serverseitig vor dem Rendern ueber die bestehenden Helfer geprueft.
+
+#### Technisches Ziel
+
+- Entferne im verbundenen Zustand ausschliesslich den grossen Kopf mit Verbindung aktiv sowie NewPartnerEndButton und NewLogoutButton aus src/app/neu/partner/page.tsx.
+- Behalte den Code-Eingabeweg im nicht verbundenen Zustand unveraendert.
+- Kreis, Kalender, neutrale Meldung und Benachrichtigungs-Auswahl bleiben an ihrer bisherigen Logik; keine Freigabe oder Datenableitung darf sich veraendern.
+- Entferne nur dadurch unbenutzte Imports. Keine Komponenten, Routen oder Datenmodelle loeschen, wenn sie ausserhalb dieser Ansicht noch bestehen oder als spaetere Option erhalten bleiben sollen.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Migration noetig: nein.
+- Keine API- oder Datenwirkung.
+
+#### Invarianten
+
+- Partnerzugriff bleibt rein lesend und serverseitig freigabegeprueft.
+- Die Eigentuemerin kann die Verbindung weiterhin im eigenen Bereich beenden.
+- Keine automatische Abmeldung, kein Verbindungswiderruf und keine Aenderung gespeicherter Daten.
+
+#### Pflichtpruefungen
+
+- Pruefe verbundenen Zustand mit allen vier Kombinationen aus Kreis- und Kalenderfreigabe: Keine Statuskarte oder entfernte Buttons; nur erlaubte Inhalte erscheinen.
+- Pruefe nicht verbundenen Zustand: Code-Eingabeweg bleibt sichtbar.
+- Pruefe, dass keine schreibende Partneraktion entsteht und die neutrale Meldung bei fehlender Freigabe erhalten bleibt.
+- Fuehre TypeScript, gezielte Partneransicht-Pruefung, mobile Sichtpruefung und Produktions-Build aus.
+
+#### Stoppbedingungen
+
+- Stoppe vor einer Aenderung an Verbindung, Abmeldung, Freigaben, Datenbank, alter Luma oder einer neuen Partner-Einstellung.
+- Stoppe, wenn das Entfernen der Anzeige den Code-Eingabeweg oder die serverseitige Zugriffskontrolle beeinflusst.
+
+#### Abschluss durch Claude
+
+- Ergaenze Ist Version 10, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze WP-004 nach Abschluss auf review.
+- Ergaenze den Entwicklungsledger, fuehre node scripts/work-package-state.mjs mark-updated WP-004 und danach node scripts/work-package-state.mjs validate aus.
+- Committe und pushe ausschliesslich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 10 – von Claude
+
+- **Umgesetzt:**
+  - `src/app/neu/partner/page.tsx`: Der verbundene Zustand ist jetzt ein eigener früher Rückgabepfad (`if (status.connected) { return (...) }`), getrennt vom nicht verbundenen Zustand. Im verbundenen Pfad wurden der Kopfbereich mit `Für meinen Partner / meine Partnerin` und `Verbindung aktiv` sowie `NewPartnerEndButton` und `NewLogoutButton` vollständig entfernt. Der Partner sieht dort direkt und ausschließlich die bereits erlaubten Inhalte in unveränderter Reihenfolge: `NewPartnerCycleRing` bei Kreisfreigabe, danach `NewPartnerCalendar` bei Kalenderfreigabe bzw. unverändert die neutrale Meldung `Keine freigegebene Information.` ohne Kalenderfreigabe, danach `NewPartnerNotificationPreference`.
+  - Der nicht verbundene Zustand (`Verbindungscode eingeben`, `NewPartnerRedeemForm`, `NewLogoutButton`) sowie der nicht angemeldete Zustand (`Erst ein eigenes Konto`) wurden unverändert belassen.
+  - Keine Freigabe- oder Datenableitung wurde verändert: `getPartnerCalendarView`, `getPartnerCycleView`, `getPartnerConnectionStatusForPartner` und `getPartnerNotificationPreference` werden unverändert und mit denselben Parametern aufgerufen wie zuvor.
+  - Unbenutzten Import `NewPartnerEndButton` aus `src/app/neu/partner/page.tsx` entfernt, da die Komponente in dieser Datei nicht mehr eingebunden wird. Die Komponente selbst (`src/components/NewPartnerEndButton.tsx`) wurde nicht gelöscht, wie im Auftrag gefordert.
+  - **Beobachtung außerhalb des Auftragsumfangs, nicht behoben:** `NewPartnerEndButton` ruft `POST /api/neu/partner/end` auf, das serverseitig nach `owner_user_id = session.userId` filtert (`endPartnerConnection` in `src/lib/new-partner.ts`). War der Button bisher auf der Partner-Seite sichtbar, hätte ein Klick durch den Partner (dessen `session.userId` die `partner_user_id`, nicht die `owner_user_id` ist) ohnehin nie eine Zeile betroffen und die Verbindung still nicht beendet. Die Eigentümerin konnte und kann die Verbindung weiterhin über `NewPartnerCodeCard` in `/neu/einstellungen` beenden (eigene, unabhängige Implementierung mit derselben Route, aber korrekt mit der eigenen `ownerUserId`). Diese vorbestehende, durch das Entfernen des Buttons nun gegenstandslose Inkonsistenz wird hier nur dokumentiert, nicht repariert, da außerhalb des WP-004-Version-10-Auftragsumfangs.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - Neues `scripts/verify-partner-view-no-status-card.ts`: Quelltext-Prüfungen bestätigen, dass der verbundene Rückgabepfad weder `Verbindung aktiv` noch `NewPartnerEndButton` noch `NewLogoutButton` enthält, aber `NewPartnerCycleRing`, `NewPartnerCalendar`, die neutrale Meldung und `NewPartnerNotificationPreference` weiterhin enthält; dass der nicht verbundene Pfad weiterhin `Verbindungscode eingeben`, `NewPartnerRedeemForm` und `NewLogoutButton` enthält; dass die Seite selbst keinen schreibenden Partner-API-Aufruf auslöst und die bestehenden freigabegeprüften Lade-Funktionen unverändert genutzt werden; dass `NewPartnerEndButton.tsx` als Datei weiterhin besteht. Alle Prüfungen bestanden.
+  - Bestehende Regressionen erneut ausgeführt: `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-estimated-period.mts`, `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-partner-notification-preference.mts` — alle grün.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, Routenliste unverändert (keine neue Route, wie im Auftrag vorgesehen).
+  - Mobile und breite Sichtprüfung mit Playwright (Chromium, temporär installiert und danach vollständig entfernt) gegen den lokalen Dev-Server mit zwei echten, verbundenen Testkonten (Owner + Partner): nicht verbundener Zustand (mobil) zeigt weiterhin `Verbindungscode eingeben` und `Abmelden`. Alle vier Kombinationen aus Kreis-/Kalenderfreigabe im verbundenen Zustand geprüft (Kreis aus/Kalender aus, Kreis an/Kalender aus, Kreis an/Kalender an, Kreis aus/Kalender an) – in jeder Kombination fehlen `Verbindung aktiv`, `Verbindung beenden` und `Abmelden` vollständig, während genau die laut Freigabe erlaubten Inhalte (Zyklus-Kreis, Kalender, neutrale Meldung) korrekt erscheinen bzw. fehlen. Kein horizontaler Überlauf in keiner der geprüften Kombinationen (mobil 375×812 und breit 1280×900). Playwright und beide Testkonten (inkl. Verbindung, Code und Perioden) danach vollständig entfernt.
+- **Abweichungen:** keine fachliche Abweichung.
+  - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` (seit WP-004 Version 6) bestehen unverändert fort und waren für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: als verbundener Partner `/neu/partner` öffnen und bestätigen, dass kein Statustext und keine der beiden entfernten Schaltflächen mehr erscheinen, während Zyklus-Kreis/Kalender/neutrale Meldung weiterhin wie gewohnt funktionieren; als nicht verbundener Partner den unveränderten Code-Eingabeweg bestätigen; mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Die oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** folgt unmittelbar nach diesem Eintrag.
+
+## Owner-Abnahme
+
+- Die Ownerin hat WP-004 nach der Prüfung der Partneransicht, der getrennten Kalenderfreigabe und der Kreisfreigabe am 2026-09-30 bestätigt.
+- Status: abgeschlossen.
 
 ## Version 9 – Grundkalender nur nach ausdrücklicher Freigabe
 

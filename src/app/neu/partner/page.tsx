@@ -6,7 +6,6 @@ import { getPartnerCycleView } from "@/lib/new-partner-cycle-view";
 import { getPartnerNotificationPreference } from "@/lib/new-partner-notification-preference";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
-import NewPartnerEndButton from "@/components/NewPartnerEndButton";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
 import NewPartnerCycleRing from "@/components/NewPartnerCycleRing";
 import NewPartnerNotificationPreference from "@/components/NewPartnerNotificationPreference";
@@ -55,39 +54,40 @@ export default async function NewPartnerPage() {
   const cycleView = status.connected ? await getPartnerCycleView(session.userId) : null;
   const notificationPreference = status.connected ? await getPartnerNotificationPreference(session.userId) : null;
 
+  if (status.connected) {
+    return (
+      <main className="min-h-screen bg-neutral-50 px-6 py-10">
+        <section className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+          {cycleView && (
+            <NewPartnerCycleRing
+              personalCycleView={cycleView.personalCycleView}
+              runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
+              today={todayBerlinDateOnly()}
+            />
+          )}
+          {calendarView ? (
+            <NewPartnerCalendar
+              confirmedDates={calendarView.confirmedDates}
+              estimatedNextPeriodDates={calendarView.estimatedNextPeriodDates}
+            />
+          ) : (
+            <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
+          )}
+          <NewPartnerNotificationPreference initialPreference={notificationPreference} />
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-neutral-50 px-6 py-10">
       <section className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
         <div className="space-y-2">
           <p className="text-sm font-medium text-neutral-500">Für meinen Partner / meine Partnerin</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">
-            {status.connected ? "Verbindung aktiv" : "Verbindungscode eingeben"}
-          </h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Verbindungscode eingeben</h1>
         </div>
 
-        {status.connected ? (
-          <>
-            {cycleView && (
-              <NewPartnerCycleRing
-                personalCycleView={cycleView.personalCycleView}
-                runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
-                today={todayBerlinDateOnly()}
-              />
-            )}
-            {calendarView ? (
-              <NewPartnerCalendar
-                confirmedDates={calendarView.confirmedDates}
-                estimatedNextPeriodDates={calendarView.estimatedNextPeriodDates}
-              />
-            ) : (
-              <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>
-            )}
-            <NewPartnerNotificationPreference initialPreference={notificationPreference} />
-            <NewPartnerEndButton />
-          </>
-        ) : (
-          <NewPartnerRedeemForm />
-        )}
+        <NewPartnerRedeemForm />
 
         <NewLogoutButton />
       </section>
