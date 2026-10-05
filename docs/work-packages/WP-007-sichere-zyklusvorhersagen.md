@@ -1,7 +1,7 @@
 ---
 id: WP-007
 title: "Sichere, persoenliche Zyklusvorhersagen"
-package_revision: 1
+package_revision: 2
 status: review
 created: 2026-10-05
 updated: 2026-10-05
@@ -160,10 +160,120 @@ Die bestehende Vorhersage nutzt bereits echte Periodenstarts und trennt Perioden
   - Owner-Prüfschritt steht aus: `/neu` öffnen, einen Monat mit vorhergesagter Periode und fruchtbarem Zeitfenster ansehen, die neue Legendenzeile und – bei vorhandener Überlappung – den kleinen zusätzlichen Punkt auf einem bereits farblich markierten Tag prüfen; bei einem Konto mit stark schwankender echter Zyklushistorie den Hinweis „Vorhersage unsicher - Kann abweichen“ prüfen; mobil auf fehlenden horizontalen Überlauf prüfen.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** folgt unmittelbar nach diesem Eintrag.
+- **Commit:** 145498c.
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: ausstehend.
-- Nachschaerfung: keine.
-- Product-Map aktualisiert: nein.
+- Ergebnis: Soll erfuellt. Die Umsetzung deckt die vereinbarten Vorhersageregeln, die sichere Trennung zu echten Periodendaten und die Ueberlappungsdarstellung ab.
+- Nachschaerfung: keine fachliche. Die Unsicherheitsschwelle > 10 Tage ist reproduzierbar getestet und im Ist dokumentiert.
+- Product-Map aktualisiert: ja.
+
+
+## Version 2 - Einklappbare Kalender-Erklaerungen
+
+### Owner-Ansicht - einfach erklaert
+
+- Kurz gesagt: Der Home-Kalender wirkt ruhiger. Die vielen Erklaerungen unter dem Kalender sind zuerst geschlossen.
+- Unter dem Kalender steht nur ein kleiner Button: Erklaerungen zum Kalender anzeigen.
+- Nach dem Antippen erscheinen die bisherigen Bedeutungen fuer bestaetigte/laufende Periode, voraussichtliches Ende, geschaetzte naechste Periode, moegliches fruchtbares Zeitfenster sowie P, M und E.
+- Der Hinweis Vorhersage unsicher - Kann abweichen bleibt sichtbar, wenn er zutrifft. Er wird nicht versteckt, weil er fuer die Einordnung der Vorhersage wichtig ist.
+- Es wird nichts in die Einstellungen verschoben. Einstellungen bleiben fuer Aenderungen, der Kalender erklaert seine sichtbaren Markierungen direkt vor Ort.
+
+### Entstehungsweg
+
+Die neue Kalenderlegende erklaert die Markierungen korrekt, nimmt auf dem Home-Screen aber viel Platz ein. Die Ownerin moechte einen ruhigeren Home-Screen ohne Verlust der Erklaerungen. Deshalb werden die normalen Erklaerungen einklappbar; der kontextbezogene Unsicherheitshinweis bleibt sichtbar.
+
+- bestaetigtes Problem: Die dauerhaft sichtbare Legende unter dem Kalender macht den Home-Screen unnoetig voll.
+- gewuenschte Wirkung: Der Kalender bleibt verstaendlich, aber der erste Blick auf die Startseite ist ruhiger.
+- gewaehlte Loesung: Ein zugaenglicher Ein-/Ausklappbereich direkt unter dem Kalender.
+- bestaetigte Grenze: Keine Verlagerung in Einstellungen und keine Aenderung an Berechnung, Daten oder Markierungen.
+- Quellen: Owner-Rueckmeldung vom 2026-10-05, APP-IDEA-007.
+
+### Soll - von Codex
+
+- Die ausfuehrliche Kalenderlegende ist beim ersten Anzeigen geschlossen.
+- Ein klarer Button zeigt Erklaerungen zum Kalender anzeigen. Nach dem Oeffnen lautet er Erklaerungen ausblenden.
+- Der geoeffnete Bereich enthaelt die bisherigen Erklaerungen fuer bestaetigt/laufend, voraussichtliches Ende, geschaetzte naechste Periode, moegliches fruchtbares Zeitfenster sowie die vorhandenen P/M/E-Erklaerungen.
+- Die sichtbaren Kalendermarker, ihre Farben, Tagesfenster, aria-Labels und Berechnungen bleiben unveraendert.
+- Vorhersage unsicher - Kann abweichen bleibt ausserhalb des eingeklappten Bereichs sichtbar, wenn die bestehende Vorhersage unsicher ist.
+- Der Bereich ist ueber Tastatur, Screenreader und auf Mobilgeraeten bedienbar.
+
+### Nicht enthalten
+
+- Keine Aenderung von Zyklus-, Perioden-, Eisprung-, PMS- oder Fruchtbarkeitsberechnung.
+- Keine Datenbank, API, Einstellungen, Partneransicht, Freigabe, Anmeldung oder alte Luma.
+- Keine neue Textuebersetzung oder neue medizinische Aussage.
+
+### Abnahmekriterien
+
+1. Beim Laden ist nur der kompakte Erklaerungsbutton sichtbar; die lange Legende ist geschlossen.
+2. Ein Tipp oder Tastaturaktion oeffnet und schliesst alle Kalendererklaerungen eindeutig.
+3. Der Unsicherheitshinweis bleibt sichtbar, wenn prediction.isUncertain true ist, auch bei geschlossener Legende.
+4. Bestehende Kalendermarker und Tagesfenster bleiben unveraendert sichtbar und funktionsfaehig.
+5. Kein horizontaler Ueberlauf auf einem mobilen Bildschirm.
+
+### Technischer Auftrag fuer Claude - Version 2
+
+#### Bestaetigte Ausgangslage im Code
+
+- src/components/NewCycleExample.tsx rendert unter dem Home-Kalender zuerst die Legendenzeilen fuer Periodenstatus und fruchtbares Zeitfenster, danach bei prediction.isUncertain den Hinweis Vorhersage unsicher - Kann abweichen und anschliessend die interaktive P/M/E-Legende mit PhaseLegendItem.
+- Die Komponente besitzt bereits Client-State fuer das Oeffnen einzelner P/M/E-Erklaerungen. Kalenderdaten, prediction und Phasenlogik stammen aus den bestehenden zentralen Modulen.
+- Die neue Aenderung betrifft ausschliesslich die Praesentation der vorhandenen Legende im Owner-Home-Kalender.
+
+#### Technisches Ziel
+
+- Fuege einen kleinen zugaenglichen aufklappbaren Bereich fuer die vorhandenen normalen Kalendererklaerungen ein. Der Anfangszustand ist geschlossen.
+- Der Steuerbutton verwendet einen klaren sichtbaren Text sowie aria-expanded und aria-controls. Beim Oeffnen bleiben die vorhandenen P/M/E-Einzel-Erklaerungen und Escape-Verhalten funktionsfaehig.
+- Platziere den bestehenden Unsicherheitshinweis bewusst ausserhalb des einklappbaren Bereichs, damit er bei unsicherer Vorhersage immer sichtbar bleibt.
+- Verschiebe oder veraendere keine Marker-, Berechnungs-, Tagesfenster- oder Datenlogik. Wiederverwende die bestehende Legende statt neue Texte oder eine zweite Erklaerungsstruktur anzulegen.
+
+#### Invarianten
+
+- Home-Kalender, Zyklus-Kreis, Heute-Karte, Partneransicht, Einstellungen und alle Datenwege bleiben unveraendert.
+- Alle bestehenden Labels fuer Schaetzungen bleiben im geoeffneten Erklaerungsbereich vollstaendig erhalten.
+- Es darf keine medizinische Aussage ergaenzt oder abgeschwaecht werden.
+- Keine neue Route, Datenbankmigration, Speicherung oder Konfiguration.
+
+#### Pflichtpruefungen
+
+- Gezielte Pruefung: Anfangszustand geschlossen, Buttontext und aria-Zustand korrekt, Oeffnen/Schliessen sichtbar und per Tastatur bedienbar.
+- Pruefe, dass Unsicherheit bei prediction.isUncertain ausserhalb der Legende sichtbar bleibt.
+- Pruefe, dass alle bisherigen Legendentexte und P/M/E-Erklaerungen im geoeffneten Zustand vorhanden sind.
+- Pruefe vorhandene Kalender- und WP-007-Regressionen, TypeScript und eine mobile Sichtpruefung ohne horizontalen Ueberlauf.
+- Keine neue Abhaengigkeit und keine Testdaten ausserhalb von tests.
+
+#### Stoppbedingungen
+
+- Stoppe vor jeder Aenderung an Vorhersagelogik, Partneransicht, Einstellungen, Datenbank, API oder medizinischer Formulierung.
+- Stoppe, wenn die bestehende zugaengliche P/M/E-Interaktion im Einklappbereich nicht sicher erhalten werden kann.
+
+#### Abschluss durch Claude
+
+- Ergaenze Ist Version 2, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus nach Abschluss auf review.
+- Ergaenze den Entwicklungsledger, fuehre node scripts/work-package-state.mjs mark-updated WP-007 und danach node scripts/work-package-state.mjs validate aus.
+- Committe und pushe nur auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 2 - von Claude
+
+- **umgesetzt:**
+  - `src/components/NewCycleExample.tsx`: neuer Client-State `isCalendarLegendOpen` (Default `false` – geschlossen). Die bisherigen zwei Legendenblöcke unter dem Home-Kalender (die Zeile „Bestätigt/Laufend · Voraussichtliches Ende · Geschätzte nächste Periode · Mögliches fruchtbares Zeitfenster“ sowie die interaktive P/M/E-Legende mit `PhaseLegendItem`) wurden unverändert in einen gemeinsamen, bedingt gerenderten Bereich (`id="calendar-legend-panel"`) verschoben, der nur erscheint, wenn `isCalendarLegendOpen` true ist.
+  - Neuer Steuerbutton direkt darüber: Text „Erklärungen zum Kalender anzeigen“ im geschlossenen und „Erklärungen ausblenden“ im geöffneten Zustand, mit `aria-expanded={isCalendarLegendOpen}` und `aria-controls="calendar-legend-panel"`.
+  - Der bestehende „Vorhersage unsicher - Kann abweichen“-Hinweis (`prediction?.isUncertain`) wurde bewusst **vor** dem neuen Steuerbutton belassen, außerhalb des Einklappbereichs – er bleibt unabhängig vom Öffnungszustand sichtbar, genau wie gefordert.
+  - Keine Änderung an Marker-, Berechnungs-, Tagesfenster- oder Datenlogik: `primaryCalendarPhase`, `showsFertileMarker`, `phasesForDate`, alle Kalenderzellen, `DayDetailModal`, `aria-label`s der Tage sowie `PhaseLegendItem` (inklusive dessen eigenständigem Escape-Verhalten und Einzel-`aria-expanded` je Phase) sind unverändert. Es wurden ausschließlich vorhandene Texte und Komponenten in eine neue, bedingt sichtbare Hülle verschoben – keine neuen Texte, keine zweite Erklärungsstruktur.
+  - Keine neue Route, keine Datenbankänderung, keine Konfiguration, keine neue Abhängigkeit. Zyklus-Kreis, Heute-Karte, Partneransicht und Einstellungen bleiben unberührt.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - Neues `scripts/verify-calendar-legend-collapsible.ts`: Quelltext-Prüfungen bestätigen den geschlossenen Anfangszustand (`useState(false)`), `aria-expanded`/`aria-controls` am Steuerbutton samt passender Panel-`id`, beide Button-Textzustände, dass der Unsicherheitshinweis im Quelltext vor dem Einklappbereich steht und unverändert an `prediction?.isUncertain` gebunden bleibt (nicht an den Öffnungszustand), dass alle bisherigen Legendentexte (inklusive „Mögliches fruchtbares Zeitfenster“) und die vollständige P/M/E-Legende im geöffneten Bereich enthalten sind, dass `PhaseLegendItem` sein Escape-Verhalten und eigenes `aria-expanded` unverändert behält, und dass die zentrale WP-007-Marker-Logik (`primaryCalendarPhase`, `showsFertileMarker`) unverändert eingebunden bleibt. Alle Prüfungen bestanden.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-day-detail.ts`, `scripts/verify-period-history.ts`, `scripts/verify-history-month-jump.ts`, `scripts/verify-partner-fixed-view.ts`, `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-my-periods.mts`, `scripts/verify-period-day-actions.mts`.
+  - `node --experimental-strip-types --test tests/new-cycle-prediction.test.ts tests/cycle-fertility.test.ts`: alle 22 Prüfungen weiterhin bestanden (reine Präsentationsänderung, keine Berührung der Vorhersagelogik).
+  - `scripts/verify-personal-cycle-view.ts` zeigt weiterhin dieselben, bereits seit mehreren vorherigen Versionen dokumentierten 9 Fehlschläge bei den Farbverlauf-Quelltextprüfungen (Gradient-Fundstelle seit WP-004 Version 6) – unverändert vorbestehend, nicht durch diese Version verursacht.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, Routenliste unverändert (keine neue Route).
+  - Mobile Sichtprüfung (375×812) mit Playwright (temporär installiert, danach vollständig entfernt) gegen den lokalen Dev-Server mit einem echten Testkonto mit stark schwankender Zyklushistorie (Spanne der echten Abstände > 10 Tage, löst `isUncertain` aus): Anfangszustand zeigt nur den kompakten Button (`aria-expanded="false"`), das Panel ist nicht im DOM vorhanden; der Unsicherheitshinweis ist bereits vor dem Öffnen sichtbar. Nach dem Öffnen (`aria-expanded="true"`) sind alle vier Legendenzeilen und die vollständige P/M/E-Legende vorhanden; ein Klick auf „M – PMS“ öffnet die PMS-Erklärung, Escape schließt sie wieder – unverändert funktionsfähig. Der Unsicherheitshinweis bleibt während des geöffneten Zustands weiterhin sichtbar. Nach dem Schließen ist das Panel wieder aus dem DOM entfernt, der Unsicherheitshinweis bleibt weiterhin sichtbar. Kein horizontaler Überlauf. Screenshots geprüft (geschlossener und geöffneter Zustand). Playwright und Testkonto danach vollständig entfernt.
+- **Abweichungen:** keine fachliche Abweichung.
+  - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: `/neu` öffnen, prüfen dass unter dem Kalender nur der kompakte Button sichtbar ist, öffnen und alle Erklärungen inklusive P/M/E-Einzelerklärungen prüfen, bei einem Konto mit unsicherer Vorhersage prüfen, dass der Hinweis unabhängig vom Öffnungszustand sichtbar bleibt, mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** folgt unmittelbar nach diesem Eintrag.

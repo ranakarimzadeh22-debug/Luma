@@ -772,6 +772,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const exampleMonth = { year: todayYear, month: todayMonthIndex - 1 };
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
   const [activePhase, setActivePhase] = useState<Phase | null>(null);
+  const [isCalendarLegendOpen, setIsCalendarLegendOpen] = useState(false);
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
   const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
@@ -1124,51 +1125,68 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-[#382631]" aria-label="Kalender-Kennzeichnung">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full bg-[#6d153f]" aria-hidden="true" />
-            Bestätigt / Laufend
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full bg-[#f3a9bd]" aria-hidden="true" />
-            Voraussichtliches Ende – kann abweichen
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full bg-[#c9b3ea]" aria-hidden="true" />
-            Geschätzte nächste Periode – kann abweichen
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
-            Mögliches fruchtbares Zeitfenster – kann abweichen
-          </span>
-        </div>
         {prediction?.isUncertain && (
           <p className="text-center text-xs font-semibold text-[#a52b5d]">
             Vorhersage unsicher - Kann abweichen
           </p>
         )}
 
-        <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-            {(["period", "pms", "ovulation"] as const).map((phase) => (
-              <PhaseLegendItem
-                key={phase}
-                phase={phase}
-                activePhase={activePhase}
-                setActivePhase={setActivePhase}
-              />
-            ))}
-          </div>
-          {activePhase && (
-            <p
-              id={`phase-explanation-${activePhase}`}
-              role="tooltip"
-              className="mx-auto max-w-sm rounded-2xl border border-[#efd5dc] bg-white/95 px-4 py-3 text-center leading-relaxed shadow-[0_8px_24px_rgba(91,31,62,0.12)]"
-            >
-              {phaseExplanations[activePhase]}
-            </p>
-          )}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            aria-expanded={isCalendarLegendOpen}
+            aria-controls="calendar-legend-panel"
+            onClick={() => setIsCalendarLegendOpen((current) => !current)}
+            className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+          >
+            {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
+          </button>
         </div>
+
+        {isCalendarLegendOpen && (
+          <div id="calendar-legend-panel" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-[#382631]" aria-label="Kalender-Kennzeichnung">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full bg-[#6d153f]" aria-hidden="true" />
+                Bestätigt / Laufend
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full bg-[#f3a9bd]" aria-hidden="true" />
+                Voraussichtliches Ende – kann abweichen
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full bg-[#c9b3ea]" aria-hidden="true" />
+                Geschätzte nächste Periode – kann abweichen
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
+                Mögliches fruchtbares Zeitfenster – kann abweichen
+              </span>
+            </div>
+
+            <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+                {(["period", "pms", "ovulation"] as const).map((phase) => (
+                  <PhaseLegendItem
+                    key={phase}
+                    phase={phase}
+                    activePhase={activePhase}
+                    setActivePhase={setActivePhase}
+                  />
+                ))}
+              </div>
+              {activePhase && (
+                <p
+                  id={`phase-explanation-${activePhase}`}
+                  role="tooltip"
+                  className="mx-auto max-w-sm rounded-2xl border border-[#efd5dc] bg-white/95 px-4 py-3 text-center leading-relaxed shadow-[0_8px_24px_rgba(91,31,62,0.12)]"
+                >
+                  {phaseExplanations[activePhase]}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {!prediction && (
           <div className="flex justify-center pb-1">
