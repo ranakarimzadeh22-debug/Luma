@@ -211,3 +211,35 @@ export function phaseForDate(date: string, prediction: CyclePrediction): CyclePh
   if (phases.pms) return "pms";
   return null;
 }
+
+export type PrimaryCalendarPhase = "period" | "pms" | "ovulation";
+
+/**
+ * WP-007/WP-004 v11: the single primary background phase for a calendar
+ * day, shared by the owner's own calendar (src/components/NewCycleExample.tsx)
+ * and the connected partner's calendar (src/components/NewPartnerCalendar.tsx)
+ * so both render the exact same marker priority from one place — no second,
+ * divergent calculation. Period takes visual priority; "fertile" never wins
+ * the background on its own (see showsFertileMarker for its own, secondary
+ * marker).
+ */
+export function primaryCalendarPhase(date: string, prediction: CyclePrediction): PrimaryCalendarPhase | null {
+  const phases = phasesForDate(date, prediction);
+  if (phases.period) return "period";
+  if (phases.ovulation) return "ovulation";
+  if (phases.pms) return "pms";
+  return null;
+}
+
+/**
+ * WP-007/WP-004 v11: the fertile window must stay visible even on a day
+ * whose primary marker is already claimed by something else (a period day,
+ * a predicted period day, or a confirmed/running period) — callers render
+ * this as a small secondary marker, never hiding the primary marking. Only
+ * suppressed when the primary phase marker shown for this day is already
+ * "ovulation" itself, so the single ovulation day's own letter marker isn't
+ * duplicated by the secondary dot.
+ */
+export function showsFertileMarker(phases: DatePhases, primaryPhase: PrimaryCalendarPhase | null): boolean {
+  return phases.fertile && primaryPhase !== "ovulation";
+}

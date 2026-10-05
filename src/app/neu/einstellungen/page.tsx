@@ -3,8 +3,6 @@ import { redirect } from "next/navigation";
 import { getNewAuthSession } from "@/lib/new-auth";
 import { getPartnerConnectionStatusForOwner } from "@/lib/new-partner";
 import NewPartnerCodeCard from "@/components/NewPartnerCodeCard";
-import NewPartnerCycleRingSharingToggle from "@/components/NewPartnerCycleRingSharingToggle";
-import NewPartnerCalendarSharingToggle from "@/components/NewPartnerCalendarSharingToggle";
 import NewLogoutButton from "@/components/NewLogoutButton";
 
 export const dynamic = "force-dynamic";
@@ -23,12 +21,6 @@ export default async function NewSettingsPage() {
           <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Einstellungen</h1>
         </div>
         <NewPartnerCodeCard isConnected={status.connected} />
-        {status.role === "owner" && status.connected && (
-          <>
-            <NewPartnerCycleRingSharingToggle initialShared={status.cycleRingShared} />
-            <NewPartnerCalendarSharingToggle initialShared={status.calendarShared} />
-          </>
-        )}
         <NewLogoutButton />
       </section>
     </main>

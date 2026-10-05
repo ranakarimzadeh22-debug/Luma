@@ -68,7 +68,7 @@ export default async function NewPartnerPage() {
           {calendarView ? (
             <NewPartnerCalendar
               confirmedDates={calendarView.confirmedDates}
-              estimatedNextPeriodDates={calendarView.estimatedNextPeriodDates}
+              prediction={calendarView.prediction}
             />
           ) : (
             <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>

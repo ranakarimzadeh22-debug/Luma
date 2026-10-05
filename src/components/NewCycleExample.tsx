@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
-import { phasesForDate, type CyclePrediction, type DatePhases } from "@/lib/new-cycle-prediction";
+import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
@@ -21,38 +21,6 @@ function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
   if (day >= 15 && day <= 18) return "pms";
   if (day === 11 || day === 12) return "ovulation";
   return null;
-}
-
-/**
- * Primary background phase for a calendar day: period takes visual
- * priority over a same-day predicted phase (storedPeriod/runningPeriod
- * checks elsewhere already take priority over this). "fertile" never wins
- * the background on its own — a fertile-window day gets a neutral/period/
- * pms background and is marked only through showsFertileMarker, so it
- * never gets confused with the single ovulation day's own marker.
- */
-function predictedPhaseForCalendarDay(
-  date: string,
-  prediction: CyclePrediction,
-): "period" | "pms" | "ovulation" | null {
-  const phases = phasesForDate(date, prediction);
-  if (phases.period) return "period";
-  if (phases.ovulation) return "ovulation";
-  if (phases.pms) return "pms";
-  return null;
-}
-
-/**
- * WP-007: the fertile window must stay visible even on a day whose
- * primary marker is already claimed by something else (a period day, a
- * predicted period day, or storedPeriod/runningPeriod) — callers render
- * this as a small secondary marker, never hiding the primary marking. Only
- * suppressed when the primary phase marker shown for this day is already
- * "ovulation" itself, so the single ovulation day's own letter marker
- * isn't duplicated by the secondary dot.
- */
-function showsFertileMarker(phases: DatePhases, primaryPhase: "period" | "pms" | "ovulation" | null): boolean {
-  return phases.fertile && primaryPhase !== "ovulation";
 }
 
 const phaseStyles = {
@@ -1029,7 +997,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               : null;
             const phase = day
               ? prediction
-                ? predictedPhaseForCalendarDay(date as string, prediction)
+                ? primaryCalendarPhase(date as string, prediction)
                 : isExampleMonth
                   ? examplePhase(day)
                   : null
@@ -1062,7 +1030,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   hasRunningPeriod: Boolean(runningPeriod),
                   hasExpectedEnd: Boolean(expectedPeriod),
                   hasPlannedPeriod: Boolean(plannedPeriod),
-                  phase: prediction ? predictedPhaseForCalendarDay(date, prediction) : null,
+                  phase: prediction ? primaryCalendarPhase(date, prediction) : null,
                 })
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;

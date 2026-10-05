@@ -12,19 +12,20 @@ export interface PartnerCycleView {
 }
 
 /**
- * Read-only cycle ring view for a connected, ring-sharing partner. Reuses
- * the exact same computePersonalCycleView() logic as the owner's own /neu
- * page — no second, divergent phase/ring calculation. The expected-end
- * date is read directly from the already-loaded period entries, gated only
- * by cycle_ring_shared — independent from the separate calendar_shared
- * grant that getPartnerCalendarView() checks for its base calendar (WP-004
- * Version 9 removed expected days from that base calendar entirely).
- * Returns null when there is no active connection for this partner
- * account, or when the owner has not (or no longer) turned sharing on;
- * callers must never fall back to any other data source in that case.
+ * Read-only cycle ring view for a connected partner. Reuses the exact same
+ * computePersonalCycleView() logic as the owner's own /neu page — no
+ * second, divergent phase/ring calculation. The expected-end date is read
+ * directly from the already-loaded period entries, the same source
+ * getPartnerCalendarView() derives its prediction from. Returns null when
+ * there is no active connection for this partner account; callers must
+ * never fall back to any other data source in that case.
+ *
+ * WP-004 Version 11: the active connection alone is now the sole gate —
+ * the old cycle_ring_shared column is no longer read here. It is retired,
+ * unused legacy structure (left in place, not migrated away).
  */
 export async function getPartnerCycleView(partnerUserId: string): Promise<PartnerCycleView | null> {
-  const ownerUserId = await resolveSharingOwnerUserId(partnerUserId);
+  const ownerUserId = await resolveActiveConnectionOwner(partnerUserId);
   if (!ownerUserId) return null;
 
   const [periods, profile] = await Promise.all([
@@ -42,11 +43,9 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
   };
 }
 
-async function resolveSharingOwnerUserId(partnerUserId: string): Promise<string | null> {
+async function resolveActiveConnectionOwner(partnerUserId: string): Promise<string | null> {
   const result = await getLumaCorePool().query<{ owner_user_id: string }>(
-    `SELECT owner_user_id FROM new_partner_connections
-     WHERE partner_user_id = $1 AND status = 'active' AND cycle_ring_shared = TRUE
-     LIMIT 1`,
+    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1`,
     [partnerUserId],
   );
   return result.rows[0]?.owner_user_id ?? null;

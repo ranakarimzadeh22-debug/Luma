@@ -2,13 +2,21 @@ import "server-only";
 
 import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
-import { predictCycle } from "@/lib/new-cycle-prediction";
+import { predictCycle, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { getLumaCorePool } from "@/lib/new-auth-db";
 
 export interface PartnerCalendarView {
   confirmedDates: string[];
-  estimatedNextPeriodDates: string[];
+  /**
+   * WP-004 Version 11: the same CyclePrediction the owner's own calendar
+   * uses — only date boundaries and the uncertainty flag, never raw
+   * periods, profile values, IDs, names, or emails. The partner UI derives
+   * its markers from this with the shared primaryCalendarPhase/
+   * showsFertileMarker/phasesForDate helpers (src/lib/new-cycle-prediction.ts),
+   * so there is no second, divergent prediction calculation.
+   */
+  prediction: CyclePrediction | null;
 }
 
 function addDays(date: string, days: number): string {
@@ -30,28 +38,27 @@ function datesBetweenInclusive(start: string, end: string): string[] {
 
 /**
  * Read-only, minimal calendar view for a connected partner: only the
- * day-status lists the partner UI is allowed to show. Never includes IDs,
- * names, emails, profile/cycle values, or anything beyond date strings.
- * Returns null when there is no active connection for this partner
- * account, or when the owner has not (or no longer) turned the calendar
- * share on (WP-004 Version 9) — callers must never fall back to any other
- * data source in that case. The base calendar deliberately contains only
- * real confirmed days: expectedEndDate and every prediction value are
- * excluded on purpose (WP-004 Version 9 narrows the shared base calendar to
- * true confirmed days only). The estimated-next-period list (WP-004
- * Version 8) is a separate, independent grant gated by cycle_ring_shared —
- * both flags are read in this same query as the connection itself, so
- * there is no window where a stale flag could leak either kind of data.
+ * day-status data the partner UI is allowed to show. Never includes IDs,
+ * names, emails, or raw profile values. Returns null when there is no
+ * active connection for this partner account — callers must never fall
+ * back to any other data source in that case.
+ *
+ * WP-004 Version 11: the active connection alone is now the sole gate.
+ * The old per-feature cycle_ring_shared / calendar_shared columns are no
+ * longer read here — they're retired, unused legacy structure (left in
+ * place, not migrated away, per the brief).
  */
 export async function getPartnerCalendarView(partnerUserId: string): Promise<PartnerCalendarView | null> {
-  const connection = await resolveActiveConnection(partnerUserId);
-  if (!connection || !connection.calendarShared) return null;
+  const ownerUserId = await resolveActiveConnectionOwner(partnerUserId);
+  if (!ownerUserId) return null;
 
   const today = todayBerlinDateOnly();
-  const entries = await getNewPeriodEntries(connection.ownerUserId);
+  const [entries, profile] = await Promise.all([
+    getNewPeriodEntries(ownerUserId),
+    getNewCycleProfile(ownerUserId),
+  ]);
 
   const confirmedDates = new Set<string>();
-
   for (const entry of entries) {
     if (entry.endDate !== null) {
       for (const date of datesBetweenInclusive(entry.startDate, entry.endDate)) {
@@ -68,38 +75,23 @@ export async function getPartnerCalendarView(partnerUserId: string): Promise<Par
     }
   }
 
-  const estimatedNextPeriodDates = new Set<string>();
-  if (connection.cycleRingShared) {
-    const profile = await getNewCycleProfile(connection.ownerUserId);
-    const prediction = predictCycle(entries, profile, today);
-    if (prediction) {
-      for (const date of datesBetweenInclusive(prediction.nextPeriodStart, prediction.nextPeriodEnd)) {
-        estimatedNextPeriodDates.add(date);
-      }
-    }
-  }
+  const prediction = predictCycle(entries, profile, today);
 
   return {
     confirmedDates: [...confirmedDates].sort(),
-    estimatedNextPeriodDates: [...estimatedNextPeriodDates].sort(),
+    prediction,
   };
 }
 
 /**
- * Single query covering "is this partner actively connected", "to which
- * owner", "is the base calendar currently shared", and "is the cycle-ring
- * share currently on" — avoids separate checks that could go stale between
- * calls (the connection ending or either share being turned off between
- * two round trips).
+ * The sole data gate for the partner view (WP-004 Version 11): is this
+ * partner account actively connected, and to which owner. No per-feature
+ * flag is consulted anymore.
  */
-async function resolveActiveConnection(
-  partnerUserId: string,
-): Promise<{ ownerUserId: string; cycleRingShared: boolean; calendarShared: boolean } | null> {
-  const result = await getLumaCorePool().query<{ owner_user_id: string; cycle_ring_shared: boolean; calendar_shared: boolean }>(
-    `SELECT owner_user_id, cycle_ring_shared, calendar_shared FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1`,
+async function resolveActiveConnectionOwner(partnerUserId: string): Promise<string | null> {
+  const result = await getLumaCorePool().query<{ owner_user_id: string }>(
+    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1`,
     [partnerUserId],
   );
-  const row = result.rows[0];
-  if (!row) return null;
-  return { ownerUserId: row.owner_user_id, cycleRingShared: row.cycle_ring_shared, calendarShared: row.calendar_shared };
+  return result.rows[0]?.owner_user_id ?? null;
 }

@@ -1,7 +1,7 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 10
+package_revision: 11
 status: review
 created: 2026-09-10
 updated: 2026-10-05
@@ -1095,3 +1095,146 @@ Dieser Abschnitt beschreibt die benötigten Sicherheitsgrenzen und Startpunkte. 
   - Der bereits aus früheren Paketen bekannte, unabhängige Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) besteht unverändert fort und war für dieses Paket nicht im Umfang.
   - Kein Deploy ausgelöst – wie beauftragt nicht vorgenommen.
 - Commit: folgt unmittelbar nach diesem Eintrag.
+
+
+## Version 11 - Feste Partneransicht nach aktiver Verbindung
+
+### Owner-Ansicht - einfach erklaert
+
+- Kurz gesagt: Sobald der Partner den persoenlichen Code erfolgreich eingeloest hat, sieht er automatisch die fest vereinbarte Partneransicht. Es gibt keine einzelnen Schalter fuer Kalender, Zyklus-Kreis oder Fruchtbarkeitsvorhersage mehr.
+- Der Partner sieht nur lesend: echte Periodentage, die geschaetzte naechste Periode, moegliches fruchtbares Zeitfenster, moeglichen Eisprung, moegliche PMS-Phase und den Zyklus-Kreis.
+- Schaetzungen sind immer sichtbar als moeglich/geschaetzt und mit Kann abweichen gekennzeichnet. Sie sind keine bestaetigte Fruchtbarkeit oder medizinische Aussage.
+- Private Profilangaben, Symptome, Notizen, die vollstaendige Historie sowie alle Bearbeiten- und Loeschfunktionen bleiben privat.
+- Wenn die Eigentumerin die gesamte Verbindung in ihren Einstellungen beendet, verschwindet die gesamte Partneransicht sofort.
+- Die freiwillige Auswahl fuer spaetere Benachrichtigungen bleibt eine getrennte Geraeteentscheidung und ist kein Freigabe-Schalter fuer Gesundheitsdaten.
+
+### Entstehungsweg
+
+Einzelne Kalender- und Kreisfreigaben erzeugen wiederholte Einstellungen. Die Ownerin moechte eine klare feste Partneransicht nach einmaliger Codeverbindung. Die aktive Verbindung wird zur einmaligen Freigabe fuer genau den vereinbarten begrenzten Inhalt.
+
+- bestaetigtes Problem: Die bisherigen einzelnen Schalter fuer Kalender und Zyklus-Kreis passen nicht zur gewuenschten einfachen festen Partneransicht.
+- gewuenschte Wirkung: Nach einer bewussten einmaligen Verbindung sieht der Partner die vereinbarten Kerninformationen ohne weitere Einstellungen.
+- gewaehlte Loesung: Einzelne Freigabeoberflaechen und ihre serverseitigen Daten-Gates entfallen. Die aktive Verbindung allein ist die serverseitig gepruefte Voraussetzung fuer die begrenzte lesende Kernansicht.
+- bestaetigte Grenzen: Kein Zugang zum privaten Konto, keine Bearbeitung, keine Symptome/Notizen/Profile/Historie und kein neuer Push-Versand.
+- Quellen/Akten: APP-IDEA-014, DEC-127, Owner-Entscheidung vom 2026-10-05.
+
+### Soll - von Codex
+
+- Ein aktiv verbundenes Partnerkonto der Neuen Luma sieht ohne weitere einzelne Freigabe: Zyklus-Kreis, bestaetigte Periodentage, geschaetzte naechste Periode, moegliches fruchtbares Zeitfenster, moeglichen Eisprung und moegliche PMS-Phase.
+- Die Partneransicht bleibt ausschliesslich lesend. Der Partner kann keine Perioden, Zyklusdaten oder Freigaben speichern, aendern oder loeschen.
+- Der Partnerkalender zeigt echte Periodentage vorrangig sowie zusaetzliche Vorhersagemarker fuer geschaetzte Periode, moegliches fruchtbares Zeitfenster, moeglichen Eisprung und moegliche PMS-Phase. Wenn mehrere Angaben auf denselben Tag fallen, bleiben sie gleichzeitig und verstaendlich sichtbar.
+- Eisprung ist genau ein vorhergesagter Tag; fruchtbares Zeitfenster, PMS und geschaetzte Periode bleiben als Vorhersage klar beschriftet. Vorhersage unsicher - Kann abweichen erscheint auch in der Partneransicht, wenn die vorhandene Logik die Unsicherheit liefert.
+- Die Partneransicht verwendet dieselbe bestehende Zyklus- und Vorhersagelogik wie /neu. Es darf keine zweite fachliche Zyklusberechnung entstehen.
+- Alle bisherigen einzelnen UI-Schalter fuer Zyklus-Kreis und Partnerkalender verschwinden aus /neu/einstellungen. Die zugehoerigen alten Routen und Komponenten duerfen keine Wirkung mehr auf die Partneransicht haben.
+- Eine aktive Verbindung bleibt die alleinige Voraussetzung. Ohne Verbindung, nach Widerruf oder mit fremdem Partnerkonto werden keine Daten geladen oder angezeigt.
+- Profilangaben, Symptome, Notizen, E-Mail-Adressen, IDs, vollstaendige Historie und Bearbeitungsrechte gelangen nicht in die Partneransicht.
+
+### Nicht enthalten
+
+- Keine neue Datenmigration und keine Aenderung bestehender Perioden-, Profil- oder Partnerdaten.
+- Keine Erweiterung der alten Luma, der Anmeldung oder von WP-005.
+- Keine Speicherung oder Auswertung von Symptomen, keine Personalisierung aus Symptomen und keine medizinische Beratung.
+- Keine neue Push-Aktivierung, keine Browserberechtigung, keine VAPID-Konfiguration und kein Versand von Benachrichtigungen.
+- Kein Foto, kein Name und keine vollstaendige Periodenhistorie in der Partneransicht.
+
+### Abnahmekriterien
+
+1. Eine aktive Verbindung zeigt beim Partner alle vereinbarten Kerninformationen, auch wenn alte cycle_ring_shared und calendar_shared Werte weiterhin false sind.
+2. In den Einstellungen der Eigentumerin gibt es keinen einzelnen Kalender- oder Zyklus-Kreis-Freigabeschalter mehr.
+3. Der Partnerkalender zeigt tatsaechliche Perioden sowie klare, zugaengliche zusaetzliche Marker fuer jede vereinbarte Vorhersage. Ueberlappungen verdecken keine Information.
+4. Alle Vorhersagen tragen sichtbar Kann abweichen; Eisprung und Fruchtbarkeitsfenster werden nie als bestaetigte biologische Ereignisse dargestellt.
+5. Der Partner kann keine Daten bearbeiten; private Inhalte und Rohdaten werden weder in der Seite noch ueber eine direkte Anfrage offengelegt.
+6. Nach Beendigung der Verbindung und bei einem fremden/nicht verbundenen Konto liefert die Partneransicht keinerlei Kerninformationen.
+7. Mobile und breite Ansicht bleiben ohne horizontalen Ueberlauf und mit gut lesbarer Legende nutzbar.
+
+### Technischer Auftrag fuer Claude - Version 11
+
+#### Bestaetigte Ausgangslage im Code
+
+- new_partner_connections speichert aus WP-004 Version 6/9 die alten Flags cycle_ring_shared und calendar_shared. Die derzeitige Partneransicht nutzt diese Flags noch als Daten-Gates.
+- src/lib/new-partner-calendar.ts liefert bei aktiver Kalenderfreigabe bestaetigte Tage und nur bei Kreisfreigabe die geschaetzte naechste Periode. Es nutzt bereits serverseitig getNewPeriodEntries, getNewCycleProfile, predictCycle und todayBerlinDateOnly.
+- src/lib/new-partner-cycle-view.ts nutzt bereits serverseitig dieselbe computePersonalCycleView-Logik wie die Eigentumerin, ist aber noch durch cycle_ring_shared begrenzt.
+- src/app/neu/partner/page.tsx ist die geschuetzte Server-Komponente; sie entscheidet vor dem Rendern anhand der aktiven Verbindung und uebergibt nur minimale Daten an die rein lesenden Partnerkomponenten.
+- src/components/NewPartnerCalendar.tsx zeigt bestaetigte und geschaetzte Periodentage. src/components/NewPartnerCycleRing.tsx rendert den bestehenden gemeinsamen Ring.
+- src/app/neu/einstellungen/page.tsx sowie NewPartnerCycleRingSharingToggle, NewPartnerCalendarSharingToggle und die beiden dazugehoerigen Routen bilden die alten Einzel-Schalter.
+- WP-007 liefert die zentrale Vorhersagelogik cycle-fertility.ts, predictCycle, phasesForDate und Unsicherheit. Diese Logik ist wiederzuverwenden; es darf keine parallele Berechnung entstehen.
+
+#### Technisches Ziel
+
+- Ersetze die serverseitige Bedingung einzelne Freigabe durch genau eine Bedingung: aktive Verbindung zwischen diesem Partnerkonto und dieser Eigentumerin. Alte Flags duerfen nach dieser Version weder Ring noch Kalender oder Vorhersagen sperren.
+- Entferne die zwei Einzel-Schalter aus der Owner-Einstellungsoberflaeche und entferne oder deaktiviere ihre zugehoerigen schreibenden Routen/Komponenten so, dass sie keine verbleibende Freigabewirkung haben. Eine Datenmigration ist nicht erforderlich; bestehende Spalten duerfen als ungenutzte Altstruktur erhalten bleiben.
+- Erweitere die bereits minimal serverseitig geladene Partner-Kalenderansicht nur um die benoetigten Datums-/Statuswerte fuer: bestaetigte Periode, geschaetzte naechste Periode, moegliches fruchtbares Zeitfenster, moeglichen einzelnen Eisprungtag und moegliche PMS-Phase sowie die vorhandene Unsicherheitskennzeichnung. Gib weder Rohperioden, IDs, Namen, E-Mails noch Profilwerte an den Client.
+- Verwende phasesForDate oder eine gleichwertig wiederverwendete zentrale WP-007-Logik. Bei Ueberlappung muessen mehrere Status gleichzeitig durchgaengig in Kalender, Legende, aria-Label und Tagesfenster sichtbar sein.
+- Behalte bestaetigte Periodentage optisch vorrangig. Jede geschaetzte Information braucht einen klaren Text wie Moeglich/Geschaetzt und Kann abweichen; keine Formulierung darf biologische Gewissheit behaupten.
+- Der Partner-Zyklus-Kreis und die Kalenderwerte muessen aus derselben bestehenden Daten- und Berlin-Tagesgrundlage wie die Owner-Ansicht stammen. Keine neue Vorhersage- oder Zeitzonenlogik.
+- Die Benachrichtigungs-Praeferenz aus Version 5 bleibt unveraendert. Sie darf keine Datenfreigabe steuern und diese Version darf keine Push-Technik wieder aktivieren.
+
+#### Invarianten - muessen unveraendert bleiben
+
+- Die aktive Verbindung wird bei jedem serverseitigen Datenabruf fuer das anfragende Partnerkonto geprueft. Kein Client-Filter als Sicherheitsgrenze.
+- Nach Verbindungswiderruf, ohne Sitzung oder bei fremdem Partnerkonto gibt es keine Partnerdaten, auch nicht indirekt ueber Routen oder Server-Props.
+- Die Partneransicht bleibt rein lesend. Owner-Kalender, Perioden-CRUD, Historie, Profil, Authentifizierung und Verbindungscode bleiben funktional.
+- Partner sehen nie Symptome, Notizen, Profil-/Kontodaten, vollstaendige Historie, Datenbank-IDs oder Bearbeitungsmoeglichkeiten.
+- Bestehende Vorhersagegrenzen aus WP-007 bleiben bindend: Periodenstarts als Grundlage, keine Ableitung aus Periodenende, klare Schaetzung, keine medizinische Aussage.
+- Alte Luma, Datenmigrationen, Dokploy, Push-Versand und echte Geraeteberechtigungen bleiben ausserhalb dieses Auftrags.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: keine neue Tabelle und keine Migration. Alte Freigabespalten duerfen bestehen bleiben, aber werden nicht mehr als Zugriffskriterium verwendet.
+- API-Wirkung: keine neue Partnerdaten-API. Entferne oder deaktiviere ausschliesslich nicht mehr benoetigte schreibende Einzel-Freigabe-Routen, sofern sie nicht anders verwendet werden.
+- Keine neuen gespeicherten Gesundheits-, Profil- oder Geraetedaten.
+
+#### Pflichtpruefungen
+
+- Pruefe aktive Verbindung mit allen vier alten Flag-Kombinationen: Kernansicht ist jeweils sichtbar; alte Flags haben keine Wirkung mehr.
+- Pruefe ohne Verbindung, nach Widerruf, mit fremdem Partnerkonto und ohne Sitzung: keine Kalender-, Ring- oder Vorhersagedaten.
+- Pruefe bestaetigte Periode, geschaetzte naechste Periode, fruchtbares Zeitfenster, einzelnen Eisprungtag, PMS und mindestens einen Ueberlappungsfall. Alle Vorhersagen muessen sich als Schaetzung erkennen lassen.
+- Pruefe stabile und unsichere Vorhersage inklusive sichtbarem Hinweis bei Unsicherheit.
+- Pruefe, dass kein Partner-UI und kein Tagesfenster eine schreibende Periodenaktion anbietet und dass keine Profile, Symptome, Namen, E-Mails, IDs oder vollstaendige Historie geliefert werden.
+- Pruefe das Entfernen der alten Schalter und dass ihre alten Endpunkte keine Freigabewirkung mehr haben.
+- Fuehre betroffene Partner-, Kalender-, Zyklus-, Perioden- und Auth-Regressionen, TypeScript, Produktions-Build und mobile/breite Sichtpruefung aus. Testkonten und temporaere Tools danach entfernen.
+
+#### Stoppbedingungen
+
+- Stoppe vor einer Migration, einer neuen API, einer Erweiterung der Datenfreigabe ueber die hier vereinbarte Kernansicht, einer Symptom-/Profil-/Notizweitergabe, Push-Reaktivierung oder Alter-Luma-Aenderung.
+- Stoppe, wenn die Entfernung der Einzel-Gates die aktive Verbindungspruefung nicht weiterhin sicher nachweisbar laesst.
+- Stoppe, wenn die minimale Datendarstellung die vereinbarten Vorhersagen nicht ohne Profil- oder Rohhistorienweitergabe liefern kann.
+- Stoppe, wenn eine Formulierung eine bestaetigte Fruchtbarkeit, einen bestaetigten Eisprung oder medizinische Gewissheit bedeuten wuerde.
+
+#### Abschluss durch Claude
+
+- Ergaenze Ist Version 11, Tests, Abweichungen und offene Punkte sichtbar.
+- Lasse den Paketstatus nach Abschluss auf review.
+- Ergaenze den Entwicklungsledger, fuehre node scripts/work-package-state.mjs mark-updated WP-004 und danach node scripts/work-package-state.mjs validate aus.
+- Committe und pushe ausschliesslich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 11 - von Claude
+
+- **umgesetzt:**
+  - `src/lib/new-partner-calendar.ts` vollständig umgebaut: `resolveActiveConnectionOwner` prüft jetzt ausschließlich `status = 'active'`, ohne `calendar_shared`/`cycle_ring_shared` zu lesen. `getPartnerCalendarView` liefert weiterhin `confirmedDates` (unverändertes Verhalten: echte bestätigte Tage, laufende Periode bis einschließlich heute) sowie neu `prediction: CyclePrediction | null` – dieselbe, bereits bestehende `predictCycle(entries, profile, today)`-Ausgabe, die auch der Owner-Kalender nutzt (keine zweite Berechnung). Enthält nur Datumsgrenzen und das `isUncertain`-Flag, keine Rohperioden, IDs, Namen, E-Mails oder Profilwerte.
+  - `src/lib/new-partner-cycle-view.ts` entsprechend umgebaut: `resolveActiveConnectionOwner` prüft nur noch `status = 'active'`, `cycle_ring_shared` wird nicht mehr gelesen. `computePersonalCycleView` bleibt unverändert die alleinige Berechnungsquelle.
+  - `src/lib/new-cycle-prediction.ts`: zwei neue, zentrale, exportierte Darstellungs-Hilfsfunktionen `primaryCalendarPhase` und `showsFertileMarker` ergänzt – extrahiert aus den bisher nur lokal in `NewCycleExample.tsx` definierten gleichnamigen Funktionen, damit Owner- und Partnerkalender exakt dieselbe Phasen-Priorität und denselben Überlappungs-Zusatzmarker-Mechanismus nutzen (keine zweite, abweichende Berechnung). `NewCycleExample.tsx` wurde entsprechend auf den Import dieser zentralen Funktionen umgestellt, die lokalen Duplikate entfernt – funktional unverändert (durch bestehende und neue Regressionen bestätigt).
+  - `src/components/NewPartnerCalendar.tsx` komplett neu geschrieben: nutzt jetzt `prediction: CyclePrediction | null` statt der alten, auf `cycle_ring_shared` beschränkten `estimatedNextPeriodDates`-Liste. Zeigt bestätigte Tage (Hauptfarbe, Priorität), geschätzte nächste Periode, möglichen Eisprung (genau ein Tag), mögliche PMS-Phase sowie das mögliche fruchtbare Zeitfenster als zusätzlichen, kleinen Marker – über dieselben zentralen `primaryCalendarPhase`/`showsFertileMarker`/`phasesForDate`-Funktionen wie der Owner-Kalender. Überlappungen (z. B. geschätzte Periode und fruchtbares Zeitfenster am selben Tag) bleiben gleichzeitig sichtbar, ohne dass eine Kennzeichnung die andere verdeckt – im `aria-label`, in der Legende und im Tagesfenster (`DayDetailModal`) konsistent. Ein sichtbarer „Vorhersage unsicher - Kann abweichen“-Hinweis erscheint, wenn `prediction.isUncertain` zutrifft. Keine Formulierung behauptet eine bestätigte Fruchtbarkeit, einen bestätigten Eisprung oder eine medizinische Diagnose – durchgängig „Möglich/Geschätzt“ und „kann abweichen“.
+  - `src/app/neu/partner/page.tsx`: `NewPartnerCalendar` erhält jetzt `confirmedDates` und `prediction` statt der alten Props. Keine sonstige Strukturänderung; `calendarView`/`cycleView` können weiterhin `null` sein (z. B. bei einer Race-Bedingung zwischen den beiden serverseitigen Abfragen, falls die Verbindung exakt dazwischen endet) – die bestehende neutrale Meldung bleibt als Sicherheitsnetz erhalten.
+  - `src/app/neu/einstellungen/page.tsx`: Die beiden Einzel-Schalter (`NewPartnerCycleRingSharingToggle`, `NewPartnerCalendarSharingToggle`) wurden entfernt. Der Verbindungscode-Bereich (`NewPartnerCodeCard`) bleibt unverändert.
+  - Nach ausdrücklicher Owner-Rückfrage zur Behandlung der jetzt wirkungslosen alten Freigabe-Routen (siehe Abweichungen): Die beiden Routen `src/app/api/neu/partner/cycle-ring-sharing/route.ts` und `src/app/api/neu/partner/calendar-sharing/route.ts` sowie die beiden zugehörigen Toggle-Komponenten `NewPartnerCycleRingSharingToggle.tsx`/`NewPartnerCalendarSharingToggle.tsx` wurden vollständig gelöscht. Die zugehörigen Setter-Funktionen `setPartnerCycleRingShared`/`setPartnerCalendarShared` in `src/lib/new-partner.ts` wurden ebenfalls entfernt; `PartnerConnectionStatus` und `getPartnerConnectionStatusForOwner` liefern `cycleRingShared`/`calendarShared` nicht mehr, da sie nirgends mehr gelesen werden.
+  - Datenbankwirkung: keine Migration. Die Spalten `cycle_ring_shared` und `calendar_shared` auf `new_partner_connections` bleiben wie im Auftrag vorgesehen als ungenutzte Altstruktur in der Datenbank bestehen.
+  - Keine neue API-Route, keine Änderung an Verbindungscode, Sitzung, Widerruf (`endPartnerConnection`), Periodendaten, Authentifizierung, Benachrichtigungs-Präferenz oder alter Luma.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - Drei bestehende Partner-Prüfskripte grundlegend auf das neue Modell umgeschrieben (spiegeln weiterhin die jeweiligen `server-only`-Module serverseitig gegen die echte Datenbank): `scripts/verify-partner-calendar.mts` (aktive Verbindung allein genügt; alle vier alten Flag-Kombinationen haben nachweislich keine Wirkung mehr; bestätigte Tage, laufende Periode, Widerruf, Kontotrennung unverändert korrekt), `scripts/verify-partner-cycle-ring.mts` (aktive Verbindung allein genügt; alte `cycle_ring_shared`-Spalte ohne Wirkung; `no_data`, Kontotrennung, Widerruf unverändert korrekt), `scripts/verify-partner-estimated-period.mts` (die geschätzte nächste Periode erscheint jetzt allein durch die Verbindung, alte Flag-Werte ändern nichts mehr am Ergebnis). Alle drei vollständig grün.
+  - Neues `scripts/verify-partner-fixed-view.ts`: gezielte Quelltext-Prüfungen bestätigen, dass `new-partner-calendar.ts`/`new-partner-cycle-view.ts` die alten Freigabe-Spalten nicht mehr per SQL selektieren, dass `new-partner.ts` keine Setter-Funktionen für die alten Schalter mehr enthält, dass die beiden alten Routen-Dateien nicht mehr existieren, dass die Owner-Einstellungen keine Einzel-Schalter mehr referenzieren, dass die Toggle-Komponenten-Dateien gelöscht sind, dass `NewPartnerCalendar.tsx` die zentralen WP-007-Funktionen (`primaryCalendarPhase`, `showsFertileMarker`, `phasesForDate`) wiederverwendet und sichtbar „Vorhersage unsicher“/„kann abweichen“ zeigt, sowie dass die Partnerseite nur abgeleitete Datumslisten und die zentrale Vorhersage weiterreicht, keine E-Mail- oder Profilwerte. Alle Prüfungen bestanden.
+  - Bestehendes `scripts/verify-partner-view-no-status-card.ts` (WP-004 Version 10) erneut ausgeführt und unverändert vollständig grün – die Version-10-Struktur (kein Statustext, keine Buttons im verbundenen Zustand) bleibt durch diese Version unberührt.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-partner-notification-preference.mts`, `scripts/verify-my-periods.mts`, `scripts/verify-cycle-today-and-estimate.mts`, `scripts/verify-day-detail.ts`, `scripts/verify-period-history.ts`, `scripts/verify-history-month-jump.ts`, `scripts/verify-period-day-actions.mts`.
+  - `node --experimental-strip-types --test tests/new-cycle-prediction.test.ts tests/cycle-fertility.test.ts`: alle 22 Prüfungen weiterhin bestanden (die Extraktion von `primaryCalendarPhase`/`showsFertileMarker` hat die bestehende `phaseForDate`/`phasesForDate`-Logik nicht verändert).
+  - `scripts/verify-personal-cycle-view.ts` zeigt weiterhin dieselben, bereits seit mehreren vorherigen Versionen dokumentierten 9 Fehlschläge bei den Farbverlauf-Quelltextprüfungen (Gradient-Fundstelle seit WP-004 Version 6) – unverändert vorbestehend, nicht durch diese Version verursacht.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack, nach vollständigem `.next`-Cache-Neubau wegen der entfernten Routen): erfolgreich. Die beiden alten Routen `/api/neu/partner/cycle-ring-sharing` und `/api/neu/partner/calendar-sharing` erscheinen nicht mehr in der Routenliste; keine neue Route hinzugekommen.
+  - Mobile (375×812) und breite (1280×900) Sichtprüfung mit Playwright (temporär installiert, danach vollständig entfernt) gegen den lokalen Dev-Server mit zwei echten, frisch verbundenen Testkonten und einem konstruierten, echten Überlappungsszenario (Zykluslänge 21 Tage, Periodendauer 10 Tage, identisch zur WP-007-Sichtprüfung): Die Partneransicht zeigt **sofort nach der Verbindung, ohne dass je ein alter Schalter betätigt wurde**, die vollständige feste Kernansicht – Zyklus-Kreis, bestätigte Tage, geschätzte nächste Periode, möglichen Eisprung, mögliche PMS-Phase und das mögliche fruchtbare Zeitfenster, jeweils mit vollständiger Legende. Am 22. Oktober 2026 zeigt das `aria-label` nachweislich gleichzeitig „Geschätzte nächste Periode – kann abweichen“ und „mögliches fruchtbares Zeitfenster, kann abweichen“ – die geforderte gleichzeitige Überlappungsdarstellung ist bestätigt. Beide alten Routen liefern `404`. Die Owner-Einstellungen zeigen keine der beiden alten Schalter-Beschriftungen mehr. Kein horizontaler Überlauf in beiden Ansichten. Screenshots geprüft. Playwright und beide Testkonten (inkl. Verbindung, Code und Perioden) danach vollständig entfernt.
+- **Abweichungen:**
+  - Der Auftrag erlaubte ausdrücklich sowohl „entferne“ als auch „deaktiviere“ für die alten Freigabe-Routen/Komponenten. Da eine inaktive, aber weiterhin aufrufbare Route (die z. B. nur `410`/`404` zurückgibt) keinen Mehrwert gegenüber einer vollständigen Entfernung geboten hätte und tote, verwirrende Schreibpfade in jetzt ungenutzte Spalten vermieden werden sollten, wurde dies dem Owner zur Entscheidung vorgelegt. Entscheidung: vollständiges Entfernen der beiden Routen-Dateien, der beiden Toggle-Komponenten und der beiden zugehörigen Setter-Funktionen. Die Datenbankspalten selbst (`cycle_ring_shared`, `calendar_shared`) bleiben wie im Auftrag gefordert unverändert als Altstruktur bestehen – keine Migration.
+  - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: einen neuen Verbindungscode erzeugen, mit einem zweiten Testkonto einlösen und ohne jede weitere Einstellung sofort die vollständige Kernansicht (Zyklus-Kreis, Kalender mit allen Vorhersagemarkern) beim Partner sehen; einen Monat mit Überlappung von geschätzter Periode und fruchtbarem Zeitfenster ansehen; die Owner-Einstellungen auf das Fehlen der beiden alten Schalter prüfen; mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** folgt unmittelbar nach diesem Eintrag.

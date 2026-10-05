@@ -26,8 +26,10 @@ const client = new Client({ connectionString });
 await client.connect();
 
 // Spiegelt src/lib/new-partner-calendar.ts (getPartnerCalendarView, der
-// estimatedNextPeriodDates-Teil) gegen die echte Datenbank, da das Modul
-// "server-only" importiert und daher nicht direkt per tsx ausführbar ist.
+// prediction-Teil) gegen die echte Datenbank, da das Modul "server-only"
+// importiert und daher nicht direkt per tsx ausführbar ist. WP-004 Version
+// 11: die geschätzte nächste Periode ist jetzt Teil der festen
+// Kernansicht und nicht mehr an cycle_ring_shared gekoppelt.
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -65,13 +67,6 @@ async function insertPeriod(userId: string, entry: PeriodEntry): Promise<void> {
   await client.query(
     "INSERT INTO new_period_entries (id, user_id, start_date, end_date, expected_end_date) VALUES ($1, $2, $3, $4, $5)",
     [randomUUID(), userId, entry.startDate, entry.endDate, entry.expectedEndDate],
-  );
-}
-
-async function setCycleRingShared(ownerUserId: string, shared: boolean): Promise<void> {
-  await client.query(
-    "UPDATE new_partner_connections SET cycle_ring_shared = $1 WHERE owner_user_id = $2 AND status = 'active'",
-    [shared, ownerUserId],
   );
 }
 
@@ -123,18 +118,21 @@ function predictNextPeriod(periods: PeriodEntry[], today: string): { start: stri
   return { start: nextStart, end: addDays(nextStart, periodLengthDays - 1) };
 }
 
-async function getPartnerEstimatedDates(partnerUserId: string, today: string): Promise<string[] | null> {
-  const conn = await client.query<{ owner_user_id: string; cycle_ring_shared: boolean }>(
-    "SELECT owner_user_id, cycle_ring_shared FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1",
+async function resolveActiveConnectionOwner(partnerUserId: string): Promise<string | null> {
+  const result = await client.query<{ owner_user_id: string }>(
+    "SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1",
     [partnerUserId],
   );
-  const row = conn.rows[0];
-  if (!row) return null;
-  if (!row.cycle_ring_shared) return [];
+  return result.rows[0]?.owner_user_id ?? null;
+}
+
+async function getPartnerEstimatedDates(partnerUserId: string, today: string): Promise<string[] | null> {
+  const ownerUserId = await resolveActiveConnectionOwner(partnerUserId);
+  if (!ownerUserId) return null;
 
   const periodsResult = await client.query<{ start_date: string; end_date: string | null; expected_end_date: string | null }>(
     "SELECT start_date::text, end_date::text, expected_end_date::text FROM new_period_entries WHERE user_id = $1 ORDER BY start_date DESC",
-    [row.owner_user_id],
+    [ownerUserId],
   );
   const periods = periodsResult.rows.map((r) => ({ startDate: r.start_date, endDate: r.end_date, expectedEndDate: r.expected_end_date }));
   const prediction = predictNextPeriod(periods, today);
@@ -156,10 +154,10 @@ async function deleteUser(id: string): Promise<void> {
 const today = new Date().toISOString().slice(0, 10);
 const suffix = Date.now();
 
-const ownerA = await createUser(`wp004-v8-owner-a-${suffix}@example.com`);
-const partnerA = await createUser(`wp004-v8-partner-a-${suffix}@example.com`);
-const ownerB = await createUser(`wp004-v8-owner-b-${suffix}@example.com`);
-const partnerB = await createUser(`wp004-v8-partner-b-${suffix}@example.com`);
+const ownerA = await createUser(`wp004-v11-owner-a-${suffix}@example.com`);
+const partnerA = await createUser(`wp004-v11-partner-a-${suffix}@example.com`);
+const ownerB = await createUser(`wp004-v11-owner-b-${suffix}@example.com`);
+const partnerB = await createUser(`wp004-v11-partner-b-${suffix}@example.com`);
 
 try {
   await connect(ownerA, partnerA);
@@ -172,17 +170,10 @@ try {
     start = addDays(start, cycleLength);
   }
 
-  console.log("== Ohne Freigabe: keine geschätzte nächste Periode, auch nicht versteckt ==");
+  console.log("== WP-004 V11: die geschätzte nächste Periode erscheint allein durch die aktive Verbindung ==");
   {
     const dates = await getPartnerEstimatedDates(partnerA, today);
-    assertEqual(dates, [], "ohne cycle_ring_shared liefert die Funktion eine leere Liste, nie die echte Schätzung");
-  }
-
-  console.log("\n== Mit Freigabe: Schätzung erscheint und stimmt mit predictCycle-Logik überein ==");
-  {
-    await setCycleRingShared(ownerA, true);
-    const dates = await getPartnerEstimatedDates(partnerA, today);
-    assert(dates !== null && dates.length > 0, "mit Freigabe liefert die Funktion eine nicht-leere Schätzung");
+    assert(dates !== null && dates.length > 0, "ohne jede alte Freigabe-Spalte liefert die Funktion bereits eine Schätzung");
     const expected = predictNextPeriod(
       [
         { startDate: addDays(today, -(cycleLength * 3)), endDate: addDays(addDays(today, -(cycleLength * 3)), 4), expectedEndDate: null },
@@ -198,24 +189,27 @@ try {
     }
   }
 
-  console.log("\n== Ausschalten der Freigabe entfernt die Schätzung sofort wieder ==");
+  console.log("\n== WP-004 V11: alte cycle_ring_shared-Spalte (an oder aus) ändert nichts mehr an der Schätzung ==");
   {
-    await setCycleRingShared(ownerA, false);
-    const dates = await getPartnerEstimatedDates(partnerA, today);
-    assertEqual(dates, [], "nach dem Ausschalten liefert die Funktion wieder eine leere Liste");
+    await client.query("UPDATE new_partner_connections SET cycle_ring_shared = FALSE WHERE owner_user_id = $1", [ownerA]);
+    const datesOff = await getPartnerEstimatedDates(partnerA, today);
+    assert(datesOff !== null && datesOff.length > 0, "cycle_ring_shared = FALSE (altes Modell) blockiert die Schätzung nicht mehr");
+
+    await client.query("UPDATE new_partner_connections SET cycle_ring_shared = TRUE WHERE owner_user_id = $1", [ownerA]);
+    const datesOn = await getPartnerEstimatedDates(partnerA, today);
+    assertEqual(datesOn, datesOff, "cycle_ring_shared = TRUE (altes Modell) liefert dasselbe Ergebnis wie FALSE");
   }
 
   console.log("\n== Kontotrennung: Paar B sieht nie die Schätzung von Paar A ==");
   {
-    await setCycleRingShared(ownerA, true);
     const datesB = await getPartnerEstimatedDates(partnerB, today);
-    assertEqual(datesB, [], "Paar B ohne eigene Freigabe und ohne eigene Perioden bekommt keine Schätzung von Paar A");
+    assertEqual(datesB, [], "Paar B ohne eigene Perioden bekommt keine Schätzung von Paar A");
   }
 
   console.log("\n== Widerruf der Verbindung entfernt die Schätzung ebenfalls ==");
   {
     const beforeEnd = await getPartnerEstimatedDates(partnerA, today);
-    assert(beforeEnd !== null && beforeEnd.length > 0, "vor dem Widerruf ist die Schätzung sichtbar (Freigabe aktiv)");
+    assert(beforeEnd !== null && beforeEnd.length > 0, "vor dem Widerruf ist die Schätzung sichtbar");
     await endConnection(ownerA);
     const afterEnd = await getPartnerEstimatedDates(partnerA, today);
     assertEqual(afterEnd, null, "nach Widerruf liefert die Funktion null (keine aktive Verbindung mehr)");
