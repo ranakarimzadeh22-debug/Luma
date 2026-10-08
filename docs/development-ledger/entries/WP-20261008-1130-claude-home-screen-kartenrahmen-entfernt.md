@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 4235cd0
 ---
 
 # Home-Screen: hinzugefügte Kartenrahmen wieder entfernt (WP-009 Version 2)
@@ -38,4 +38,4 @@ Owner prüft `/neu` und bestätigt die rahmenlose Ansicht. Danach Soll-Ist-Prüf
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-home-screen-layout.ts`, `docs/work-packages/WP-009-home-screen-ruhig-gliedern.md`.
 - Tests: `npx tsx scripts/verify-home-screen-layout.ts`, `npx tsc --noEmit`.
-- Commit oder Referenz: pending.
+- Commit oder Referenz: 4235cd0.

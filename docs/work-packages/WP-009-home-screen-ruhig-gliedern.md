@@ -169,7 +169,7 @@ Die Ownerin hat die gemeldete Kartenrahmung nicht akzeptiert. Sie bestaetigt ern
 
 ### Commit, Version 2
 
-- Platzhalter, wird nach dem Commit ergaenzt.
+- 4235cd0
 
 ## Soll-Ist-Prüfung – von Codex
 
