@@ -963,7 +963,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     >
       <TodayCard personalCycleView={personalCycleView} />
 
-      <section aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"} className="space-y-3">
+      <section
+        aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}
+        className="space-y-3 rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 shadow-sm"
+      >
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
         <CyclePersonalRing personalCycleView={personalCycleView} today={todayKey} />
@@ -988,7 +991,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         </div>
       )}
 
-      <section aria-label="Kalender zur Orientierung" className="space-y-5">
+      <section
+        aria-label="Kalender zur Orientierung"
+        className="space-y-5 rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 shadow-sm"
+      >
         <CalendarTodayLine today={todayKey} />
         <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
