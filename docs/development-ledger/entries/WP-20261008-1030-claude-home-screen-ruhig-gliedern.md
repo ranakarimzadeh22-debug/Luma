@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: f1584e5
 ---
 
 # Home-Screen ruhig gliedern (WP-009)
@@ -39,4 +39,4 @@ Owner prüft `/neu` und bestätigt Reihenfolge, Abstände, Monatsnavigation, His
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-home-screen-layout.ts` (neu), `docs/work-packages/WP-009-home-screen-ruhig-gliedern.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npx tsx scripts/verify-home-screen-layout.ts`, `npm run build`, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: f1584e5.
