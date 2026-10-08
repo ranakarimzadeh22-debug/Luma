@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 1ebd621
 ---
 
 # Periodenhistorie ruhig und lesbar gliedern (WP-008)
@@ -41,4 +41,4 @@ Owner prüft `/neu`, tippt auf die Monatsanzeige und bestätigt die Periodenhist
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-period-history.ts`, `scripts/verify-period-history-layout.ts` (neu), `docs/work-packages/WP-008-periodenhistorie-ruhig-gliedern.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npx tsx scripts/verify-period-history.ts`, `npx tsx scripts/verify-period-history-layout.ts`, `npx tsx scripts/verify-history-month-jump.ts`, `npm run build`, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: 1ebd621.

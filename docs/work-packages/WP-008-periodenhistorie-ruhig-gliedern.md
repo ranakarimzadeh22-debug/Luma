@@ -129,7 +129,7 @@ Die Ownerin moechte die bereits vorhandene App zuerst insgesamt ruhig und klar o
 
 ### Commit
 
-- Platzhalter, wird nach dem Commit ergaenzt.
+- 1ebd621
 
 ## Soll-Ist-Prüfung – von Codex
 
