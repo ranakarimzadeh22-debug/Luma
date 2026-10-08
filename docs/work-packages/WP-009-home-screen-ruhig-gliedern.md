@@ -1,7 +1,7 @@
 ---
 id: WP-009
 title: "Home-Screen ruhig gliedern"
-package_revision: 1
+package_revision: 2
 status: review
 created: 2026-10-08
 updated: 2026-10-08
@@ -90,6 +90,23 @@ Nach dem Abschluss der ruhigen Einstellungen und der ruhig gegliederten Perioden
 
 `/neu` oeffnen und nur auf die sichtbare Reihenfolge und die Abstaende achten: Heute-Karte oben, Zyklus-Kreis in der Mitte, Kalender darunter. Anschliessend Monatsnavigation, Historie und ein Tagesfenster kurz pruefen.
 
+## Version 2 - Kartenrahmen entfernen
+
+Die Ownerin hat die gemeldete Kartenrahmung nicht akzeptiert. Sie bestaetigt erneut: Der Zyklus-Kreis und der Kalender erhalten keine zusaetzlichen Card-Rahmen, keine Hintergrundflaeche, keine neue Rundung und keinen Schatten.
+
+### Soll - von Codex, Version 2
+
+- Entferne ausschliesslich die in Version 1 neu hinzugefuegten Klassen `rounded-2xl`, `border`, `border-[#efd5dc]`, `bg-white/90`, `px-5`, `py-4` und `shadow-sm` von den bestehenden Zyklus- und Kalender-`section`-Elementen.
+- Stelle dadurch die vorherige, rahmenlose Ansicht mit den schon vorhandenen aeusseren Abstaenden wieder her.
+- Aendere nichts anderes: keine Texte, Reihenfolge, Inhalte, innere Abstaende, Komponenten, Props, Handler, Berechnungen, Tests ausser einer gezielten Anpassung der Layout-Pruefung oder Partneransicht.
+
+### Technischer Auftrag fuer Claude, Version 2
+
+- Aendere nur `src/components/NewCycleExample.tsx` und bei Bedarf `scripts/verify-home-screen-layout.ts`.
+- Die beiden bestehenden `section`-Elemente fuer Zyklus und Kalender bleiben rahmenlos. Die Heute-Karte bleibt unveraendert.
+- Fuehre eine gezielte Pruefung aus, dass die neuen Kartenklassen nicht mehr auf diesen beiden Sections stehen und die Render-Reihenfolge unveraendert ist. Fuehre anschliessend `npx tsc --noEmit` aus.
+- Kein manueller Deploy, keine Daten-, API- oder Funktionsaenderung.
+
 ## Ist – von Claude
 
 ### Umgesetzt
@@ -122,6 +139,37 @@ Nach dem Abschluss der ruhigen Einstellungen und der ruhig gegliederten Perioden
 ### Commit
 
 - f1584e5
+
+## Ist – von Claude, Version 2
+
+### Umgesetzt
+
+- In `src/components/NewCycleExample.tsx` wurden auf den beiden bestehenden `<section>`-Elementen fuer Zyklus-Kreis und Kalender ausschliesslich die in Version 1 ergaenzten Kartenklassen (`rounded-2xl`, `border`, `border-[#efd5dc]`, `bg-white/90`, `px-5`, `py-4`, `shadow-sm`) wieder entfernt.
+- Die Zyklus-section hat wieder genau `className="space-y-3"`, die Kalender-section wieder genau `className="space-y-5"` – also exakt den Stand vor Version 1.
+- Die Heute-Karte (`TodayCard`) wurde nicht veraendert und behaelt ihre eigene, schon vorher bestehende Kartenrahmung.
+- Keine weitere Aenderung: Texte, Reihenfolge, Inhalte, innere Abstaende, Komponenten, Props, Handler, Berechnungen und Partneransicht blieben unangetastet.
+
+### Nicht umgesetzt
+
+- Keine Abweichung vom Soll Version 2.
+
+### Tests
+
+- `npx tsx scripts/verify-home-screen-layout.ts` wurde angepasst: der Abschnitt zur aeusseren Rahmung prueft jetzt gezielt, dass Zyklus- und Kalender-section wieder exakt ihre urspruengliche, rahmenlose `className` ohne jede Kartenklasse tragen, dass die Heute-Karte ihre eigene Rahmung unveraendert behaelt, und dass Reihenfolge sowie Hauptkomponenten/Props/Handler weiterhin unveraendert sind. Alle Pruefungen bestanden.
+- `npx tsc --noEmit` — fehlerfrei.
+- Kein erneuter `npm run build` und keine erneute Browser-Live-Pruefung: Der Version-2-Auftrag ist eine reine Entfernung bereits geprueften, rein optischen CSS-Klassen ohne Aenderung an Struktur, Verhalten oder Daten; der Auftrag selbst verlangt fuer Version 2 ausdruecklich nur die gezielte Pruefung und `npx tsc --noEmit`.
+
+### Abweichungen
+
+- Keine Abweichung vom Soll Version 2.
+
+### Offene Punkte
+
+- Owner-Pruefschritt steht aus: `/neu` oeffnen und bestaetigen, dass Zyklus-Kreis und Kalender wieder ohne Card-Rahmen, Hintergrundflaeche, Rundung und Schatten erscheinen, mit unveraenderten Abstaenden.
+
+### Commit, Version 2
+
+- Platzhalter, wird nach dem Commit ergaenzt.
 
 ## Soll-Ist-Prüfung – von Codex
 

@@ -53,20 +53,28 @@ console.log("\n== WP-009: Hauptkomponenten, Props und Handler sind unverändert 
   assert(body.includes("onClick={() => setIsPeriodHistoryOpen(true)}"), "die Monatsanzeige öffnet weiterhin die Periodenhistorie");
 }
 
-console.log("\n== WP-009: nur äußere Layout-Klassen wurden ergänzt, keine neuen sichtbaren Inhalte ==");
+console.log("\n== WP-009 Version 2: Zyklus- und Kalender-section bleiben rahmenlos, nur die ursprünglichen Abstände bleiben ==");
 {
   const cycleSectionMatch = body.match(/<section\s+aria-label=\{hasPersonalCircle[\s\S]*?className="([^"]*)"/);
-  const calendarSectionMatch = body.match(/<section\s+aria-label="Kalender zur Orientierung"[\s\S]*?className="([^"]*)"/);
+  const calendarSectionMatch = body.match(/<section\s+aria-label="Kalender zur Orientierung"\s+className="([^"]*)"/);
 
-  assert(Boolean(cycleSectionMatch?.[1].includes("rounded-2xl")), "die Zyklus-section erhält dieselbe ruhige Kartenrahmung wie die Heute-Karte");
-  assert(Boolean(calendarSectionMatch?.[1].includes("rounded-2xl")), "die Kalender-section erhält dieselbe ruhige Kartenrahmung wie die Heute-Karte");
+  assert(cycleSectionMatch?.[1] === "space-y-3", "die Zyklus-section hat wieder nur die ursprüngliche className 'space-y-3' ohne Kartenklassen");
+  assert(calendarSectionMatch?.[1] === "space-y-5", "die Kalender-section hat wieder nur die ursprüngliche className 'space-y-5' ohne Kartenklassen");
+
+  for (const forbidden of ["rounded-2xl", "border-[#efd5dc]", "bg-white/90", "shadow-sm", "px-5", "py-4"]) {
+    assert(
+      !(cycleSectionMatch?.[1].includes(forbidden) ?? false),
+      `die Zyklus-section enthält keine Kartenklasse '${forbidden}' mehr`,
+    );
+    assert(
+      !(calendarSectionMatch?.[1].includes(forbidden) ?? false),
+      `die Kalender-section enthält keine Kartenklasse '${forbidden}' mehr`,
+    );
+  }
+
   assert(
-    Boolean(cycleSectionMatch?.[1].includes("border-[#efd5dc]") && cycleSectionMatch?.[1].includes("bg-white/90")),
-    "die Zyklus-section nutzt dieselben bestehenden Rahmen-/Hintergrundfarben wie die Heute-Karte",
-  );
-  assert(
-    Boolean(calendarSectionMatch?.[1].includes("border-[#efd5dc]") && calendarSectionMatch?.[1].includes("bg-white/90")),
-    "die Kalender-section nutzt dieselben bestehenden Rahmen-/Hintergrundfarben wie die Heute-Karte",
+    source.includes('<div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 text-center shadow-sm">'),
+    "die Heute-Karte (TodayCard) behält ihre Kartenrahmung unverändert",
   );
 
   assert(body.includes("Dein Zyklus"), "kein Text in der Zyklus-section wurde entfernt oder verändert");
