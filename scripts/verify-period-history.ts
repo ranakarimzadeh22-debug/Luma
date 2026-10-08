@@ -124,9 +124,11 @@ console.log("\n== WP-003 V6: NewCycleExample.tsx bindet die Historie rein lesend
   assert(backgroundBlocked, "der Hintergrund wird bei offener Historie über inert deaktiviert");
 
   const showsDurationSeparateFromCycle =
-    source.includes("Zyklus: {row.cycleLengthDays !== null") &&
-    source.includes("row.durationDays !== null && ` · Dauer: ${row.durationDays} Tage`");
-  assert(showsDurationSeparateFromCycle, "die Historie zeigt Dauer zusätzlich zur Zykluslänge, klar getrennt formatiert");
+    source.includes("row.durationDays !== null && (") &&
+    source.includes("Dauer:</span> {row.durationDays} Tage") &&
+    source.includes("Zyklus:</span>{\" \"}") &&
+    source.includes('row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"');
+  assert(showsDurationSeparateFromCycle, "die Historie zeigt Dauer und Zykluslänge als getrennte, einzeln beschriftete Felder (WP-008)");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

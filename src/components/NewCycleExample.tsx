@@ -726,14 +726,21 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModal
               aria-label={`Kalender für ${formatHistoryMonth(row.startDate)} öffnen`}
               className="w-full rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3 text-left hover:bg-[#f8e4e9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
             >
-              <p className="text-sm font-semibold capitalize text-[#28101f]">{formatHistoryMonth(row.startDate)}</p>
+              <p className="text-base font-semibold capitalize text-[#28101f]">{formatHistoryMonth(row.startDate)}</p>
               <p className="mt-1 text-sm text-[#382631]">
                 {row.endDate ? `${formatPeriodDate(row.startDate)} bis ${formatPeriodDate(row.endDate)}` : `${formatPeriodDate(row.startDate)}, läuft noch`}
               </p>
-              <p className="mt-1 text-sm text-[#6b5560]">
-                Zyklus: {row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"}
-                {row.durationDays !== null && ` · Dauer: ${row.durationDays} Tage`}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6b5560]">
+                {row.durationDays !== null && (
+                  <span>
+                    <span className="font-semibold text-[#382631]">Dauer:</span> {row.durationDays} Tage
+                  </span>
+                )}
+                <span>
+                  <span className="font-semibold text-[#382631]">Zyklus:</span>{" "}
+                  {row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"}
+                </span>
+              </div>
             </button>
           ))}
         </div>
