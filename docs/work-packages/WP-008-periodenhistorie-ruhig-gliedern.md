@@ -2,7 +2,7 @@
 id: WP-008
 title: "Periodenhistorie ruhig und lesbar gliedern"
 package_revision: 1
-status: review
+status: completed
 created: 2026-10-08
 updated: 2026-10-08
 owner_approved: yes
@@ -125,7 +125,7 @@ Die Ownerin moechte die bereits vorhandene App zuerst insgesamt ruhig und klar o
 
 ### Offene Punkte
 
-- Owner-Pruefschritt steht aus: `/neu` oeffnen, auf die Monatsanzeige tippen, Periodenhistorie ansehen (siehe "Owner-Pruefort nach Umsetzung" oben).
+- Keine. Owner hat die Umsetzung am 2026-10-08 geprueft und akzeptiert.
 
 ### Commit
 
@@ -133,4 +133,7 @@ Die Ownerin moechte die bereits vorhandene App zuerst insgesamt ruhig und klar o
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ausstehend: Codex prueft nach der Claude-Rueckmeldung Soll gegen Ist.
+- **Soll:** Die bestehende Periodenhistorie soll ohne neue Daten oder Funktion ruhiger gegliedert werden. Monat/Jahr, Zeitraum, Dauer und Zykluslaenge bleiben klar getrennt; Navigation und Berechnung bleiben unveraendert.
+- **Ist:** Die bestehende Historienzeile zeigt Monat/Jahr hervorgehoben, den Zeitraum darunter sowie getrennte, beschriftete Felder fuer Dauer und Zyklus. Dauer erscheint nur bei echtem Ende; eine unbekannte Zykluslaenge bleibt sichtbar. Klickflaeche, Monatsnavigation, Escape und Datenableitung sind laut dokumentierter Umsetzung unveraendert.
+- **Nachweis:** Commit `1ebd621` und Nachbesserungs-Commit `97d0df2`; gezielte Layout-, Historien-, Navigations-, TypeScript-, Build- und mobile Sichtpruefungen sind im Ist dokumentiert.
+- **Ergebnis:** Soll erfuellt. Owner hat die Umsetzung am 2026-10-08 geprueft und akzeptiert.
