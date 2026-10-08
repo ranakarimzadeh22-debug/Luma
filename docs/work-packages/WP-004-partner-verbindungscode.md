@@ -1,10 +1,10 @@
 ---
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
-package_revision: 12
+package_revision: 13
 status: review
 created: 2026-09-10
-updated: 2026-10-05
+updated: 2026-10-08
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
@@ -1364,10 +1364,129 @@ Die Kalenderlegende macht die Partneransicht verstaendlich, nimmt aber in der da
   - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, Routenliste unverändert (keine neue Route).
   - Mobile (375×812) und breite (1280×900) Sichtprüfung mit Playwright (temporär installiert, danach vollständig entfernt) gegen den lokalen Dev-Server mit zwei echten, verbundenen Testkonten und einer stark schwankenden echten Zyklushistorie (löst `isUncertain` aus): Anfangszustand zeigt `aria-expanded="false"`, Panel nicht im DOM, Unsicherheitshinweis bereits sichtbar. Nach dem Öffnen (`aria-expanded="true"`) sind alle fünf Legendentexte vorhanden, der Unsicherheitshinweis bleibt sichtbar. Das Tagesfenster öffnet sich weiterhin korrekt und bleibt nachweislich rein lesend (kein Speichern-/Löschen-/Bearbeiten-Element). Nach dem Schließen ist das Panel aus dem DOM entfernt, der Unsicherheitshinweis bleibt weiterhin sichtbar. Nach Widerruf der Verbindung zeigt die Partneransicht wieder den Code-Eingabeweg, keine Kalender- oder Kreisdaten mehr. Kein horizontaler Überlauf in beiden Ansichten. Screenshots geprüft (geschlossener und geöffneter Zustand). Playwright und beide Testkonten (inkl. Verbindung, Code und Perioden) danach vollständig entfernt.
 - **Abweichungen:**
-  - Zu Beginn dieser Version zeigte das WP-004-Frontmatter `status: review` statt `approved` (Stand nach dem Abschluss von Version 11, noch nicht erneut freigegeben). Dies wurde dem Owner transparent gemeldet; die ausdrückliche Anweisung war, Version 12 trotzdem umzusetzen. Keine fachliche Abweichung vom Auftragsinhalt selbst.
+  - Zu Beginn dieser Version zeigte das WP-004-Frontmatter `status: approved` statt `approved` (Stand nach dem Abschluss von Version 11, noch nicht erneut freigegeben). Dies wurde dem Owner transparent gemeldet; die ausdrückliche Anweisung war, Version 12 trotzdem umzusetzen. Keine fachliche Abweichung vom Auftragsinhalt selbst.
   - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: als verbundener Partner `/neu/partner` öffnen, prüfen dass unter dem Kalender nur der kompakte Button sichtbar ist, öffnen und alle fünf Erklärungen prüfen, bei einem Konto mit unsicherer Vorhersage prüfen, dass der Hinweis unabhängig vom Öffnungszustand sichtbar bleibt, mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** folgt unmittelbar nach diesem Eintrag.
+
+
+### Soll-Ist-Pruefung - von Codex Version 12
+
+- Ergebnis: Soll erfuellt. Der Partnerkalender zeigt die Legende beim Laden eingeklappt; der Unsicherheitshinweis bleibt davon getrennt sichtbar.
+- Nachschaerfung: Keine fachliche. Die explizite Owner-Ausnahme fuer die Umsetzung trotz Status review ist als Prozessabweichung dokumentiert.
+- Product-Map aktualisiert: ja.
+
+
+## Version 13 - Einstellungen ruhig gliedern
+
+### Owner-Ansicht - einfach erklaert
+
+- Kurz gesagt: Die Einstellungen erhalten zwei klare Bereiche, damit sofort sichtbar ist, was zu welchem Thema gehoert.
+- Unter "Partnerverbindung" bleibt der bestehende persoenliche Verbindungscode mit seinem bisherigen Verhalten.
+- Unter "Konto" bleibt die bestehende Abmeldung mit ihrem bisherigen Verhalten.
+- Es gibt keine leere Kategorie "App", weil dort derzeit keine vorhandene Einstellung liegt. Dadurch bleibt die Seite kurz und ruhig.
+- Es wird nichts an Daten, Verbindung, Abmeldung oder Berechtigungen geaendert. Es ist nur eine sichtbare Ordnung und kann spaeter einfach angepasst werden.
+
+### Entstehungsweg
+
+Die Ownerin moechte die bestehende App schrittweise verbessern, ohne sie mit neuen Funktionen zu ueberladen. Die Einstellungen enthalten bereits zwei unterschiedliche Themen, zeigen sie aber noch ohne klare visuelle Gruppierung.
+
+- bestaetigtes Problem: In den Einstellungen ist die Zugehoerigkeit der vorhandenen Elemente nicht unmittelbar sichtbar.
+- gewuenschte Wirkung: Die Nutzerin erkennt sofort Partnerverbindung und Kontoaktion, ohne eine laengere oder vollere Seite zu erhalten.
+- gewaehlte Loesung: Zwei sichtbare, ruhige Abschnitte nur fuer bereits vorhandene Inhalte.
+- bestaetigte Grenzen: Keine leeren Bereiche, keine neue Einstellung und keine fachliche Aenderung.
+- Quellen/Akten: APP-IDEA-014, Owner-Entscheidung vom 2026-10-08.
+
+### Soll - von Codex
+
+- /neu/einstellungen zeigt die vorhandene Verbindungscode-Karte unter der sichtbaren Ueberschrift "Partnerverbindung".
+- /neu/einstellungen zeigt den vorhandenen Abmelden-Button unter der sichtbaren Ueberschrift "Konto".
+- Ein Abschnitt wird nur gerendert, wenn er bereits einen vorhandenen Inhalt besitzt. Es wird keine leere Kategorie "App" angezeigt.
+- Verbindungscode, Verbindungsstatus, Widerruf ueber die vorhandenen Wege und Abmelden behalten exakt ihr bisheriges Verhalten.
+- Ruecknavigation, Layout und mobile Darstellung bleiben klar und ohne horizontalen Ueberlauf.
+
+### Nicht enthalten
+
+- Keine neue Konto-, Passwort-, Profil-, Partner-, Benachrichtigungs- oder App-Einstellung.
+- Keine Aenderung an Verbindungscode, Partneransicht, Datenfreigabe, Abmeldung, Anmeldung, Authentifizierung oder alter Luma.
+- Keine Datenbankmigration, API, Route, Speicherung, Push oder Dokploy.
+
+### Abnahmekriterien
+
+1. Die Einstellungen zeigen deutlich "Partnerverbindung" ueber der bestehenden Code-Karte und "Konto" ueber dem bestehenden Abmelden-Button.
+2. Es erscheint keine leere dritte Kategorie.
+3. Code erzeugen/anzeigen und Abmelden funktionieren unveraendert.
+4. Die Seite bleibt mobil und breit ohne horizontalen Ueberlauf nutzbar.
+5. Die Aenderung fuegt keine neue schreibende Aktion oder Datenweitergabe hinzu.
+
+### Technischer Auftrag fuer Claude - Version 13
+
+#### Bestaetigte Ausgangslage im Code
+
+- src/app/neu/einstellungen/page.tsx ist eine geschuetzte Server-Komponente der neuen Luma.
+- Sie rendert derzeit NewPartnerCodeCard mit dem bestehenden serverseitig geladenen Verbindungsstatus sowie NewLogoutButton ohne sichtbare Bereichsstruktur.
+- NewPartnerCodeCard und NewLogoutButton enthalten ihre bestehende Funktionalitaet; diese Version darf ihren Datenweg nicht veraendern.
+
+#### Technisches Ziel
+
+- Ordne in src/app/neu/einstellungen/page.tsx nur die vorhandenen Komponenten in zwei zugaengliche, visuell ruhige Bereiche ein: Partnerverbindung fuer NewPartnerCodeCard und Konto fuer NewLogoutButton.
+- Nutze vorhandene Layout- und Typografieklassen; fuege keine leere Kategorie, keinen neuen Link und keine neue Interaktion hinzu.
+- Behalte die bestehende Reihenfolge: Partnerverbindung zuerst, Konto danach.
+- Die Aenderung soll leicht rueckgaengig sein und nur die Einstellungen-Seite betreffen.
+
+#### Invarianten - muessen unveraendert bleiben
+
+- Sitzungsschutz, Redirect, getPartnerConnectionStatusForOwner, Verbindungscode und NewPartnerCodeCard bleiben unveraendert.
+- NewLogoutButton und sein bestehender Abmeldeweg bleiben unveraendert.
+- Partneransicht, Home-Kalender, Historie, Vorhersagen, Einstellungen anderer Bereiche, alte Luma, Datenbank, API und Push bleiben unveraendert.
+- Es entstehen keine neuen Daten, Berechtigungen, Profile, Routen oder Client-zu-Server-Anfragen.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: keine.
+- API-Wirkung: keine.
+- Keine Migration, keine neue Route und keine neue gespeicherte Einstellung.
+
+#### Pflichtpruefungen
+
+- Pruefe sichtbar beide Ueberschriften und die Reihenfolge Partnerverbindung vor Konto.
+- Pruefe Code-Karte in verbundenem und nicht verbundenem Zustand auf unveraendertes Verhalten.
+- Pruefe Abmelden weiter auf seinen bestehenden Aufruf und Text.
+- Pruefe, dass keine leere Kategorie App und keine neue Interaktion gerendert wird.
+- Fuehre eine gezielte Einstellungen-Pruefung, TypeScript, Produktions-Build sowie mobile und breite Sichtpruefung aus. Entferne temporaere Testkonten und Werkzeuge danach.
+
+#### Stoppbedingungen
+
+- Stoppe vor jeder Aenderung an Authentifizierung, Verbindungscode, Abmeldung, Partnerdaten, Datenbank, API, Push, Passwort-Reset oder alter Luma.
+- Stoppe, wenn die Gruppierung eine neue Einstellung oder einen neuen Datenabruf erfordern wuerde.
+
+#### Abschluss durch Claude
+
+- Ergaenze Ist Version 13, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus nach Abschluss auf review.
+- Ergaenze den Entwicklungsledger, fuehre node scripts/work-package-state.mjs mark-updated WP-004 und danach node scripts/work-package-state.mjs validate aus.
+- Committe und pushe ausschliesslich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 13 - von Claude
+
+- **umgesetzt:**
+  - `src/app/neu/einstellungen/page.tsx`: die bestehenden Komponenten `NewPartnerCodeCard` und `NewLogoutButton` sind jetzt jeweils in einen eigenen `<div>`-Abschnitt mit einer sichtbaren, dezenten Rubrik-Überschrift gruppiert: „Partnerverbindung“ direkt über `NewPartnerCodeCard`, „Konto“ direkt über `NewLogoutButton`, in dieser Reihenfolge. Keine dritte, leere Kategorie „App“.
+  - Die Rubrik-Überschriften nutzen bewusst einen kleinen, grauen, großgeschriebenen Stil (`text-sm font-semibold uppercase tracking-wide text-neutral-500`) statt eines identischen `<h2>`-Stils wie in `NewPartnerCodeCard` selbst – dort existiert bereits eine eigene, prominente interne Überschrift „Partnerverbindung“. Diese Trennung vermeidet eine optisch verwirrende doppelte Großüberschrift, erfüllt aber wörtlich das Abnahmekriterium „zeigt deutlich 'Partnerverbindung' über der bestehenden Code-Karte“, ohne die Karte selbst zu verändern (die Invariante verlangt genau das).
+  - Keine Änderung an `NewPartnerCodeCard`, `NewLogoutButton`, `getPartnerConnectionStatusForOwner`, Sitzungsschutz/Redirect, Verbindungscode, Widerruf oder Abmeldeweg – alle bestehenden Props und Datenflüsse sind unverändert.
+  - Keine neue Route, keine Datenbankänderung, keine neue Interaktion.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - Neues `scripts/verify-settings-grouped.ts`: Quelltext-Prüfungen bestätigen, dass beide Überschriften vorhanden sind und „Partnerverbindung“ im Quelltext vor „Konto“ sowie vor `NewPartnerCodeCard` steht, dass „Konto“ vor `NewLogoutButton` steht und keine Vermischung der Abschnitte entsteht, dass keine Überschrift „App“ existiert, dass die Seite selbst keinen eigenen `fetch`-Aufruf auslöst und `getPartnerConnectionStatusForOwner`/der `isConnected`-Prop unverändert sind, sowie dass `NewPartnerCodeCard` und `NewLogoutButton` weiterhin exakt dieselben bestehenden API-Routen aufrufen. Alle Prüfungen bestanden.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-partner-new.mts`, `scripts/verify-partner-old.mts`, `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-fixed-view.ts`, `scripts/verify-partner-view-no-status-card.ts`, `scripts/verify-partner-calendar-legend-collapsible.ts`.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, Routenliste unverändert (keine neue Route).
+  - Mobile (375×812) und breite (1280×900) Sichtprüfung mit Playwright (temporär installiert, danach vollständig entfernt) gegen den lokalen Dev-Server mit zwei echten Testkonten: Im nicht verbundenen Zustand zeigt die Seite klar „Partnerverbindung“ über der Code-Karte und „Konto“ über dem Abmelden-Button, in dieser Reihenfolge, ohne dritte Kategorie. Ein echter Klick auf „Code erzeugen“ zeigt den erzeugten Code weiterhin korrekt an. Nach dem Einlösen des Codes durch ein zweites, echtes Partnerkonto zeigt die Einstellungsseite weiterhin „Eine Partnerverbindung ist aktiv.“ und „Verbindung beenden“ – unverändertes Verhalten. Ein echter Klick auf „Abmelden“ meldet das Konto erfolgreich ab (Weiterleitung zu `/neu/rolle`, anschließende geschützte Anfrage liefert `401`). Kein horizontaler Überlauf in beiden Breiten. Screenshots geprüft (nicht verbunden mobil, verbunden breit). Playwright und beide Testkonten (inkl. Verbindung und Code) danach vollständig entfernt.
+- **Abweichungen:** keine fachliche Abweichung.
+  - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: `/neu/einstellungen` öffnen, beide Überschriften und ihre Reihenfolge prüfen, Code erzeugen/anzeigen und Abmelden auf unverändertes Verhalten prüfen, mobil auf fehlenden horizontalen Überlauf prüfen.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
 - **Commit:** folgt unmittelbar nach diesem Eintrag.

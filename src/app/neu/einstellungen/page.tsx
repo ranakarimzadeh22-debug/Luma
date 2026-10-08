@@ -15,13 +15,21 @@ export default async function NewSettingsPage() {
 
   return (
     <main className="min-h-screen bg-neutral-50 px-6 py-10">
-      <section className="mx-auto flex w-full max-w-sm flex-col gap-6">
+      <section className="mx-auto flex w-full max-w-sm flex-col gap-8">
         <div className="space-y-2">
           <Link href="/neu" className="text-sm text-neutral-500 hover:text-neutral-900">← Zurück</Link>
           <h1 className="text-3xl font-semibold tracking-tight text-neutral-950">Einstellungen</h1>
         </div>
-        <NewPartnerCodeCard isConnected={status.connected} />
-        <NewLogoutButton />
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Partnerverbindung</h2>
+          <NewPartnerCodeCard isConnected={status.connected} />
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Konto</h2>
+          <NewLogoutButton />
+        </div>
       </section>
     </main>
   );
