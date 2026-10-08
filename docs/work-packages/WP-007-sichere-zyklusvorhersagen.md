@@ -1,10 +1,10 @@
 ---
 id: WP-007
 title: "Sichere, persoenliche Zyklusvorhersagen"
-package_revision: 2
+package_revision: 3
 status: review
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-08
 owner_approved: yes
 executor: claude
 product_area: "Neue Luma - Home-Screen /neu, Zyklus-Kreis und Kalender"
@@ -274,6 +274,133 @@ Die neue Kalenderlegende erklaert die Markierungen korrekt, nimmt auf dem Home-S
   - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: `/neu` öffnen, prüfen dass unter dem Kalender nur der kompakte Button sichtbar ist, öffnen und alle Erklärungen inklusive P/M/E-Einzelerklärungen prüfen, bei einem Konto mit unsicherer Vorhersage prüfen, dass der Hinweis unabhängig vom Öffnungszustand sichtbar bleibt, mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit:** a97d176.
+
+
+### Soll-Ist-Pruefung - von Codex Version 2
+
+- Ergebnis: Soll erfuellt. Die Kalendererklaerungen sind einklappbar, waehrend der Unsicherheitshinweis sichtbar bleibt.
+- Nachschaerfung: keine.
+- Product-Map aktualisiert: ja.
+
+
+## Version 3 - Start-Hilfe ohne Periodendaten
+
+### Owner-Ansicht - einfach erklaert
+
+- Kurz gesagt: Wenn eine Nutzerin noch keine echte Periode gespeichert hat, hilft Luma ihr einmal direkt auf dem Home-Screen beim Start.
+- Ueber dem Kalender erscheint dann eine kleine, ruhige Karte: "Noch keine Periodendaten. Waehle im Kalender den ersten Tag deiner Periode, um zu beginnen."
+- Sobald mindestens ein echter Periodenbeginn gespeichert ist, verschwindet diese Karte automatisch.
+- Sie ist nur eine Erklaerung. Es gibt keine neue Funktion, keinen neuen Button und keine weitere Seite.
+- Der restliche Home-Screen bleibt ruhig. Partneransicht und alte Luma bleiben unveraendert.
+
+### Entstehungsweg
+
+Neue Nutzerinnen brauchen beim ersten Oeffnen einen klaren naechsten Schritt. Ohne gespeicherte Periodendaten soll die App nicht durch leere Vorhersagen oder viele Erklaerungen verwirren.
+
+- bestaetigtes Problem: Ohne erste gespeicherte Periode ist nicht sofort klar, wie die Nutzerin beginnen soll.
+- gewuenschte Wirkung: Der erste notwendige Schritt ist direkt auf dem bestehenden Kalender einfach erklaert.
+- gewaehlte Loesung: Eine einmalige, nicht aufdringliche Start-Hilfe nur im echten Ohne-Daten-Zustand.
+- bestaetigte Grenzen: Keine neue Datenerfassung, keine Vorhersage, keine Partnerfreigabe und keine dauerhafte Zusatzkarte.
+- Quellen/Akten: APP-IDEA-007, Owner-Entscheidung vom 2026-10-08.
+
+### Soll - von Codex
+
+- Auf /neu erscheint die Start-Hilfe nur, wenn fuer das angemeldete Konto noch kein echter Periodenbeginn existiert.
+- Der sichtbare Text lautet: "Noch keine Periodendaten. Waehle im Kalender den ersten Tag deiner Periode, um zu beginnen."
+- Sobald ein echter Periodenbeginn vorhanden ist, erscheint die Start-Hilfe nicht mehr.
+- Die Hilfe erscheint nicht in der Partneransicht und nicht in der alten Luma.
+- Sie fuegt keine Schaltflaeche, Route, Einstellung, Speicherung oder neue Berechnung hinzu.
+- Kalender, Tagesfenster, Meine-Periode-aktualisieren, Heute-Karte, Zyklus-Kreis, Vorhersagen und bestehende Legenden bleiben in ihrem Verhalten unveraendert.
+
+### Nicht enthalten
+
+- Keine Aenderung an Periodenstart/-ende, Historie, Vorhersage, Zyklus-Kreis, Einstellungen, Partneransicht, Anmeldung oder alter Luma.
+- Keine Datenbankmigration, API, Route, neue Speicherung oder Benachrichtigung.
+- Keine medizinische Aussage, keine Fruchtbarkeits- oder Eisprungberechnung.
+
+### Abnahmekriterien
+
+1. Ein Konto ohne echten Periodenbeginn sieht die kurze Start-Hilfe klar ueber dem bestehenden Kalender.
+2. Ein Konto mit mindestens einem echten Periodenbeginn sieht die Start-Hilfe nicht.
+3. Die Hilfe verschwindet nach dem erfolgreichen Speichern eines ersten Periodenbeginns ohne manuelle Einstellung.
+4. Der Kalender bleibt direkt bedienbar; die Hilfe verdeckt weder Tage noch Tagesfenster.
+5. Partneransicht und alte Luma enthalten diese Hilfe nicht.
+6. Mobile und breite Ansicht bleiben ohne horizontalen Ueberlauf.
+
+### Technischer Auftrag fuer Claude - Version 3
+
+#### Bestaetigte Ausgangslage im Code
+
+- src/components/NewCycleExample.tsx ist die bestehende Owner-Home-Ansicht fuer Heute-Karte, Zyklus-Kreis und Kalender.
+- Die Owner-Ansicht nutzt bereits abgeleitete Zyklusdaten und den Ohne-Daten-Zustand; vorhandene echte Periodeneintraege sind die alleinige Grundlage fuer Zyklusansicht und Vorhersage.
+- Der Kalender selbst besitzt bereits den direkten Eingabeweg fuer einen ersten Periodenbeginn. Es ist keine zusaetzliche Navigation noetig.
+- Partneransicht /neu/partner ist getrennt und bleibt rein lesend.
+
+#### Technisches Ziel
+
+- Erkenne ausschliesslich mit vorhandenen Owner-Daten, ob kein echter Periodenbeginn gespeichert ist.
+- Rendere dann in NewCycleExample.tsx oberhalb des bestehenden Kalenders eine kleine, ruhige und nicht interaktive Start-Hilfe mit dem vereinbarten Text.
+- Nutze keine neue Abfrage, Speicherung, Route oder Berechnungslogik. Wiederverwende den vorhandenen Ohne-Daten-/Periodenstatus.
+- Stelle sicher, dass die Karte nach dem ersten echten Periodenbeginn nicht mehr gerendert wird und alle bestehenden Kalenderaktionen unveraendert bleiben.
+
+#### Invarianten - muessen unveraendert bleiben
+
+- Ausschliesslich die Owner-Home-Ansicht /neu erhaelt die Start-Hilfe; Partneransicht und alte Luma bleiben unveraendert.
+- Ein erwartetes Ende, eine Schaetzung oder ein reiner leerer Kalenderplatz gilt nicht als echter Periodenbeginn.
+- Keine Anzeige privater Daten, keine medizinische Aussage und keine neue Gesundheitsdatenverarbeitung.
+- Vorhersage-, Perioden-, Tagesfenster-, Kalender-, Zyklus-Kreis- und Heute-Karten-Logik bleiben unveraendert.
+- Keine Aenderung an Datenbank, API, Authentifizierung, Verbindungscode, Push oder Dokploy.
+
+#### Daten, Schnittstellen und Migrationen
+
+- Datenbankwirkung: keine.
+- API-Wirkung: keine.
+- Keine Migration, keine neue Route und keine neue Client-zu-Server-Anfrage.
+
+#### Pflichtpruefungen
+
+- Pruefe ein Konto ohne echte Periodeneintraege: Hilfe sichtbar, vereinbarter Text vorhanden, Kalender weiterhin bedienbar.
+- Pruefe ein Konto mit echtem abgeschlossenen und mit echtem laufendem Periodenbeginn: Hilfe nicht sichtbar.
+- Pruefe den Uebergang nach Speichern des ersten Periodenbeginns: Hilfe verschwindet nach dem bestehenden Aktualisierungsweg.
+- Pruefe Tagesfenster, bestehende Periodenaktionen, Vorhersage- und Kalenderregressionen sowie, dass Partneransicht/alte Luma die Hilfe nicht enthalten.
+- Fuehre TypeScript, Produktions-Build und mobile/breite Sichtpruefung aus. Entferne Testkonten und temporaere Werkzeuge danach.
+
+#### Stoppbedingungen
+
+- Stoppe vor jeder Aenderung an Periodenlogik, Vorhersage, Datenbank, API, Partneransicht, Authentifizierung, Push oder alter Luma.
+- Stoppe, wenn der bestehende Ohne-Daten-Zustand nicht ohne eine zusaetzliche Datenabfrage sicher erkennbar ist.
+- Stoppe, wenn die Hilfe den Kalender oder dessen Bedienung verdecken wuerde.
+
+#### Abschluss durch Claude
+
+- Ergaenze Ist Version 3, Tests, Abweichungen und offene Punkte sichtbar.
+- Setze den Paketstatus nach Abschluss auf review.
+- Ergaenze den Entwicklungsledger, fuehre node scripts/work-package-state.mjs mark-updated WP-007 und danach node scripts/work-package-state.mjs validate aus.
+- Committe und pushe ausschliesslich auftragsbezogene Dateien. Kein manuelles Deployment.
+
+### Ist Version 3 - von Claude
+
+- **umgesetzt:**
+  - `src/components/NewCycleExample.tsx`: neue, rein informative Start-Hilfe-Karte direkt oberhalb der bestehenden `<section aria-label="Kalender zur Orientierung">`, zwischen dem Zyklus-Kreis-Bereich und dem Kalender. Die Karte rendert ausschließlich bei `periods.length === 0` – `periods` ist der bereits vorhandene, serverseitig aus `getNewPeriodEntries` geladene Client-State (`initialPeriods`); es wurde keine neue Abfrage, kein neuer Prop und keine neue Berechnung eingeführt.
+  - Bewusst **nicht** `personalCycleView.status === "no_data"` verwendet, da dieser Status auch bei bereits vorhandenen, aber für einen Median unzureichenden echten Perioden zutrifft (1–3 Einträge) – der Auftrag verlangt ausdrücklich „kein echter Periodenbeginn“, also exakt `periods.length === 0`.
+  - Sichtbarer Text exakt wie vereinbart: „Noch keine Periodendaten. Wähle im Kalender den ersten Tag deiner Periode, um zu beginnen.“ Die Karte enthält keine Schaltfläche, keinen Klick-Handler und keinen Netzwerkaufruf – rein informativ, wie gefordert.
+  - Keine Änderung an Kalender, Tagesfenster, `Meine Periode aktualisieren`, Heute-Karte, Zyklus-Kreis, Vorhersagen, bestehenden Legenden, Partneransicht (`NewPartnerCalendar.tsx`, `src/app/neu/partner/page.tsx`) oder alter Luma – die Karte existiert ausschließlich in `NewCycleExample.tsx`.
+  - Keine neue Route, keine Datenbankänderung, keine neue Client-zu-Server-Anfrage.
+- **nicht umgesetzt:** nichts aus dem vereinbarten Umfang offen.
+- **Tests:**
+  - Neues `scripts/verify-start-help-no-data.ts`: Quelltext-Prüfungen bestätigen den exakten Hilfetext, die Bindung an `periods.length === 0` (nicht an den weiter gefassten `no_data`-Status), dass die Karte im Quelltext vor dem Kalenderbereich steht und kein Teil der Kalender-Section selbst ist, dass sie keine Schaltfläche/keinen Klick-Handler/keinen `fetch`-Aufruf enthält, dass `periods` weiterhin der bereits vorhandene `initialPeriods`-State ist, und dass weder `NewPartnerCalendar.tsx` noch die Partnerseite den Hilfetext enthalten. Alle Prüfungen bestanden.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-calendar-legend-collapsible.ts`, `scripts/verify-partner-calendar-legend-collapsible.ts`, `scripts/verify-day-detail.ts`, `scripts/verify-period-history.ts`, `scripts/verify-history-month-jump.ts`, `scripts/verify-partner-fixed-view.ts`, `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-my-periods.mts`, `scripts/verify-period-day-actions.mts`.
+  - `node --experimental-strip-types --test tests/new-cycle-prediction.test.ts tests/cycle-fertility.test.ts`: alle 22 Prüfungen weiterhin bestanden (reine Präsentationsänderung, keine Berührung der Vorhersage-/Periodenlogik).
+  - `scripts/verify-personal-cycle-view.ts` zeigt weiterhin dieselben, bereits seit mehreren vorherigen Versionen dokumentierten 9 Fehlschläge bei den Farbverlauf-Quelltextprüfungen (Gradient-Fundstelle seit WP-004 Version 6) – unverändert vorbestehend, nicht durch diese Version verursacht.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build` (Next.js 16.2.6, Turbopack): erfolgreich, Routenliste unverändert (keine neue Route).
+  - Mobile (375×812) und breite (1280×900) Sichtprüfung mit Playwright (temporär installiert, danach vollständig entfernt) gegen den lokalen Dev-Server mit drei echten Testkonten: Konto A ohne echte Periode (Onboarding übersprungen) zeigt die Hilfe sichtbar oberhalb des weiterhin bedienbaren Kalenders (13 Tagesbuttons klickbar); nach dem Speichern eines ersten echten Periodenbeginns über die bestehende API ist die Hilfe beim nächsten Laden nicht mehr vorhanden. Konto B mit einer laufenden Periode (echter Start, kein `endDate`) zeigt die Hilfe zu keinem Zeitpunkt. Konto C ohne jede Periode, aber mit aktiver Partnerverbindung: Die verbundene Partneransicht zeigt die Hilfe nicht – strukturell ausgeschlossen, da sie ausschließlich in der Owner-Komponente existiert. Kein horizontaler Überlauf in beiden Breiten, weder vor noch nach dem Speichern der ersten Periode. Screenshot geprüft. Playwright und alle vier Testkonten (inkl. Verbindung, Code und Perioden) danach vollständig entfernt.
+- **Abweichungen:** keine fachliche Abweichung.
+  - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht aus: `/neu` mit einem frischen Konto ohne Periodendaten öffnen, die Start-Hilfe über dem Kalender prüfen, einen ersten Periodenbeginn speichern und bestätigen, dass die Hilfe danach verschwindet; mobil auf fehlenden horizontalen Überlauf prüfen.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
 - **Commit:** folgt unmittelbar nach diesem Eintrag.

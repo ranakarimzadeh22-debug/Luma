@@ -973,6 +973,14 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         )}
       </section>
 
+      {periods.length === 0 && (
+        <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 text-center shadow-sm">
+          <p className="text-sm text-[#382631]">
+            Noch keine Periodendaten. Wähle im Kalender den ersten Tag deiner Periode, um zu beginnen.
+          </p>
+        </div>
+      )}
+
       <section aria-label="Kalender zur Orientierung" className="space-y-5">
         <CalendarTodayLine today={todayKey} />
         <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
