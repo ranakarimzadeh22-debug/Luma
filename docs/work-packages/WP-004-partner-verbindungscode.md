@@ -2,9 +2,9 @@
 id: WP-004
 title: "Sichere Partnerverbindung mit persönlichem Code"
 package_revision: 13
-status: review
+status: completed
 created: 2026-09-10
-updated: 2026-10-08
+updated: 2026-10-09
 owner_approved: yes
 executor: claude
 product_area: "Alte und neue Luma – Partnerverbindung"
@@ -1370,7 +1370,7 @@ Die Kalenderlegende macht die Partneransicht verstaendlich, nimmt aber in der da
   - Owner-Prüfschritt steht aus: als verbundener Partner `/neu/partner` öffnen, prüfen dass unter dem Kalender nur der kompakte Button sichtbar ist, öffnen und alle fünf Erklärungen prüfen, bei einem Konto mit unsicherer Vorhersage prüfen, dass der Hinweis unabhängig vom Öffnungszustand sichtbar bleibt, mobil auf fehlenden horizontalen Überlauf prüfen.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** folgt unmittelbar nach diesem Eintrag.
+- **Commit:** e712d12.
 
 
 ### Soll-Ist-Pruefung - von Codex Version 12
@@ -1489,4 +1489,16 @@ Die Ownerin moechte die bestehende App schrittweise verbessern, ohne sie mit neu
   - Owner-Prüfschritt steht aus: `/neu/einstellungen` öffnen, beide Überschriften und ihre Reihenfolge prüfen, Code erzeugen/anzeigen und Abmelden auf unverändertes Verhalten prüfen, mobil auf fehlenden horizontalen Überlauf prüfen.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** folgt unmittelbar nach diesem Eintrag.
+- **Commit:** e712d12.
+
+
+### Soll-Ist-Pruefung - von Codex Version 13
+
+- Ergebnis: Soll erfuellt. Die Einstellungen gruppieren die bestehenden Inhalte klar als Partnerverbindung und Konto, ohne eine neue Funktion oder leere Kategorie.
+- Nachschaerfung: keine.
+- Product-Map aktualisiert: ja.
+
+## Owner-Abnahme (gesamtes Paket)
+
+- Die Ownerin hat WP-004 am 2026-10-09 geprüft und akzeptiert.
+- Status: abgeschlossen.
