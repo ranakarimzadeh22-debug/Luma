@@ -2,7 +2,7 @@
 id: WP-009
 title: "Home-Screen ruhig gliedern"
 package_revision: 2
-status: review
+status: completed
 created: 2026-10-08
 updated: 2026-10-08
 owner_approved: yes
@@ -165,7 +165,7 @@ Die Ownerin hat die gemeldete Kartenrahmung nicht akzeptiert. Sie bestaetigt ern
 
 ### Offene Punkte
 
-- Owner-Pruefschritt steht aus: `/neu` oeffnen und bestaetigen, dass Zyklus-Kreis und Kalender wieder ohne Card-Rahmen, Hintergrundflaeche, Rundung und Schatten erscheinen, mit unveraenderten Abstaenden.
+- Keine. Owner hat die Umsetzung Version 2 am 2026-10-08 geprueft und akzeptiert.
 
 ### Commit, Version 2
 
@@ -173,4 +173,9 @@ Die Ownerin hat die gemeldete Kartenrahmung nicht akzeptiert. Sie bestaetigt ern
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ausstehend: Codex prueft nach der Claude-Rueckmeldung Soll gegen Ist.
+- **Soll Version 1:** Die eigene Startseite sollte nur ruhig gegliedert werden, ohne neue sichtbare Karten oder Boxen.
+- **Ist Version 1:** Zyklus-Kreis und Kalender erhielten Kartenrahmen. Das wich von der ausdruecklichen Grenze ab und wurde nicht als Endstand akzeptiert.
+- **Soll Version 2:** Nur die neu hinzugefuegten Kartenklassen entfernen; die vorherige rahmenlose Ansicht, Reihenfolge und Abstaende wiederherstellen.
+- **Ist Version 2:** Die Klassen sind ausschliesslich von den beiden betroffenen Sections entfernt. Sie haben wieder exakt `space-y-3` und `space-y-5`; Heute-Karte, Inhalte, Verhalten und Datenfluss sind unveraendert.
+- **Nachweis:** Commit `4235cd0`; gezielte Layout-Pruefung und TypeScript-Pruefung bestanden. Der kleinere Pruefumfang entspricht dem ausdruecklich begrenzten Versions-2-Auftrag.
+- **Ergebnis:** Soll Version 2 erfuellt. Die Product-Map bleibt unveraendert, weil der sichtbare Endstand wieder dem Stand vor WP-009 entspricht. Owner hat die Umsetzung Version 2 am 2026-10-08 geprueft und akzeptiert.
