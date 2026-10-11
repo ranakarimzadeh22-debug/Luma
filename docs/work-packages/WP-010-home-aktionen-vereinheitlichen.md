@@ -117,7 +117,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnoetige Schritt
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: `/neu` öffnen, Hauptaktion, Erklärungen und – falls sichtbar – `Zykluslänge ergänzen` ansehen, anschließend Monatsnavigation, Tagesfenster und `Meine Periode aktualisieren` kurz testen.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** wird nach dem Commit ergänzt.
+- **Commit:** dab2f07.
 
 ## Soll-Ist-Prüfung – von Codex
 

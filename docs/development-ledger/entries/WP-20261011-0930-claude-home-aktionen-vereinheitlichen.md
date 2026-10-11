@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: dab2f07
 ---
 
 # Home-Aktionen ruhig vereinheitlichen (WP-010)
@@ -40,4 +40,4 @@ Owner prüft `/neu` und bestätigt Hauptaktion, Hilfsaktionen und Regressionen. 
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-home-actions-consistent.ts` (neu), `docs/work-packages/WP-010-home-aktionen-vereinheitlichen.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npx tsx scripts/verify-home-actions-consistent.ts`, bestehende Regressionsskripte, `npm run build`, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: dab2f07.
