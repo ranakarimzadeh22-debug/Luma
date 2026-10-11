@@ -2,7 +2,7 @@
 id: WP-007
 title: "Sichere, persoenliche Zyklusvorhersagen"
 package_revision: 3
-status: review
+status: completed
 created: 2026-10-05
 updated: 2026-10-08
 owner_approved: yes
@@ -400,7 +400,14 @@ Neue Nutzerinnen brauchen beim ersten Oeffnen einen klaren naechsten Schritt. Oh
 - **Abweichungen:** keine fachliche Abweichung.
   - Der bereits bekannte, vorbestehende Testdefekt in `tests/calendar-day-info.test.ts` (fehlende Funktion `applyPeriodDayAction`) sowie der vorbestehende Gradient-Fundstellen-Defekt in `scripts/verify-personal-cycle-view.ts` bestehen unverändert fort und waren für diese Version nicht im Umfang.
 - **offene Punkte:**
-  - Owner-Prüfschritt steht aus: `/neu` mit einem frischen Konto ohne Periodendaten öffnen, die Start-Hilfe über dem Kalender prüfen, einen ersten Periodenbeginn speichern und bestätigen, dass die Hilfe danach verschwindet; mobil auf fehlenden horizontalen Überlauf prüfen.
+  - Keine. Owner hat die Umsetzung (alle drei Versionen) am 2026-10-11 geprüft und akzeptiert.
   - Die beiden oben genannten, vorbestehenden Testdefekte sollten weiterhin in eigenen, dafür vorgesehenen Paketen behoben werden.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** folgt unmittelbar nach diesem Eintrag.
+- **Commit:** 6efbbb6.
+
+
+### Soll-Ist-Pruefung - von Codex Version 3
+
+- Ergebnis: Soll erfuellt. Die ruhige Start-Hilfe erscheint nur ohne echte Periodendaten und verschwindet nach dem ersten echten Periodenbeginn.
+- Nachschaerfung: keine. Die Unterscheidung ueber periods.length verhindert bewusst eine falsche Anzeige bei bereits vorhandenen, aber fuer Vorhersagen noch unzureichenden Daten.
+- Product-Map aktualisiert: ja.
