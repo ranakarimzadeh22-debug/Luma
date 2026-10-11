@@ -1155,7 +1155,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             aria-expanded={isCalendarLegendOpen}
             aria-controls="calendar-legend-panel"
             onClick={() => setIsCalendarLegendOpen((current) => !current)}
-            className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
           >
             {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
           </button>
