@@ -7,7 +7,7 @@ status: completed
 screens: Anmeldung | Registrierung
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: b27c695
 ---
 
 # Anmeldung und Registrierung ruhig vereinheitlichen (WP-011)
@@ -37,4 +37,4 @@ Owner prüft beide Seiten und bestätigt, dass sie bereits ruhig und konsistent 
 
 - Betroffene Dateien: `docs/work-packages/WP-011-anmeldung-registrierung-vereinheitlichen.md`, `docs/work-packages/STATE.json`. Keine Quelltextänderung (siehe Ist-Abschnitt im Arbeitspaket).
 - Tests: `npx tsc --noEmit`, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: b27c695.

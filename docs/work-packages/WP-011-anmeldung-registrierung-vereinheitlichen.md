@@ -115,7 +115,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnoetige Schritt
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: Beide Seiten nacheinander öffnen, die Links zwischen Anmeldung und Registrierung prüfen und jeweils eine harmlose Fehleingabe ausprobieren, ohne ein neues Konto zu erzeugen.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** kein Code-Commit nötig (keine Quelltextänderung); Dokumentation wird committet.
+- **Commit:** b27c695 (Dokumentation; keine Quelltextänderung).
 
 ## Soll-Ist-Prüfung – von Codex
 
