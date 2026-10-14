@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 7e64881
 ---
 
 # Kurze Erfolgsrückmeldung nach Periodenaktionen (WP-012)
@@ -40,4 +40,4 @@ Owner prüft `/neu`, speichert einen Periodenbeginn und löscht einen Randtag, u
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-action-success-toast.ts` (neu), `docs/work-packages/WP-012-erfolgsrueckmeldung-periodenaktionen.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npx tsx scripts/verify-action-success-toast.ts`, bestehende Regressionsskripte, `npm run build`, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: 7e64881.

@@ -121,7 +121,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnoetige Schritt
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: Auf `/neu` einen vergangenen neutralen Tag als Periodenbeginn speichern und danach einen Randtag löschen. Nach beiden Aktionen soll der passende kurze Hinweis erscheinen.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** wird nach dem Commit ergänzt.
+- **Commit:** 7e64881.
 
 ## Soll-Ist-Prüfung – von Codex
 
