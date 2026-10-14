@@ -500,6 +500,33 @@ function NoDataToast({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+const ACTION_TOAST_DURATION_MS = 3000;
+
+function ActionToast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, ACTION_TOAST_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-4 top-[max(1.5rem,env(safe-area-inset-top))] z-40 mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-[#d8afbd] bg-white p-4 text-sm text-[#382631] shadow-lg"
+    >
+      <p className="flex-1">{message}</p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Hinweis schließen"
+        className="rounded-full px-2 py-1 text-lg leading-none text-[#6b5560] hover:bg-[#f4e4e3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 interface DayDetailModalProps {
   date: string;
   periodDay: number | null;
@@ -786,6 +813,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
   const [isNoDataToastVisible, setIsNoDataToastVisible] = useState(personalCycleView.status === "no_data");
+  const [actionToastMessage, setActionToastMessage] = useState<string | null>(null);
+
+  function showActionToast(message: string) {
+    setIsNoDataToastVisible(false);
+    setActionToastMessage(message);
+  }
   const [selectedDayDetail, setSelectedDayDetail] = useState<{ date: string; periodDay: number | null; totalDays: number | null } | null>(null);
   const [isSavingDayAction, setIsSavingDayAction] = useState(false);
   const [dayActionError, setDayActionError] = useState("");
@@ -821,11 +854,13 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     );
     setPeriodFormMode("closed");
     setIsMyPeriodsModalOpen(false);
+    showActionToast("Gespeichert.");
     router.refresh();
   }
 
   function handlePeriodDeleted(entryId: string) {
     setPeriods((current) => current.filter((entry) => entry.id !== entryId));
+    showActionToast("Gelöscht.");
     router.refresh();
   }
 
@@ -850,6 +885,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
 
   function handleCycleLengthSaved() {
     setIsAddCycleLengthModalOpen(false);
+    showActionToast("Gespeichert.");
     router.refresh();
   }
 
@@ -879,6 +915,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       [...current, result.entry as NewPeriodEntryOpen].sort((first, second) => second.startDate.localeCompare(first.startDate)),
     );
     closeDayDetail();
+    showActionToast("Gespeichert.");
     router.refresh();
   }
 
@@ -903,6 +940,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       ),
     );
     closeDayDetail();
+    showActionToast("Gespeichert.");
     router.refresh();
   }
 
@@ -928,6 +966,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       setPeriods((current) => current.filter((existing) => existing.id !== entry.id));
       setPendingDeleteEdge(null);
       closeDayDetail();
+      showActionToast("Gelöscht.");
       router.refresh();
       return;
     }
@@ -952,6 +991,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     );
     setPendingDeleteEdge(null);
     closeDayDetail();
+    showActionToast("Gelöscht.");
     router.refresh();
   }
 
@@ -1241,7 +1281,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         />
       )}
 
-      {isNoDataToastVisible && <NoDataToast onDismiss={() => setIsNoDataToastVisible(false)} />}
+      {actionToastMessage ? (
+        <ActionToast message={actionToastMessage} onDismiss={() => setActionToastMessage(null)} />
+      ) : (
+        isNoDataToastVisible && <NoDataToast onDismiss={() => setIsNoDataToastVisible(false)} />
+      )}
     </div>
     {selectedDayDetail && !pendingDeleteEdge && (() => {
       const actions = getPeriodDayActions(selectedDayDetail.date, todayKey, periods);
