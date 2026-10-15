@@ -5,6 +5,7 @@ import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
 import { getPartnerCycleView } from "@/lib/new-partner-cycle-view";
 import { getPartnerNotificationPreference } from "@/lib/new-partner-notification-preference";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
+import { manualPmsSymptomsForDate } from "@/lib/manual-pms";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
 import NewPartnerCycleRing from "@/components/NewPartnerCycleRing";
@@ -63,12 +64,16 @@ export default async function NewPartnerPage() {
               personalCycleView={cycleView.personalCycleView}
               runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
               today={todayBerlinDateOnly()}
+              manualPmsSymptoms={
+                calendarView ? manualPmsSymptomsForDate(calendarView.manualPmsSection, todayBerlinDateOnly()) : []
+              }
             />
           )}
           {calendarView ? (
             <NewPartnerCalendar
               confirmedDates={calendarView.confirmedDates}
               prediction={calendarView.prediction}
+              manualPmsSection={calendarView.manualPmsSection}
             />
           ) : (
             <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>

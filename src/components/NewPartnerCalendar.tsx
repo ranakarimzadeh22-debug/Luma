@@ -4,15 +4,25 @@ import { useEffect, useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePrediction } from "@/lib/new-cycle-prediction";
+import { isWithinManualPmsSection, manualPmsSymptomsForDate, type ManualPmsSection } from "@/lib/manual-pms";
+import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-type PrimaryDayStatus = "confirmed" | "period" | "pms" | "ovulation" | "none";
+type PrimaryDayStatus = "confirmed" | "period" | "pms" | "pms-manual" | "ovulation" | "none";
+
+const PMS_SYMPTOM_LABELS: Record<PmsSymptom, string> = {
+  breast_tenderness: "Brustschmerzen/-spannen",
+  abdominal_pain: "Unterleibsschmerzen",
+  fatigue: "Müdigkeit",
+  mood_swings: "Stimmungsschwankungen",
+};
 
 interface NewPartnerCalendarProps {
   confirmedDates: string[];
   prediction: CyclePrediction | null;
+  manualPmsSection: ManualPmsSection | null;
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -32,6 +42,7 @@ const primaryStatusLabel: Record<PrimaryDayStatus, string> = {
   confirmed: "Bestätigt",
   period: "Geschätzte nächste Periode – kann abweichen",
   pms: "Mögliche PMS-Phase – kann abweichen",
+  "pms-manual": "PMS von ihr eingetragen",
   ovulation: "Möglicher Eisprung – kann abweichen",
   none: "Keine freigegebene Information",
 };
@@ -40,6 +51,7 @@ const primaryStatusStyle: Record<PrimaryDayStatus, string> = {
   confirmed: "border-neutral-900 bg-neutral-900 text-white",
   period: "border-purple-300 bg-purple-100 text-purple-900",
   pms: "border-pink-300 bg-pink-100 text-pink-900",
+  "pms-manual": "border-pink-400 bg-pink-200 text-pink-950",
   ovulation: "border-violet-300 bg-violet-100 text-violet-900",
   none: "border-neutral-200 bg-white text-neutral-700",
 };
@@ -47,6 +59,7 @@ const primaryStatusStyle: Record<PrimaryDayStatus, string> = {
 const primaryStatusLetter: Record<Exclude<PrimaryDayStatus, "confirmed" | "none">, string> = {
   period: "Gsch.",
   pms: "M",
+  "pms-manual": "M·Sie",
   ovulation: "E",
 };
 
@@ -55,10 +68,11 @@ interface DayDetailModalProps {
   status: PrimaryDayStatus;
   isFertile: boolean;
   isUncertain: boolean;
+  manualSymptoms: PmsSymptom[];
   onClose: () => void;
 }
 
-function DayDetailModal({ date, status, isFertile, isUncertain, onClose }: DayDetailModalProps) {
+function DayDetailModal({ date, status, isFertile, isUncertain, manualSymptoms, onClose }: DayDetailModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -79,6 +93,9 @@ function DayDetailModal({ date, status, isFertile, isUncertain, onClose }: DayDe
           {formatFullGermanDate(date)}
         </h2>
         <p className="mt-3 text-base text-neutral-700">{primaryStatusLabel[status]}</p>
+        {status === "pms-manual" && manualSymptoms.length > 0 && (
+          <p className="mt-1 text-sm text-pink-800">{manualSymptoms.map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}</p>
+        )}
         {isFertile && status !== "ovulation" && (
           <p className="mt-1 text-sm text-violet-700">Mögliches fruchtbares Zeitfenster – kann abweichen</p>
         )}
@@ -97,7 +114,7 @@ function DayDetailModal({ date, status, isFertile, isUncertain, onClose }: DayDe
   );
 }
 
-export default function NewPartnerCalendar({ confirmedDates, prediction }: NewPartnerCalendarProps) {
+export default function NewPartnerCalendar({ confirmedDates, prediction, manualPmsSection }: NewPartnerCalendarProps) {
   const [todayKey] = useState(() => todayBerlinDateOnly());
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
   const [displayedMonth, setDisplayedMonth] = useState({ year: todayYear, month: todayMonthIndex - 1 });
@@ -117,6 +134,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction }: NewPa
 
   function primaryStatusFor(date: string): PrimaryDayStatus {
     if (confirmedSet.has(date)) return "confirmed";
+    if (isWithinManualPmsSection(manualPmsSection, date)) return "pms-manual";
     if (!prediction) return "none";
     const phase = primaryCalendarPhase(date, prediction);
     return phase ?? "none";
@@ -249,6 +267,12 @@ export default function NewPartnerCalendar({ confirmedDates, prediction }: NewPa
               </span>
             </>
           )}
+          {manualPmsSection && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-3 rounded-full bg-pink-400" aria-hidden="true" />
+              PMS von ihr eingetragen
+            </span>
+          )}
           {hasFertileWindowSomewhere && (
             <span className="inline-flex items-center gap-1.5">
               <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
@@ -264,6 +288,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction }: NewPa
         status={selectedDay.status}
         isFertile={selectedDay.isFertile}
         isUncertain={Boolean(prediction?.isUncertain)}
+        manualSymptoms={manualPmsSymptomsForDate(manualPmsSection, selectedDay.date)}
         onClose={() => setSelectedDay(null)}
       />
     )}

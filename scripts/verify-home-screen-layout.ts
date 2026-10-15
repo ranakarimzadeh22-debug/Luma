@@ -28,8 +28,8 @@ console.log("\n== WP-009: Home-Screen-Hauptbereiche wurden gefunden ==");
 
 console.log("\n== WP-009: Reihenfolge Heute-Karte vor Zyklus-Kreis vor Kalender bleibt erhalten ==");
 {
-  const todayCardIndex = body.indexOf("<TodayCard personalCycleView={personalCycleView} />");
-  const cycleRingIndex = body.indexOf("<CyclePersonalRing personalCycleView={personalCycleView} today={todayKey} />");
+  const todayCardIndex = body.indexOf("<TodayCard personalCycleView={displayedPersonalCycleView} />");
+  const cycleRingIndex = body.indexOf("<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} />");
   const calendarIndex = body.indexOf("<CalendarTodayLine today={todayKey} />");
 
   assert(todayCardIndex !== -1, "TodayCard wird gerendert");
@@ -43,10 +43,13 @@ console.log("\n== WP-009: Reihenfolge Heute-Karte vor Zyklus-Kreis vor Kalender 
 
 console.log("\n== WP-009: Hauptkomponenten, Props und Handler sind unverändert ==");
 {
-  assert(body.includes('<TodayCard personalCycleView={personalCycleView} />'), "TodayCard erhält unverändert personalCycleView");
   assert(
-    body.includes('<CyclePersonalRing personalCycleView={personalCycleView} today={todayKey} />'),
-    "CyclePersonalRing erhält unverändert personalCycleView und today",
+    body.includes('<TodayCard personalCycleView={displayedPersonalCycleView} />'),
+    "TodayCard erhält weiterhin die aufbereitete personalCycleView (WP-013: inklusive manueller PMS-Übersteuerung)",
+  );
+  assert(
+    body.includes('<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} />'),
+    "CyclePersonalRing erhält weiterhin die aufbereitete personalCycleView und today (WP-013: inklusive manueller PMS-Übersteuerung)",
   );
   assert(body.includes('<CalendarTodayLine today={todayKey} />'), "CalendarTodayLine erhält unverändert today");
   assert(body.includes("onClick={() => changeMonth(-1)}") && body.includes("onClick={() => changeMonth(1)}"), "die Monatsnavigation ruft weiterhin changeMonth auf");

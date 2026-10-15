@@ -10,6 +10,7 @@ import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { predictCycle } from "@/lib/new-cycle-prediction";
 import { computePersonalCycleView } from "@/lib/personal-cycle-view";
 import { getNewPeriodPlans } from "@/lib/new-period-plans";
+import { getPmsSymptomDays } from "@/lib/new-pms-symptoms";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 
 export const dynamic = "force-dynamic";
@@ -41,10 +42,11 @@ export default async function NewAppPage() {
     );
   }
 
-  const [periodEntries, periodPlans, profile] = await Promise.all([
+  const [periodEntries, periodPlans, profile, pmsSymptomDays] = await Promise.all([
     getNewPeriodEntries(session.userId),
     getNewPeriodPlans(session.userId),
     getNewCycleProfile(session.userId),
+    getPmsSymptomDays(session.userId),
   ]);
 
   if (periodEntries.length === 0 && !session.periodHistoryOnboardingSkipped) {
@@ -73,6 +75,7 @@ export default async function NewAppPage() {
           prediction={prediction}
           personalCycleView={personalCycleView}
           cycleProfile={profile}
+          initialPmsSymptomDays={pmsSymptomDays}
         />
       </section>
     </main>

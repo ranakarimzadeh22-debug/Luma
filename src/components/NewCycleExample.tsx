@@ -11,8 +11,18 @@ import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
+import { deriveManualPmsSection, applyManualPmsOverride, manualPmsSymptomsForDate, isWithinManualPmsSection } from "@/lib/manual-pms";
+import type { PmsSymptomDay } from "@/lib/new-pms-symptoms";
+import { PMS_SYMPTOMS, type PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CyclePersonalRing from "@/components/CyclePersonalRing";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
+
+export const PMS_SYMPTOM_LABELS: Record<PmsSymptom, string> = {
+  breast_tenderness: "Brustschmerzen/-spannen",
+  abdominal_pain: "Unterleibsschmerzen",
+  fatigue: "Müdigkeit",
+  mood_swings: "Stimmungsschwankungen",
+};
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -56,6 +66,7 @@ interface NewCycleExampleProps {
   prediction: CyclePrediction | null;
   personalCycleView: PersonalCycleView;
   cycleProfile: NewCycleProfileInput | null;
+  initialPmsSymptomDays: PmsSymptomDay[];
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -539,6 +550,8 @@ interface DayDetailModalProps {
   onEnd: () => void;
   onRequestDeleteEdge: () => void;
   onClose: () => void;
+  selectedSymptoms: PmsSymptom[];
+  onSaveSymptoms: (symptoms: PmsSymptom[]) => void;
 }
 
 function formatFullGermanDate(date: string): string {
@@ -562,7 +575,15 @@ function DayDetailModal({
   onEnd,
   onRequestDeleteEdge,
   onClose,
+  selectedSymptoms,
+  onSaveSymptoms,
 }: DayDetailModalProps) {
+  const [draftSymptoms, setDraftSymptoms] = useState<PmsSymptom[]>(selectedSymptoms);
+
+  useEffect(() => {
+    setDraftSymptoms(selectedSymptoms);
+  }, [date, selectedSymptoms]);
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -570,6 +591,15 @@ function DayDetailModal({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+
+  function toggleSymptom(symptom: PmsSymptom) {
+    setDraftSymptoms((current) =>
+      current.includes(symptom) ? current.filter((value) => value !== symptom) : [...current, symptom],
+    );
+  }
+
+  const symptomsChanged =
+    draftSymptoms.length !== selectedSymptoms.length || draftSymptoms.some((value) => !selectedSymptoms.includes(value));
 
   return (
     <div
@@ -597,6 +627,31 @@ function DayDetailModal({
             {error}
           </p>
         )}
+        <div className="mt-5 text-left">
+          <p className="text-sm font-semibold text-[#28101f]">PMS-Symptome an diesem Tag</p>
+          <p className="mt-1 text-xs text-[#6b5560]">Deine eigene Angabe, keine medizinische Diagnose.</p>
+          <div className="mt-2.5 flex flex-col gap-2">
+            {PMS_SYMPTOMS.map((symptom) => (
+              <label key={symptom} className="flex items-center gap-2.5 text-sm text-[#382631]">
+                <input
+                  type="checkbox"
+                  checked={draftSymptoms.includes(symptom)}
+                  onChange={() => toggleSymptom(symptom)}
+                  className="size-4 rounded border-[#d8afbd] text-[#6d153f] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+                />
+                {PMS_SYMPTOM_LABELS[symptom]}
+              </label>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={isSaving || !symptomsChanged}
+            onClick={() => onSaveSymptoms(draftSymptoms)}
+            className="mt-3 w-full rounded-xl bg-[#6d153f] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {isSaving ? "Wird gespeichert …" : "Symptome speichern"}
+          </button>
+        </div>
         <div className="mt-4 flex flex-col gap-2.5">
           {actions.canBegin && (
             <button
@@ -799,7 +854,7 @@ function TodayCard({ personalCycleView }: { personalCycleView: PersonalCycleView
   );
 }
 
-export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile }: NewCycleExampleProps) {
+export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile, initialPmsSymptomDays }: NewCycleExampleProps) {
   const router = useRouter();
   const [todayKey] = useState(() => todayBerlinDateOnly());
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
@@ -809,6 +864,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [isCalendarLegendOpen, setIsCalendarLegendOpen] = useState(false);
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
+  const [pmsSymptomDays, setPmsSymptomDays] = useState(initialPmsSymptomDays);
+  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays);
   const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
@@ -894,6 +951,25 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     setSelectedDayDetail(null);
     setDayActionError("");
     setPendingDeleteEdge(null);
+  }
+
+  async function saveManualPmsSymptoms(date: string, symptoms: PmsSymptom[]) {
+    setIsSavingDayAction(true);
+    setDayActionError("");
+    const response = await fetch("/api/neu/pms-symptoms", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ date, symptoms }),
+    }).catch(() => null);
+    const result = (await response?.json().catch(() => null)) as { day?: PmsSymptomDay; error?: string } | null;
+    setIsSavingDayAction(false);
+    if (!response?.ok || !result?.day) {
+      setDayActionError(result?.error || "Die Symptome konnten nicht gespeichert werden.");
+      return;
+    }
+    setPmsSymptomDays((current) => [...current.filter((day) => day.date !== date), result.day as PmsSymptomDay].filter((day) => day.symptoms.length > 0));
+    showActionToast(symptoms.length > 0 ? "Gespeichert." : "Gelöscht.");
+    router.refresh();
   }
 
   async function beginPeriodAtSelectedDay() {
@@ -995,13 +1071,18 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     router.refresh();
   }
 
+  const isManualPmsToday = isWithinManualPmsSection(manualPmsSection, todayKey);
+  const displayedPersonalCycleView: PersonalCycleView = isManualPmsToday
+    ? { ...personalCycleView, todayPhase: "pms", isEstimate: false }
+    : personalCycleView;
+
   return (
     <>
     <div
       className="space-y-9 sm:space-y-10"
       inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
-      <TodayCard personalCycleView={personalCycleView} />
+      <TodayCard personalCycleView={displayedPersonalCycleView} />
 
       <section
         aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}
@@ -1009,7 +1090,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       >
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
-        <CyclePersonalRing personalCycleView={personalCycleView} today={todayKey} />
+        <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} />
+        {isManualPmsToday && (
+          <p className="text-center text-xs font-medium text-[#6d153f]">
+            Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
+          </p>
+        )}
         {personalCycleView.status === "no_data" && periods.length > 0 && (
           <div className="flex justify-center">
             <button
@@ -1054,14 +1140,16 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const date = day
               ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day)
               : null;
-            const phase = day
+            const estimatedPhase = day
               ? prediction
                 ? primaryCalendarPhase(date as string, prediction)
                 : isExampleMonth
                   ? examplePhase(day)
                   : null
               : null;
-            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date, prediction), phase));
+            const phase = date ? applyManualPmsOverride(estimatedPhase, manualPmsSection, date) : estimatedPhase;
+            const isManualPmsDay = Boolean(date && isWithinManualPmsSection(manualPmsSection, date));
+            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date, prediction), estimatedPhase));
             const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const storedPeriod = date
               ? periods.find((entry) => entry.endDate !== null && entry.startDate <= date && entry.endDate >= date)
@@ -1089,7 +1177,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   hasRunningPeriod: Boolean(runningPeriod),
                   hasExpectedEnd: Boolean(expectedPeriod),
                   hasPlannedPeriod: Boolean(plannedPeriod),
-                  phase: prediction ? primaryCalendarPhase(date, prediction) : null,
+                  phase,
                 })
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
@@ -1109,7 +1197,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
             const dayAriaLabel = date
-              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
+              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isManualPmsDay ? ", PMS von dir eingetragen" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
               : "";
             const dayChildren = (
               <>
@@ -1121,9 +1209,15 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && (
                   <span
                     className="absolute right-1 top-0.5 text-[9px] font-bold"
-                    aria-label={phase === "period" ? "Geschätzte nächste Periode, kann abweichen" : phaseLabels[phase]}
+                    aria-label={
+                      isManualPmsDay
+                        ? "PMS von dir eingetragen"
+                        : phase === "period"
+                          ? "Geschätzte nächste Periode, kann abweichen"
+                          : phaseLabels[phase]
+                    }
                   >
-                    {phase === "period" ? "Gsch." : phaseLetters[phase]}
+                    {isManualPmsDay ? "M·Du" : phase === "period" ? "Gsch." : phaseLetters[phase]}
                   </span>
                 )}
                 {isToday && (
@@ -1220,6 +1314,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
                 Mögliches fruchtbares Zeitfenster – kann abweichen
               </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="grid size-3 place-items-center rounded-full bg-[#f8c2d0] text-[6px] font-bold text-[#9f164f]" aria-hidden="true">M</span>
+                PMS von dir eingetragen (M·Du) – deine eigene Angabe
+              </span>
             </div>
 
             <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
@@ -1290,6 +1388,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     {selectedDayDetail && !pendingDeleteEdge && (() => {
       const actions = getPeriodDayActions(selectedDayDetail.date, todayKey, periods);
       const isMiddleConfirmedDay = selectedDayDetail.periodDay !== null && !actions.deletableEdge && !actions.runningEntryToEnd;
+      const currentSymptoms = pmsSymptomDays.find((day) => day.date === selectedDayDetail.date)?.symptoms ?? [];
       return (
         <DayDetailModal
           date={selectedDayDetail.date}
@@ -1303,6 +1402,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           onEnd={() => actions.runningEntryToEnd && endPeriodAtSelectedDay(actions.runningEntryToEnd)}
           onRequestDeleteEdge={() => actions.deletableEdge && requestDeleteEdge(actions.deletableEdge)}
           onClose={closeDayDetail}
+          selectedSymptoms={currentSymptoms}
+          onSaveSymptoms={(symptoms) => saveManualPmsSymptoms(selectedDayDetail.date, symptoms)}
         />
       );
     })()}

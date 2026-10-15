@@ -5,6 +5,8 @@ import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { computePersonalCycleView, type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
+import { getPmsSymptomDays } from "@/lib/new-pms-symptoms";
+import { deriveManualPmsSection, isWithinManualPmsSection } from "@/lib/manual-pms";
 
 export interface PartnerCycleView {
   personalCycleView: PersonalCycleView;
@@ -28,13 +30,18 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
   const ownerUserId = await resolveActiveConnectionOwner(partnerUserId);
   if (!ownerUserId) return null;
 
-  const [periods, profile] = await Promise.all([
+  const [periods, profile, pmsSymptomDays] = await Promise.all([
     getNewPeriodEntries(ownerUserId),
     getNewCycleProfile(ownerUserId),
+    getPmsSymptomDays(ownerUserId),
   ]);
 
   const today = todayBerlinDateOnly();
-  const personalCycleView = computePersonalCycleView(periods, profile, today);
+  const computedView = computePersonalCycleView(periods, profile, today);
+  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays);
+  const personalCycleView: PersonalCycleView = isWithinManualPmsSection(manualPmsSection, today)
+    ? { ...computedView, todayPhase: "pms", isEstimate: false }
+    : computedView;
   const runningEntry = periods.find((entry) => entry.endDate === null && entry.startDate <= today);
 
   return {

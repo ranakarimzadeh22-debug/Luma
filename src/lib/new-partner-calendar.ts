@@ -5,6 +5,8 @@ import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { predictCycle, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { getLumaCorePool } from "@/lib/new-auth-db";
+import { getPmsSymptomDays } from "@/lib/new-pms-symptoms";
+import { deriveManualPmsSection, type ManualPmsSection } from "@/lib/manual-pms";
 
 export interface PartnerCalendarView {
   confirmedDates: string[];
@@ -17,6 +19,12 @@ export interface PartnerCalendarView {
    * so there is no second, divergent prediction calculation.
    */
   prediction: CyclePrediction | null;
+  /**
+   * WP-013: the owner's manually marked PMS section (dates + the four
+   * symptom texts only), derived with the exact same deriveManualPmsSection()
+   * the owner's own view uses. Read-only; the partner can never write it.
+   */
+  manualPmsSection: ManualPmsSection | null;
 }
 
 function addDays(date: string, days: number): string {
@@ -53,9 +61,10 @@ export async function getPartnerCalendarView(partnerUserId: string): Promise<Par
   if (!ownerUserId) return null;
 
   const today = todayBerlinDateOnly();
-  const [entries, profile] = await Promise.all([
+  const [entries, profile, pmsSymptomDays] = await Promise.all([
     getNewPeriodEntries(ownerUserId),
     getNewCycleProfile(ownerUserId),
+    getPmsSymptomDays(ownerUserId),
   ]);
 
   const confirmedDates = new Set<string>();
@@ -76,10 +85,12 @@ export async function getPartnerCalendarView(partnerUserId: string): Promise<Par
   }
 
   const prediction = predictCycle(entries, profile, today);
+  const manualPmsSection = deriveManualPmsSection(entries, pmsSymptomDays);
 
   return {
     confirmedDates: [...confirmedDates].sort(),
     prediction,
+    manualPmsSection,
   };
 }
 
