@@ -219,4 +219,4 @@ Die Ownerin hatte nach der ersten Korrektur gemeldet, dass manuelles PMS nach ei
 - **offene Punkte:**
   - Owner-Prüfschritt steht weiterhin aus (siehe oben, unverändert). Zusätzlich sinnvoll zu prüfen: eine heutige Markierung zeigt manuelles PMS nicht mehr über den vorhergesagten nächsten Periodenbeginn hinaus.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit (Korrektur Version 2):** wird nach dem Commit ergänzt.
+- **Commit (Korrektur Version 2):** 1399424.

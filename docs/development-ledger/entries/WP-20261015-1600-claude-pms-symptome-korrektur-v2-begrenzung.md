@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 1399424
 ---
 
 # Korrektur Version 2: manuelles PMS begrenzt darstellen (WP-013)
@@ -40,4 +40,4 @@ Codex prüft die Korrektur Version 2 gegen die gemeldete, zu breite Darstellung.
 
 - Betroffene Dateien: `src/lib/manual-pms.ts`, `src/components/NewCycleExample.tsx`, `src/lib/new-partner-calendar.ts`, `src/lib/new-partner-cycle-view.ts`, `tests/manual-pms.test.ts`, `scripts/verify-manual-pms-symptom-ui.ts`, `scripts/verify-manual-pms-prediction-isolation.ts`, `docs/work-packages/WP-013-pms-symptome-manuell-markieren.md`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: 1399424.
