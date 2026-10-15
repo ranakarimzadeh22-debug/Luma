@@ -173,7 +173,7 @@ Codex hat vor der Owner-Abnahme eine Lücke gemeldet (siehe „Soll-Ist-Prüfung
 - **offene Punkte:**
   - Owner-Prüfschritt steht weiterhin aus (siehe oben, unverändert: Symptome auf `/neu` markieren, Kalender/Kreis prüfen, Partneransicht prüfen, Entfernen prüfen). Zusätzlich sinnvoll zu prüfen: eine Markierung auf einem echten Periodentag zeigt dort kein PMS.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit (Korrektur):** wird nach dem Commit ergänzt.
+- **Commit (Korrektur):** b9ea726.
 
 ## Soll-Ist-Prüfung – von Codex
 

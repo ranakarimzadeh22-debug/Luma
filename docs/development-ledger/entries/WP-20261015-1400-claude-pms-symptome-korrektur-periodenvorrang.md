@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Fehlernachweis
-commits: pending
+commits: b9ea726
 ---
 
 # Korrektur: echte Periodendaten haben immer Vorrang vor manuellem PMS (WP-013)
@@ -41,4 +41,4 @@ Codex prüft die Korrektur gegen die gemeldete Lücke. Danach Owner-Abnahme.
 
 - Betroffene Dateien: `src/lib/manual-pms.ts`, `src/components/NewCycleExample.tsx`, `src/lib/new-partner-calendar.ts`, `src/lib/new-partner-cycle-view.ts`, `src/components/NewPartnerCalendar.tsx`, `src/app/neu/partner/page.tsx`, `tests/manual-pms.test.ts`, `scripts/verify-manual-pms-symptom-ui.ts`, `scripts/verify-manual-pms-prediction-isolation.ts`, `docs/work-packages/WP-013-pms-symptome-manuell-markieren.md`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: b9ea726.
