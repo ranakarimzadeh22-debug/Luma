@@ -25,6 +25,15 @@ export interface PartnerCalendarView {
    * the owner's own view uses. Read-only; the partner can never write it.
    */
   manualPmsSection: ManualPmsSection | null;
+  /**
+   * WP-013 correction: the minimal real-period date boundaries (start/end
+   * only, no IDs) needed so the partner UI can call isWithinManualPmsSection()/
+   * applyManualPmsOverride() with the same "real period always wins" guard
+   * the owner's own view uses — never a second, divergent period source.
+   */
+  periods: { startDate: string; endDate: string | null }[];
+  /** The same today the prediction/manual section were derived against. */
+  today: string;
 }
 
 function addDays(date: string, days: number): string {
@@ -85,12 +94,14 @@ export async function getPartnerCalendarView(partnerUserId: string): Promise<Par
   }
 
   const prediction = predictCycle(entries, profile, today);
-  const manualPmsSection = deriveManualPmsSection(entries, pmsSymptomDays);
+  const manualPmsSection = deriveManualPmsSection(entries, pmsSymptomDays, today);
 
   return {
     confirmedDates: [...confirmedDates].sort(),
     prediction,
     manualPmsSection,
+    periods: entries.map((entry) => ({ startDate: entry.startDate, endDate: entry.endDate })),
+    today,
   };
 }
 

@@ -27,7 +27,7 @@ const today = "2026-10-10";
 console.log("\n== WP-013: predictCycle bleibt bytegleich, unabhaengig von PMS-Symptommarkierungen ==");
 {
   const before = predictCycle(periods, profile, today);
-  const section = deriveManualPmsSection(periods, [{ date: "2026-10-05", symptoms: ["fatigue", "mood_swings"] }]);
+  const section = deriveManualPmsSection(periods, [{ date: "2026-10-05", symptoms: ["fatigue", "mood_swings"] }], today);
   assert(section !== null, "ein manueller PMS-Abschnitt wurde aus Symptommarkierungen abgeleitet");
   const after = predictCycle(periods, profile, today);
   assertDeepEqual(before, after, "predictCycle() liefert vor und nach dem Ableiten des manuellen Abschnitts identische Werte");
@@ -36,7 +36,7 @@ console.log("\n== WP-013: predictCycle bleibt bytegleich, unabhaengig von PMS-Sy
 console.log("\n== WP-013: computePersonalCycleView bleibt bytegleich, unabhaengig von PMS-Symptommarkierungen ==");
 {
   const before = computePersonalCycleView(periods, { cycleLengthDays: 28 }, today);
-  const section = deriveManualPmsSection(periods, [{ date: "2026-10-05", symptoms: ["fatigue"] }]);
+  const section = deriveManualPmsSection(periods, [{ date: "2026-10-05", symptoms: ["fatigue"] }], today);
   assert(section !== null, "ein manueller PMS-Abschnitt wurde aus Symptommarkierungen abgeleitet");
   const after = computePersonalCycleView(periods, { cycleLengthDays: 28 }, today);
   assertDeepEqual(before, after, "computePersonalCycleView() liefert vor und nach dem Ableiten des manuellen Abschnitts identische Werte");

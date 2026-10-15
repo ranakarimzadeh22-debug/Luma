@@ -65,7 +65,9 @@ export default async function NewPartnerPage() {
               runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
               today={todayBerlinDateOnly()}
               manualPmsSymptoms={
-                calendarView ? manualPmsSymptomsForDate(calendarView.manualPmsSection, todayBerlinDateOnly()) : []
+                calendarView
+                  ? manualPmsSymptomsForDate(calendarView.manualPmsSection, calendarView.today, calendarView.periods, calendarView.today)
+                  : []
               }
             />
           )}
@@ -74,6 +76,8 @@ export default async function NewPartnerPage() {
               confirmedDates={calendarView.confirmedDates}
               prediction={calendarView.prediction}
               manualPmsSection={calendarView.manualPmsSection}
+              periods={calendarView.periods}
+              today={calendarView.today}
             />
           ) : (
             <p className="text-sm leading-6 text-neutral-600">Keine freigegebene Information.</p>

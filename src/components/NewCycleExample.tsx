@@ -865,7 +865,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
   const [pmsSymptomDays, setPmsSymptomDays] = useState(initialPmsSymptomDays);
-  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays);
+  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, todayKey);
   const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
@@ -1071,7 +1071,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     router.refresh();
   }
 
-  const isManualPmsToday = isWithinManualPmsSection(manualPmsSection, todayKey);
+  const isManualPmsToday = isWithinManualPmsSection(manualPmsSection, todayKey, periods, todayKey);
   const displayedPersonalCycleView: PersonalCycleView = isManualPmsToday
     ? { ...personalCycleView, todayPhase: "pms", isEstimate: false }
     : personalCycleView;
@@ -1093,7 +1093,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} />
         {isManualPmsToday && (
           <p className="text-center text-xs font-medium text-[#6d153f]">
-            Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
+            Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey, periods, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
           </p>
         )}
         {personalCycleView.status === "no_data" && periods.length > 0 && (
@@ -1147,8 +1147,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   ? examplePhase(day)
                   : null
               : null;
-            const phase = date ? applyManualPmsOverride(estimatedPhase, manualPmsSection, date) : estimatedPhase;
-            const isManualPmsDay = Boolean(date && isWithinManualPmsSection(manualPmsSection, date));
+            const phase = date ? applyManualPmsOverride(estimatedPhase, manualPmsSection, date, periods, todayKey) : estimatedPhase;
+            const isManualPmsDay = Boolean(date && isWithinManualPmsSection(manualPmsSection, date, periods, todayKey));
             const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date, prediction), estimatedPhase));
             const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const storedPeriod = date

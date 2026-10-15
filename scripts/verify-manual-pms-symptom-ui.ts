@@ -63,10 +63,44 @@ console.log("\n== WP-013: authentifizierte, CSRF-geschützte API-Route ohne öff
 
 console.log("\n== WP-013: manueller PMS-Status hat Vorrang vor der Schätzung, überschreibt aber nie echte Periodentage ==");
 {
-  assert(component.includes("applyManualPmsOverride(estimatedPhase, manualPmsSection, date)"), "der Kalender wendet die Übersteuerung auf die Schätzung an, nicht umgekehrt");
+  assert(
+    component.includes("applyManualPmsOverride(estimatedPhase, manualPmsSection, date, periods, todayKey)"),
+    "der Kalender wendet die Übersteuerung auf die Schätzung an und übergibt die echten Perioden zur Absicherung",
+  );
   const phaseAssignment = component.match(/const dayClassName = `relative grid[\s\S]*?\$\{\s*storedPeriod \|\| runningPeriod[\s\S]*?: phase/);
   assert(Boolean(phaseAssignment), "storedPeriod/runningPeriod bleiben in der Darstellungspriorität vor der (ggf. übersteuerten) Phase");
-  assert(component.includes("isManualPmsToday = isWithinManualPmsSection(manualPmsSection, todayKey)"), "der Zyklus-Kreis nutzt denselben Abschnitt für den heutigen Tag");
+  assert(
+    component.includes("isManualPmsToday = isWithinManualPmsSection(manualPmsSection, todayKey, periods, todayKey)"),
+    "der Zyklus-Kreis nutzt denselben Abschnitt für den heutigen Tag und übergibt die echten Perioden zur Absicherung",
+  );
+}
+
+console.log("\n== WP-013-Korrektur: echte Periodentage haben strukturellen Vorrang, nicht nur per Rendering-Reihenfolge ==");
+{
+  const manualPms = read("src/lib/manual-pms.ts");
+  assert(
+    manualPms.includes("function isRealPeriodDay(") && manualPms.includes("isRealPeriodDay(periods, date, today)"),
+    "manual-pms.ts prüft in isWithinManualPmsSection selbst, ob ein Datum ein echter Periodentag ist",
+  );
+  const isWithinBlock = manualPms.slice(manualPms.indexOf("export function isWithinManualPmsSection"), manualPms.indexOf("export function manualPmsSymptomsForDate"));
+  assert(isWithinBlock.includes("if (isRealPeriodDay(periods, date, today)) return false;"), "isWithinManualPmsSection gibt bei einem echten Periodentag immer false zurück, unabhängig vom Aufrufer");
+  assert(
+    manualPms.includes("function firstDayAfterLatestPeriod(") && manualPms.includes("addDays(latestEnd, 1)"),
+    "deriveManualPmsSection lässt den Abschnitt frühestens am Tag nach dem echten Ende der letzten Periode beginnen (nicht ab deren Start)",
+  );
+  assert(
+    manualPms.includes("const latestEnd = latest.endDate ?? today;"),
+    "eine laufende Periode (ohne echtes Ende) gilt bis einschließlich heute als blockierend – PMS kann nicht vor ihrem Ende beginnen",
+  );
+  assert(
+    component.includes("isWithinManualPmsSection(manualPmsSection, date, periods, todayKey)"),
+    "die Kalender-Markerkennzeichnung (aria-label/M·Du) nutzt dieselbe periodenabgesicherte Prüfung",
+  );
+  const newPartnerCycleView = read("src/lib/new-partner-cycle-view.ts");
+  assert(
+    newPartnerCycleView.includes("isWithinManualPmsSection(manualPmsSection, today, periods, today)"),
+    "die Partner-Zyklus-Kreis-Ableitung übergibt ebenfalls die echten Perioden zur Absicherung (derselbe Fehler, der im Soll-Ist-Abgleich gemeldet wurde)",
+  );
 }
 
 console.log("\n== WP-013: keine neue API-Route, keine Daten-/Berechnungsänderung an predictCycle/computePersonalCycleView ==");

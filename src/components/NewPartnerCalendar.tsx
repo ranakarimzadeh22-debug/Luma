@@ -23,6 +23,8 @@ interface NewPartnerCalendarProps {
   confirmedDates: string[];
   prediction: CyclePrediction | null;
   manualPmsSection: ManualPmsSection | null;
+  periods: { startDate: string; endDate: string | null }[];
+  today: string;
 }
 
 function dateForCalendarDay(year: number, month: number, day: number): string {
@@ -114,7 +116,7 @@ function DayDetailModal({ date, status, isFertile, isUncertain, manualSymptoms, 
   );
 }
 
-export default function NewPartnerCalendar({ confirmedDates, prediction, manualPmsSection }: NewPartnerCalendarProps) {
+export default function NewPartnerCalendar({ confirmedDates, prediction, manualPmsSection, periods, today }: NewPartnerCalendarProps) {
   const [todayKey] = useState(() => todayBerlinDateOnly());
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
   const [displayedMonth, setDisplayedMonth] = useState({ year: todayYear, month: todayMonthIndex - 1 });
@@ -134,7 +136,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
 
   function primaryStatusFor(date: string): PrimaryDayStatus {
     if (confirmedSet.has(date)) return "confirmed";
-    if (isWithinManualPmsSection(manualPmsSection, date)) return "pms-manual";
+    if (isWithinManualPmsSection(manualPmsSection, date, periods, today)) return "pms-manual";
     if (!prediction) return "none";
     const phase = primaryCalendarPhase(date, prediction);
     return phase ?? "none";
@@ -288,7 +290,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
         status={selectedDay.status}
         isFertile={selectedDay.isFertile}
         isUncertain={Boolean(prediction?.isUncertain)}
-        manualSymptoms={manualPmsSymptomsForDate(manualPmsSection, selectedDay.date)}
+        manualSymptoms={manualPmsSymptomsForDate(manualPmsSection, selectedDay.date, periods, today)}
         onClose={() => setSelectedDay(null)}
       />
     )}

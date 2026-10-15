@@ -38,8 +38,8 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
 
   const today = todayBerlinDateOnly();
   const computedView = computePersonalCycleView(periods, profile, today);
-  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays);
-  const personalCycleView: PersonalCycleView = isWithinManualPmsSection(manualPmsSection, today)
+  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, today);
+  const personalCycleView: PersonalCycleView = isWithinManualPmsSection(manualPmsSection, today, periods, today)
     ? { ...computedView, todayPhase: "pms", isEstimate: false }
     : computedView;
   const runningEntry = periods.find((entry) => entry.endDate === null && entry.startDate <= today);
