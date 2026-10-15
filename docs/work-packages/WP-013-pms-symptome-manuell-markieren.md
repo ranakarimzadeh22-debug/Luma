@@ -148,7 +148,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnötige Schritt
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: Auf `/neu` einen heutigen oder vergangenen Tag öffnen, `Brustschmerzen/-spannen` und `Müdigkeit` markieren und speichern; prüfen, dass PMS ab diesem Tag auf Kalender und Kreis sichtbar ist; anschließend dieselbe Verbindung auf `/neu/partner` öffnen und dort dieselben zwei Symptome rein lesend sehen; einen Eintrag wieder entfernen und die Aktualisierung prüfen.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** wird nach dem Commit ergänzt.
+- **Commit:** f399101.
 
 ## Soll-Ist-Prüfung – von Codex
 

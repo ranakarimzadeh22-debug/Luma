@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: f399101
 ---
 
 # PMS-Symptome manuell markieren und im Partnerbereich anzeigen (WP-013)
@@ -40,4 +40,4 @@ Owner prüft `/neu` und `/neu/partner` wie im Prüfschritt beschrieben. Danach S
 
 - Betroffene Dateien: `database/luma-core/migrations/202610151200_pms_symptom_entries.sql`, `src/lib/new-pms-symptom-validation.ts`, `src/lib/new-pms-symptoms.ts`, `src/lib/manual-pms.ts`, `src/app/api/neu/pms-symptoms/route.ts`, `src/app/neu/page.tsx`, `src/components/NewCycleExample.tsx`, `src/lib/new-partner-calendar.ts`, `src/lib/new-partner-cycle-view.ts`, `src/app/neu/partner/page.tsx`, `src/components/NewPartnerCalendar.tsx`, `src/components/NewPartnerCycleRing.tsx`, `scripts/verify-luma-core.mjs`, `scripts/verify-home-screen-layout.ts`, `tests/new-pms-symptom-validation.test.ts`, `tests/manual-pms.test.ts`, `scripts/verify-manual-pms-prediction-isolation.ts`, `scripts/verify-manual-pms-symptom-ui.ts`, `scripts/verify-partner-pms-symptoms.mts`, `docs/work-packages/WP-013-pms-symptome-manuell-markieren.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, Migration + `verify-luma-core.mjs`, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: f399101.
