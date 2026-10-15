@@ -1,9 +1,9 @@
 ---
 id: WP-011
 title: "Anmeldung und Registrierung ruhig vereinheitlichen"
-status: review
+status: completed
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 owner_approved: yes
 executor: claude
 product_area: "Neue Luma – Anmeldung und Registrierung"
@@ -113,7 +113,7 @@ Dieser Abschnitt beschreibt technische Leitplanken, aber keine unnoetige Schritt
   - Kein neues Testkonto wurde angelegt; die Datenbank wurde durch diese Prüfung nicht verändert.
 - **Abweichungen:** keine fachliche Abweichung. Keine Code-Änderung war nötig, da beide Seiten bereits vollständig konsistent sind – das ist das erwartete Ergebnis bei einem „nur bei echter Uneinheitlichkeit anpassen“-Auftrag, keine unvollständige Umsetzung.
 - **offene Punkte:**
-  - Owner-Prüfschritt steht aus: Beide Seiten nacheinander öffnen, die Links zwischen Anmeldung und Registrierung prüfen und jeweils eine harmlose Fehleingabe ausprobieren, ohne ein neues Konto zu erzeugen.
+  - Keine. Owner hat die Prüfung am 2026-10-15 bestätigt und akzeptiert.
   - Kein Deploy ausgelöst – wie beauftragt.
 - **Commit:** b27c695 (Dokumentation; keine Quelltextänderung).
 
