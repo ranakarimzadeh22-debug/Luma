@@ -22,7 +22,7 @@ test("keine Symptommarkierungen ergeben keinen manuellen PMS-Abschnitt", () => {
   assert.equal(section, null);
 });
 
-test("die erste Markierung nach dem echten Ende der letzten Periode eröffnet den Abschnitt", () => {
+test("die erste Markierung nach dem echten Ende der letzten Periode eröffnet den Abschnitt und reicht ohne Vorhersage nur bis heute", () => {
   const periods = [period("2026-09-01", "2026-09-05")];
   const symptomDays = [
     symptomDay("2026-09-10", ["fatigue"]),
@@ -30,7 +30,7 @@ test("die erste Markierung nach dem echten Ende der letzten Periode eröffnet de
   ];
   const section = deriveManualPmsSection(periods, symptomDays, "2026-09-15");
   assert.equal(section?.startDate, "2026-09-10");
-  assert.equal(section?.endDate, null);
+  assert.equal(section?.endDate, "2026-09-15");
 });
 
 test("eine Markierung vor dem Ende der letzten Periode (aus einem früheren Zyklus) zählt nicht", () => {
@@ -59,23 +59,30 @@ test("eine Markierung vor dem nächsten echten Periodenbeginn eröffnet den Absc
   assert.equal(section, null);
 });
 
-test("der tatsächliche Start der nächsten (noch zukünftigen) Periode beendet den offenen manuellen PMS-Status", () => {
-  const periods = [period("2026-09-01", "2026-09-05")];
+test("eine real gespeicherte spätere Periode wird selbst zur letzten Periode und eröffnet den Abschnitt erst nach deren eigenem Ende neu", () => {
+  // Eine frühere Markierung (20.09.) liegt vor der inzwischen real
+  // gespeicherten späteren Periode (20.10.-24.10.) und zählt daher nicht
+  // mehr zum aktuellen, auf die letzte Periode bezogenen Abschnitt.
+  const periods = [period("2026-09-01", "2026-09-05"), period("2026-10-20", "2026-10-24")];
   const symptomDays = [symptomDay("2026-09-20", ["fatigue"])];
-  const section = deriveManualPmsSection(periods, symptomDays, "2026-09-25");
-  assert.equal(section?.startDate, "2026-09-20");
-  assert.equal(section?.endDate, null);
-  assert.equal(isWithinManualPmsSection(section, "2026-12-31", periods, "2026-12-31"), true);
+  const section = deriveManualPmsSection(periods, symptomDays, "2026-10-30");
+  assert.equal(section, null);
+
+  // Eine neue Markierung NACH dem echten Ende der nun letzten Periode
+  // eröffnet dagegen korrekt einen neuen Abschnitt.
+  const symptomDaysAfter = [symptomDay("2026-10-26", ["fatigue"])];
+  const sectionAfter = deriveManualPmsSection(periods, symptomDaysAfter, "2026-10-30");
+  assert.equal(sectionAfter?.startDate, "2026-10-26");
+  assert.equal(sectionAfter?.endDate, "2026-10-30");
 });
 
-test("ein offener Abschnitt endet am Vortag, sobald die nächste Periode tatsächlich beginnt und gespeichert wird", () => {
-  // Zuerst nur die bisherige Periode und eine Markierung danach: der
-  // Abschnitt ist offen (kein Enddatum).
+test("ohne eine real gespeicherte nächste Periode reicht der Abschnitt ohne Vorhersage nur bis heute, nie in die Zukunft", () => {
   const periodsBefore = [period("2026-09-01", "2026-09-05")];
   const symptomDays = [symptomDay("2026-09-20", ["fatigue"])];
   const openSection = deriveManualPmsSection(periodsBefore, symptomDays, "2026-09-25");
   assert.equal(openSection?.startDate, "2026-09-20");
-  assert.equal(openSection?.endDate, null);
+  assert.equal(openSection?.endDate, "2026-09-25");
+  assert.equal(isWithinManualPmsSection(openSection, "2026-09-26", periodsBefore, "2026-09-25"), false);
 
   // Die nächste Periode beginnt tatsächlich (wird real gespeichert, startet
   // nach der Markierung) und wird dadurch selbst zum "letzten" Periodenstart.
@@ -192,7 +199,61 @@ test("der Zyklus-Kreis/Kalender-Override ist am laufenden Periodentag selbst ste
   // kein Abschnitt entstehen, siehe Test oben – hier wird zusätzlich geprüft,
   // dass selbst ein hypothetisch vorhandener Abschnitt den laufenden
   // Periodentag nicht überschreiben dürfte.
-  const hypotheticalSection = { startDate: "2026-09-01", endDate: null, daysBySymptom: new Map([["2026-09-03", ["fatigue"] as PmsSymptom[]]]) };
+  const hypotheticalSection = { startDate: "2026-09-01", endDate: "2026-09-04", daysBySymptom: new Map([["2026-09-03", ["fatigue"] as PmsSymptom[]]]) };
   assert.equal(isWithinManualPmsSection(hypotheticalSection, "2026-09-03", runningPeriod, "2026-09-04"), false);
   assert.equal(applyManualPmsOverride("period", hypotheticalSection, "2026-09-03", runningPeriod, "2026-09-04"), "period");
+});
+
+console.log("\n== Korrektur Version 2: manuelles PMS begrenzt darstellen (nie unbegrenzt in die Zukunft) ==");
+
+test("mit einer heutigen Markierung und einer in einer Woche erwarteten Periode endet PMS am Tag vor dem erwarteten Beginn", () => {
+  const periods = [period("2026-09-01", "2026-09-05")];
+  const symptomDays = [symptomDay("2026-10-08", ["fatigue"])];
+  const predictedNextPeriodStart = "2026-10-15";
+  const section = deriveManualPmsSection(periods, symptomDays, "2026-10-08", predictedNextPeriodStart);
+  assert.equal(section?.startDate, "2026-10-08");
+  assert.equal(section?.endDate, "2026-10-14");
+  assert.equal(isWithinManualPmsSection(section, "2026-10-14", periods, "2026-10-14"), true);
+  assert.equal(isWithinManualPmsSection(section, "2026-10-15", periods, "2026-10-15"), false);
+});
+
+test("mit einem bereits überschrittenen erwarteten Beginn ohne tatsächliche neue Periode reicht manuelles PMS höchstens bis heute", () => {
+  const periods = [period("2026-09-01", "2026-09-05")];
+  const symptomDays = [symptomDay("2026-10-08", ["fatigue"])];
+  // Die Vorhersage (10.10.) liegt bereits in der Vergangenheit relativ zu "heute" (20.10.).
+  const predictedNextPeriodStart = "2026-10-10";
+  const section = deriveManualPmsSection(periods, symptomDays, "2026-10-20", predictedNextPeriodStart);
+  assert.equal(section?.startDate, "2026-10-08");
+  assert.equal(section?.endDate, "2026-10-20");
+  assert.equal(isWithinManualPmsSection(section, "2026-10-20", periods, "2026-10-20"), true);
+  assert.equal(isWithinManualPmsSection(section, "2026-10-21", periods, "2026-10-21"), false);
+});
+
+test("eine tatsächliche neue Periode beendet manuelles PMS sofort, auch wenn die Vorhersage einen späteren Termin nannte", () => {
+  const periodsBefore = [period("2026-09-01", "2026-09-05")];
+  const symptomDays = [symptomDay("2026-10-08", ["fatigue"])];
+  // Zunächst, ohne die neue Periode, ist der Abschnitt offen und reicht laut
+  // Vorhersage (veraltete Annahme: nächste Periode erst am 15.10.) bis zum 14.10.
+  const predictedNextPeriodStart = "2026-10-15";
+  const sectionBefore = deriveManualPmsSection(periodsBefore, symptomDays, "2026-10-10", predictedNextPeriodStart);
+  assert.equal(sectionBefore?.endDate, "2026-10-14");
+  assert.equal(isWithinManualPmsSection(sectionBefore, "2026-10-10", periodsBefore, "2026-10-10"), true);
+
+  // Die tatsächliche Periode beginnt dann schon früher, am 12.10. (vor der
+  // Vorhersage) und wird real gespeichert. Ab sofort ist der 12.10. ein
+  // echter Periodentag und hat Vorrang; der alte, auf die Vorhersage
+  // gestützte Abschnitt existiert mangels einer Markierung nach dem echten
+  // Periodenende nicht mehr.
+  const periodsAfter = [period("2026-09-01", "2026-09-05"), period("2026-10-12", "2026-10-16")];
+  const sectionAfter = deriveManualPmsSection(periodsAfter, symptomDays, "2026-10-20", predictedNextPeriodStart);
+  assert.equal(sectionAfter, null);
+  assert.equal(isWithinManualPmsSection(sectionBefore, "2026-10-12", periodsAfter, "2026-10-20"), false, "der jetzt echte Periodentag wird nie als manuelles PMS gezeigt, selbst mit dem alten Abschnittsobjekt");
+});
+
+test("Eigen- und Partneransicht nutzen dieselben Datumsgrenzen (gleiche Eingaben ergeben einen identischen Abschnitt)", () => {
+  const periods = [period("2026-09-01", "2026-09-05")];
+  const symptomDays = [symptomDay("2026-10-08", ["mood_swings"])];
+  const ownView = deriveManualPmsSection(periods, symptomDays, "2026-10-08", "2026-10-15");
+  const partnerView = deriveManualPmsSection(periods, symptomDays, "2026-10-08", "2026-10-15");
+  assert.deepEqual(ownView, partnerView);
 });

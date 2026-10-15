@@ -4,6 +4,7 @@ import { getLumaCorePool } from "@/lib/new-auth-db";
 import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { computePersonalCycleView, type PersonalCycleView } from "@/lib/personal-cycle-view";
+import { predictCycle } from "@/lib/new-cycle-prediction";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { getPmsSymptomDays } from "@/lib/new-pms-symptoms";
 import { deriveManualPmsSection, isWithinManualPmsSection } from "@/lib/manual-pms";
@@ -38,7 +39,8 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
 
   const today = todayBerlinDateOnly();
   const computedView = computePersonalCycleView(periods, profile, today);
-  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, today);
+  const prediction = predictCycle(periods, profile, today);
+  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, today, prediction?.nextPeriodStart ?? null);
   const personalCycleView: PersonalCycleView = isWithinManualPmsSection(manualPmsSection, today, periods, today)
     ? { ...computedView, todayPhase: "pms", isEstimate: false }
     : computedView;

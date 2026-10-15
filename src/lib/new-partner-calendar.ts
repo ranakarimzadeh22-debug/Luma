@@ -94,7 +94,7 @@ export async function getPartnerCalendarView(partnerUserId: string): Promise<Par
   }
 
   const prediction = predictCycle(entries, profile, today);
-  const manualPmsSection = deriveManualPmsSection(entries, pmsSymptomDays, today);
+  const manualPmsSection = deriveManualPmsSection(entries, pmsSymptomDays, today, prediction?.nextPeriodStart ?? null);
 
   return {
     confirmedDates: [...confirmedDates].sort(),

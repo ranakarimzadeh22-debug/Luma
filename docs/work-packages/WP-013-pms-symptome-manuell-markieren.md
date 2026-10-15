@@ -177,6 +177,46 @@ Codex hat vor der Owner-Abnahme eine Lücke gemeldet (siehe „Soll-Ist-Prüfung
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: teilweise erfüllt; Owner-Abnahme noch nicht empfohlen.
-- Nachschaerfung: Die neue manuelle PMS-Ableitung schließt Symptommarkierungen auf tatsächlichen Periodentagen nicht aus. Dadurch kann `displayedPersonalCycleView` im eigenen Zyklus-Kreis an einem echten laufenden Periodentag auf `pms` gesetzt werden, obwohl tatsächliche Periodendaten laut Soll immer Vorrang haben müssen. Der Kalender schützt echte Periodentage bereits separat, der Zyklus-Kreis jedoch nicht. Vor der Owner-Abnahme muss die Ableitung oder ihre Anwendung sicherstellen, dass ein tatsächlicher laufender/bestätigter Periodentag nie als manuelles PMS dargestellt wird und eine während der Periode gespeicherte Symptommarkierung keine PMS-Phase nach der Periode fortsetzt.
-- Product-Map aktualisiert: nein; erst nach der Korrektur und einem erneuten Soll-Ist-Abgleich.
+- Ergebnis: Soll erfüllt; Owner-Abnahme steht aus.
+- Nachschaerfung: Die vor der Owner-Abnahme festgestellte Prioritätslücke ist zentral in `manual-pms.ts` korrigiert. Die Wiederprüfung bestätigt: Ein tatsächlicher bestätigter oder laufender Periodentag wird von `isWithinManualPmsSection` und allen darauf aufbauenden Hilfen immer ausgeschlossen. Ein manueller Abschnitt kann erst nach einem tatsächlichen Periodenende beginnen. Damit haben echte Periodendaten im Kalender und im Zyklus-Kreis der Nutzerin wie des Partners strukturell Vorrang. Die übrigen vereinbarten Grenzen – vier feste Symptome, reine Partner-Leseansicht, keine Vorhersageänderung – sind laut Implementierungs- und Prüfnachweis eingehalten.
+- Product-Map aktualisiert: ja.
+
+## Korrekturauftrag Version 2 – manuelles PMS begrenzt darstellen
+
+Die Ownerin hat nach ihrer Sichtprüfung eine zu breite Darstellung gemeldet: Nach einer heutigen Symptommarkierung wurde manuelles PMS über die gesamte Zukunft des Kalenders gezeigt. Das widerspricht der gewünschten Wirkung.
+
+- Die bestehende Vorhersage für die nächste Periode bleibt vollständig unverändert, einschließlich ihres Datums, ihrer Darstellung und aller Berechnungen.
+- Ein manuell gesetzter PMS-Status beginnt am gewählten Symptomtag. Im Kalender darf er nie über `heute` hinaus als bestätigter manueller Status erscheinen.
+- Liegt der vorhergesagte Periodenbeginn noch in der Zukunft, darf die manuelle PMS-Phase vom gewählten Tag bis zum Tag vor diesem erwarteten Beginn sichtbar sein. Die bestehende geschätzte Periode behält an ihren Tagen ihren Vorrang und ihre Schätzungskennzeichnung.
+- Ist das erwartete Startdatum bereits vergangen, aber keine tatsächliche neue Periode gespeichert, darf der manuelle PMS-Status nur tageweise bis einschließlich `heute` weiterlaufen. Künftige Tage bleiben frei von manuellem PMS.
+- Beginnt die Periode tatsächlich, endet manuelles PMS sofort. Echte bestätigte oder laufende Periodentage behalten immer Vorrang.
+- Diese Darstellung gilt gleich für Kalender und Zyklus-Kreis der Nutzerin sowie die rein lesende Partneransicht. Sie verändert niemals `predictCycle`, Zykluslänge, Eisprung oder Fruchtbarkeit.
+
+### Pflichtprüfungen für die Korrektur Version 2
+
+- Mit einer heutigen Symptommarkierung und einer in einer Woche erwarteten Periode: PMS endet sichtbar am Tag vor dem erwarteten Beginn; die geschätzte Periode bleibt unverändert sichtbar.
+- Mit einem bereits überschrittenen erwarteten Beginn ohne tatsächliche neue Periode: Manuelles PMS reicht höchstens bis `heute`, nie auf einen künftigen Kalendertag.
+- Mit einer tatsächlichen neuen Periode: Manuelles PMS endet sofort und echte Periodentage bleiben vorrangig.
+- Eigen- und Partneransicht zeigen dieselben Datumsgrenzen; Partner bleibt vollständig rein lesend.
+- Bestehender Vergleichstest bestätigt weiterhin unveränderte Vorhersagen; TypeScript, Build und die betroffenen PMS-/Partner-Regressionen bestehen.
+
+## Korrektur Version 2 – von Claude
+
+Die Ownerin hatte nach der ersten Korrektur gemeldet, dass manuelles PMS nach einer heutigen Markierung über die gesamte Zukunft des Kalenders sichtbar blieb (`endDate: null`, unbegrenzt offen, solange keine reale nächste Periode gespeichert war). Der Abschnitt musste stattdessen auf die bestehende Vorhersage und `heute` begrenzt werden.
+
+- **umgesetzt:**
+  - `src/lib/manual-pms.ts`: `deriveManualPmsSection` erhält einen neuen, optionalen vierten Parameter `predictedNextPeriodStart: string | null`. Eine neue interne Funktion `resolveSectionEndDate(predictedNextPeriodStart, today)` bestimmt das Abschnittsende jetzt immer begrenzt: Liegt die übergebene Vorhersage noch in der Zukunft, endet der Abschnitt am Tag davor; sonst (keine Vorhersage, oder die Vorhersage liegt bereits auf/vor `heute`) endet er spätestens `heute`. `ManualPmsSection.endDate` ist dadurch nie mehr `null`, sondern immer ein konkretes Datum – `isWithinManualPmsSection` wurde entsprechend vereinfacht (keine `null`-Prüfung mehr nötig).
+  - Eine real bereits gespeicherte, spätere Periode hat weiterhin unverändert Vorrang: Sie wird selbst zur „letzten Periode“ (`firstDayAfterLatestPeriod` berechnet weiterhin aus der zeitlich letzten gespeicherten Periode), wodurch der Abschnitt ohnehin erst nach deren eigenem Ende neu beginnen kann – ein gesonderter `nextPeriodStart`-Zweig war dafür nicht nötig; der ursprünglich dafür vorgesehene, aber strukturell unerreichbare Code-Pfad wurde entfernt, um keinen toten Code zu behalten.
+  - Alle drei Aufrufstellen übergeben jetzt die jeweils bereits vorhandene, unveränderte Vorhersage als reine Begrenzung, ohne eine zweite Berechnung einzuführen: `src/components/NewCycleExample.tsx` (`prediction?.nextPeriodStart ?? null`, aus der bereits vorhandenen `prediction`-Prop), `src/lib/new-partner-calendar.ts` (aus dem dort bereits berechneten `predictCycle(...)`-Ergebnis) und `src/lib/new-partner-cycle-view.ts` (ruft dafür zusätzlich `predictCycle` mit denselben, bereits geladenen Perioden/Profil/`today` auf – dieselbe bestehende Funktion, die auch der Eigenkalender nutzt, keine neue oder abweichende Berechnung).
+  - Keine Änderung an `predictCycle`, `computePersonalCycleView`, der Datenbank, der API-Route oder den vier erlaubten Symptomwerten. Die Vorhersage selbst (Datum, Darstellung, Berechnung) bleibt vollständig unverändert; sie wird nur als bereits existierender Wert gelesen, um die Anzeige des manuellen Status zu begrenzen.
+- **Tests (neu/ergänzt):**
+  - `tests/manual-pms.test.ts`: 4 neue gezielte Prüfungen für Version 2 (insgesamt jetzt 22, alle bestanden): eine heutige Markierung mit einer in einer Woche erwarteten Periode endet sichtbar am Tag davor; ein bereits überschrittener erwarteter Beginn ohne reale neue Periode begrenzt manuelles PMS auf höchstens `heute`; eine tatsächliche neue Periode beendet manuelles PMS sofort, auch wenn eine (jetzt veraltete) Vorhersage einen späteren Termin genannt hatte; Eigen- und Partneransicht erzeugen bei gleichen Eingaben einen identischen Abschnitt. Zusätzlich wurden zwei bereits bestehende Tests, die noch ein unbegrenztes `endDate: null` erwarteten, auf das neue, korrekt begrenzte Verhalten (Enddatum = `heute` ohne Vorhersage) angepasst, und ein Test, der versehentlich den jetzt toten `nextPeriodStart`-Codepfad prüfte, wurde auf das tatsächlich erreichbare Verhalten korrigiert (eine real gespeicherte spätere Periode wird selbst zur letzten Periode, der Abschnitt öffnet sich erst nach deren eigenem Ende neu).
+  - `scripts/verify-manual-pms-symptom-ui.ts`: neuer Prüfblock „WP-013-Korrektur Version 2: manuelles PMS reicht nie unbegrenzt in die Zukunft“ bestätigt per Quelltextprüfung die zentrale Begrenzungsfunktion sowie, dass alle drei Aufrufstellen tatsächlich `prediction?.nextPeriodStart ?? null` übergeben.
+  - `scripts/verify-manual-pms-prediction-isolation.ts`: neuer Prüfblock bestätigt zusätzlich, dass der abgeleitete Abschnitt strikt vor dem vorhergesagten nächsten Periodenbeginn endet, und dass `predictCycle` bytegleich bleibt, auch wenn seine Vorhersage als Begrenzung an `deriveManualPmsSection` übergeben wird.
+  - Mobile/breite Live-Verifikation mit temporär installiertem Playwright gegen einen echten Dev-Server (zwei abgeschlossene Perioden im 28-Tage-Rhythmus angelegt, sodass `predictCycle` einen konkreten nächsten Beginn in der Zukunft lieferte; Symptom am heutigen Tag markiert): Der Tag vor dem vorhergesagten Beginn zeigte korrekt weiterhin „PMS von dir eingetragen“, der vorhergesagte Tag selbst zeigte kein manuelles PMS mehr (dort gilt wieder die bestehende Schätzung), und ein deutlich späterer Tag (rund drei Wochen weiter) zeigte ebenfalls kein manuelles PMS. Testkonto vollständig entfernt.
+  - `npx tsc --noEmit`, `npm run build`: fehlerfrei/erfolgreich. Alle bereits dokumentierten Pflichtprüfungen (Unit-Tests, alle `scripts/verify-*`-Regressionen, `scripts/verify-luma-core.mjs`) erneut ausgeführt und weiterhin grün; einzige Ausnahme weiterhin der bereits mehrfach dokumentierte, vorbestehende Defekt in `tests/calendar-day-info.test.ts` (nicht durch dieses Paket verursacht).
+- **Abweichungen:** keine fachliche Abweichung vom Korrekturauftrag Version 2; dies ist eine erneute Korrektur vor der Owner-Abnahme, keine Umfangsänderung.
+- **offene Punkte:**
+  - Owner-Prüfschritt steht weiterhin aus (siehe oben, unverändert). Zusätzlich sinnvoll zu prüfen: eine heutige Markierung zeigt manuelles PMS nicht mehr über den vorhergesagten nächsten Periodenbeginn hinaus.
+  - Kein Deploy ausgelöst – wie beauftragt.
+- **Commit (Korrektur Version 2):** wird nach dem Commit ergänzt.

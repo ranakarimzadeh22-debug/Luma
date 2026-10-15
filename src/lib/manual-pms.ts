@@ -14,8 +14,13 @@ export interface PeriodDateRange {
 export interface ManualPmsSection {
   /** Earliest marked symptom day within the current open cycle section. */
   startDate: string;
-  /** The day before the next real period start, or null while that period hasn't started yet. */
-  endDate: string | null;
+  /**
+   * Last day the manual section reaches: the day before a real next period,
+   * the day before a still-future predicted next period, or `today` as the
+   * final fallback. Never unbounded and never a future day without a real
+   * or predicted period anchoring it (WP-013 Korrektur Version 2).
+   */
+  endDate: string;
   /** Date → the symptoms marked for that date, restricted to this section. */
   daysBySymptom: Map<string, PmsSymptom[]>;
 }
@@ -42,38 +47,60 @@ function firstDayAfterLatestPeriod(sortedPeriods: PeriodDateRange[], today: stri
 }
 
 /**
+ * The manual section's end date, bounded so it never reaches into
+ * unlimited future calendar days (WP-013 Korrektur Version 2):
+ * - A still-future predicted next period start bounds it: ends the day
+ *   before that prediction. (Any real, already-stored period after the
+ *   current one would itself become the new "latest period" and reopen the
+ *   section after its own end — see firstDayAfterLatestPeriod — so real
+ *   period data always wins without a separate check here.)
+ * - Otherwise (the prediction is today or already in the past, or there is
+ *   no prediction at all), it reaches no further than `today` — never a
+ *   future calendar day.
+ */
+function resolveSectionEndDate(predictedNextPeriodStart: string | null, today: string): string {
+  if (predictedNextPeriodStart && predictedNextPeriodStart > today) return addDays(predictedNextPeriodStart, -1);
+  return today;
+}
+
+/**
  * WP-013: derives the manually-marked PMS section from the user's own
  * symptom markers and real period starts — a pure, read-only combination of
- * two already-computed inputs. Never recomputes period/ovulation/fertility;
- * never reads or writes predictCycle()/computePersonalCycleView() output.
+ * already-computed inputs. Never recomputes period/ovulation/fertility;
+ * never reads or writes predictCycle()/computePersonalCycleView() internals
+ * — `predictedNextPeriodStart` is only the already-computed date boundary
+ * the caller passes in, used solely to bound how far the manual section may
+ * reach, never to derive a new prediction.
  *
  * Rule: the earliest symptom marker dated strictly after the real end of the
  * latest period opens a manual PMS section — never a marker that falls on an
  * actual (running or confirmed) period day, and never while the latest
- * period is still running (no real end yet). It stays visible until the day
- * before the next real period start (if one exists yet) or indefinitely
- * until then. Removing every marker in the open section removes the section
- * entirely, letting the existing estimate show again. Real period data
- * always wins: a date that is an actual period day is never reported as
- * being inside the manual PMS section, regardless of markers.
+ * period is still running (no real end yet). It stays visible through the
+ * day before the predicted next period start while that prediction still
+ * lies in the future, or otherwise only through today — it never extends
+ * into an unbounded or future calendar day without a prediction to anchor
+ * it. A real, already-stored later period always wins regardless: it
+ * becomes the new latest period, so the section (if any) only reopens after
+ * that period's own end. Removing every marker in the open section removes
+ * the section entirely, letting the existing estimate show again.
  */
 export function deriveManualPmsSection(
   periods: PeriodDateRange[],
   symptomDays: PmsSymptomDay[],
   today: string,
+  predictedNextPeriodStart: string | null = null,
 ): ManualPmsSection | null {
   const sortedPeriods = [...periods].sort((a, b) => a.startDate.localeCompare(b.startDate));
   const sectionEarliestStart = firstDayAfterLatestPeriod(sortedPeriods, today);
   if (!sectionEarliestStart) return null;
 
-  const latestPeriodStart = sortedPeriods[sortedPeriods.length - 1].startDate;
-  const nextPeriodStart = sortedPeriods.find((entry) => entry.startDate > latestPeriodStart)?.startDate ?? null;
+  const sectionEndDate = resolveSectionEndDate(predictedNextPeriodStart, today);
 
   const relevantDays = symptomDays
     .filter((day) => day.symptoms.length > 0)
     .filter((day) => day.date >= sectionEarliestStart)
     .filter((day) => !isRealPeriodDay(periods, day.date, today))
-    .filter((day) => nextPeriodStart === null || day.date < nextPeriodStart)
+    .filter((day) => day.date <= sectionEndDate)
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (relevantDays.length === 0) return null;
@@ -83,7 +110,7 @@ export function deriveManualPmsSection(
 
   return {
     startDate: relevantDays[0].date,
-    endDate: nextPeriodStart ? addDays(nextPeriodStart, -1) : null,
+    endDate: sectionEndDate,
     daysBySymptom,
   };
 }
@@ -101,7 +128,7 @@ export function isWithinManualPmsSection(
 ): boolean {
   if (!section) return false;
   if (date < section.startDate) return false;
-  if (section.endDate !== null && date > section.endDate) return false;
+  if (date > section.endDate) return false;
   if (isRealPeriodDay(periods, date, today)) return false;
   return true;
 }

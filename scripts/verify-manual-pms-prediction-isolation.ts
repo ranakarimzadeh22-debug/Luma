@@ -27,10 +27,16 @@ const today = "2026-10-10";
 console.log("\n== WP-013: predictCycle bleibt bytegleich, unabhaengig von PMS-Symptommarkierungen ==");
 {
   const before = predictCycle(periods, profile, today);
-  const section = deriveManualPmsSection(periods, [{ date: "2026-10-05", symptoms: ["fatigue", "mood_swings"] }], today);
+  const prediction = before;
+  const section = deriveManualPmsSection(
+    periods,
+    [{ date: "2026-10-05", symptoms: ["fatigue", "mood_swings"] }],
+    today,
+    prediction?.nextPeriodStart ?? null,
+  );
   assert(section !== null, "ein manueller PMS-Abschnitt wurde aus Symptommarkierungen abgeleitet");
   const after = predictCycle(periods, profile, today);
-  assertDeepEqual(before, after, "predictCycle() liefert vor und nach dem Ableiten des manuellen Abschnitts identische Werte");
+  assertDeepEqual(before, after, "predictCycle() liefert vor und nach dem Ableiten des manuellen Abschnitts identische Werte, auch wenn nextPeriodStart als Begrenzung uebergeben wird");
 }
 
 console.log("\n== WP-013: computePersonalCycleView bleibt bytegleich, unabhaengig von PMS-Symptommarkierungen ==");
@@ -40,6 +46,22 @@ console.log("\n== WP-013: computePersonalCycleView bleibt bytegleich, unabhaengi
   assert(section !== null, "ein manueller PMS-Abschnitt wurde aus Symptommarkierungen abgeleitet");
   const after = computePersonalCycleView(periods, { cycleLengthDays: 28 }, today);
   assertDeepEqual(before, after, "computePersonalCycleView() liefert vor und nach dem Ableiten des manuellen Abschnitts identische Werte");
+}
+
+console.log("\n== WP-013 Korrektur Version 2: der manuelle PMS-Abschnitt reicht nie ueber den vorhergesagten naechsten Periodenbeginn hinaus ==");
+{
+  const prediction = predictCycle(periods, profile, today);
+  const section = deriveManualPmsSection(
+    periods,
+    [{ date: today, symptoms: ["fatigue"] }],
+    today,
+    prediction?.nextPeriodStart ?? null,
+  );
+  assert(section !== null, "ein manueller PMS-Abschnitt wurde abgeleitet");
+  assert(
+    Boolean(prediction?.nextPeriodStart) && section!.endDate < prediction!.nextPeriodStart,
+    `der Abschnitt endet strikt vor dem vorhergesagten naechsten Periodenbeginn (Abschnittsende: ${section?.endDate}, Vorhersage: ${prediction?.nextPeriodStart})`,
+  );
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

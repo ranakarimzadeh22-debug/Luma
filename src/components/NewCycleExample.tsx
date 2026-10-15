@@ -865,7 +865,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
   const [pmsSymptomDays, setPmsSymptomDays] = useState(initialPmsSymptomDays);
-  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, todayKey);
+  const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, todayKey, prediction?.nextPeriodStart ?? null);
   const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);

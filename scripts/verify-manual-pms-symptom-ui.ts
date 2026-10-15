@@ -103,6 +103,35 @@ console.log("\n== WP-013-Korrektur: echte Periodentage haben strukturellen Vorra
   );
 }
 
+console.log("\n== WP-013-Korrektur Version 2: manuelles PMS reicht nie unbegrenzt in die Zukunft ==");
+{
+  const manualPms = read("src/lib/manual-pms.ts");
+  assert(
+    manualPms.includes("function resolveSectionEndDate(predictedNextPeriodStart: string | null, today: string): string {"),
+    "manual-pms.ts begrenzt das Abschnittsende über eine eigene, zentrale Funktion",
+  );
+  const resolveBlock = manualPms.slice(manualPms.indexOf("function resolveSectionEndDate"), manualPms.indexOf("function resolveSectionEndDate") + 400);
+  assert(
+    resolveBlock.includes("if (predictedNextPeriodStart && predictedNextPeriodStart > today) return addDays(predictedNextPeriodStart, -1);") &&
+      resolveBlock.includes("return today;"),
+    "das Abschnittsende endet am Tag vor einer noch zukünftigen Vorhersage, sonst spätestens heute – nie unbegrenzt und nie in der Zukunft ohne Anker",
+  );
+  assert(
+    component.includes("deriveManualPmsSection(periods, pmsSymptomDays, todayKey, prediction?.nextPeriodStart ?? null)"),
+    "die Eigenansicht übergibt die bestehende Vorhersage als Begrenzung, ohne eine zweite Berechnung einzuführen",
+  );
+  const newPartnerCalendar = read("src/lib/new-partner-calendar.ts");
+  assert(
+    newPartnerCalendar.includes("deriveManualPmsSection(entries, pmsSymptomDays, today, prediction?.nextPeriodStart ?? null)"),
+    "der Partner-Kalender übergibt dieselbe, bereits berechnete Vorhersage als Begrenzung",
+  );
+  const newPartnerCycleView = read("src/lib/new-partner-cycle-view.ts");
+  assert(
+    newPartnerCycleView.includes("deriveManualPmsSection(periods, pmsSymptomDays, today, prediction?.nextPeriodStart ?? null)"),
+    "der Partner-Zyklus-Kreis übergibt ebenfalls dieselbe Vorhersage als Begrenzung",
+  );
+}
+
 console.log("\n== WP-013: keine neue API-Route, keine Daten-/Berechnungsänderung an predictCycle/computePersonalCycleView ==");
 {
   const predictionSource = read("src/lib/new-cycle-prediction.ts");
