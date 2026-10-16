@@ -78,11 +78,33 @@ console.log("\n== WP-014: mit einem heute aktiven manuellen PMS-Status liegt der
   const pmsSegment = geometry!.segments.find((segment) => segment.key === "pms")!;
   assert(Boolean(pmsSegment), "das PMS-Segment existiert");
 
-  // Der Marker-Winkel muss exakt der (bereits für die Beschriftung
-  // genutzten) PMS-Segmentmitte entsprechen.
-  assertEqual(geometry!.todayAngle, pmsSegment.labelAngle, "der Marker-Winkel entspricht der Mitte des PMS-Segments");
+  // Der Marker-Winkel muss innerhalb des PMS-Segments liegen, darf aber
+  // (Korrektur) nicht mehr der Segmentmitte entsprechen, da dort das
+  // "PMS"-Textlabel positioniert ist und sonst überdeckt würde. Das
+  // PMS-Fenster ist laut Auftrag 5 Tage lang (PMS_LEAD_DAYS); bei 28 Tagen
+  // Zykluslänge entspricht das einer Segmentspanne von 360/28*5 Grad. Der
+  // Marker darf also höchstens diese halbe Spanne vom Label entfernt sein.
+  const cycleLengthDays = view.cycleLengthDays!;
+  const pmsSpanDeg = (360 / cycleLengthDays) * 5;
+  const angularDistanceToLabel = Math.abs(
+    (((geometry!.todayAngle - pmsSegment.labelAngle + 540) % 360) - 180),
+  );
+  assert(
+    angularDistanceToLabel <= pmsSpanDeg / 2 + 0.01,
+    "der Marker-Winkel liegt innerhalb der PMS-Segmentspanne um die Segmentmitte",
+  );
+  assert(
+    geometry!.todayAngle !== pmsSegment.labelAngle,
+    "der Marker-Winkel entspricht NICHT mehr der Mitte des PMS-Segments (dort sitzt das Textlabel)",
+  );
 
   const markerPoint = ringPointAt(geometry!.todayAngle);
+  const labelPoint = ringPointAt(pmsSegment.labelAngle);
+  const pixelDistanceToLabel = Math.hypot(markerPoint.x - labelPoint.x, markerPoint.y - labelPoint.y);
+  assert(
+    pixelDistanceToLabel >= 20,
+    `der Marker-Punkt hat ausreichend Abstand (>=20px) zum "PMS"-Textlabel, gemessen: ${pixelDistanceToLabel.toFixed(1)}px`,
+  );
   assert(Number.isFinite(markerPoint.x) && Number.isFinite(markerPoint.y), "der Marker-Punkt lässt sich aus dem übersteuerten Winkel berechnen");
 
   // Ohne Übersteuerung läge der Marker rechnerisch bei Zyklustag-Winkel; mit

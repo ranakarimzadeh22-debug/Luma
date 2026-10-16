@@ -85,17 +85,32 @@ export function buildRingGeometry(prediction: CyclePrediction, today: string): R
 const PMS_LEAD_DAYS = 5;
 
 /**
+ * WP-014 (Korrektur): Position für den übersteuerten Heute-Punkt innerhalb
+ * des PMS-Segments. Das "PMS"-Textlabel sitzt auf der Segmentmitte
+ * (labelAngle); der Punkt wird stattdessen ein Viertel der Segmentbreite vom
+ * Segmentanfang entfernt platziert, mit einem Mindestabstand zur Mitte, damit
+ * er bei sehr kurzen Segmenten nicht wieder auf dem Label landet.
+ */
+function manualPmsMarkerAngle(startAngle: number, endAngle: number): number {
+  const span = ((endAngle - startAngle + 360) % 360) || 360;
+  const minOffsetFromMid = Math.min(span / 2, 12);
+  const offsetFromStart = Math.max(span / 4, span / 2 - minOffsetFromMid);
+  return startAngle + offsetFromStart;
+}
+
+/**
  * Ring geometry for WP-002's personal cycle view: anchored on the *current*
  * cycle window (derived from the latest confirmed period), not the next
  * upcoming period — the ring never states a next-period prediction.
  *
- * WP-014: `isManualPmsToday` only moves where the already-computed today
- * marker is drawn — into the middle of the already-computed PMS segment —
- * when the caller (manual-pms.ts via isWithinManualPmsSection) says a
- * manual PMS section is active today. It never changes the segments
- * themselves or any date/cycle calculation; a real period day is excluded
- * by the caller before this flag can ever be true, so it never competes
- * with period precedence.
+ * WP-014 (Korrektur): `isManualPmsToday` only moves where the already-computed
+ * today marker is drawn — to a point inside the already-computed PMS segment,
+ * offset away from the segment's own labelAngle so the dot never sits on top
+ * of the "PMS" text — when the caller (manual-pms.ts via
+ * isWithinManualPmsSection) says a manual PMS section is active today. It
+ * never changes the segments themselves or any date/cycle calculation; a
+ * real period day is excluded by the caller before this flag can ever be
+ * true, so it never competes with period precedence.
  */
 export function buildPersonalRingGeometry(
   view: PersonalCycleView,
@@ -127,7 +142,7 @@ export function buildPersonalRingGeometry(
 
   const todayDayOffset = ((daysBetween(cycleStartDay, today) % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
   const todayAngle = isManualPmsToday
-    ? midAngle(pmsStartAngle, pmsEndAngle)
+    ? manualPmsMarkerAngle(pmsStartAngle, pmsEndAngle)
     : angleForDay(todayDayOffset, cycleLengthDays);
 
   const segments: RingSegment[] = [
