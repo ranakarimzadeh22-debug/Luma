@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 6bfe934
 ---
 
 # Manuellen PMS-Marker im Zyklus-Kreis neben statt auf der Beschriftung platzieren (WP-014 Korrektur)
@@ -39,4 +39,4 @@ Owner prüft `/neu` und `/neu/partner` erneut wie im Prüfschritt beschrieben. D
 
 - Betroffene Dateien: `src/lib/cycle-ring-geometry.ts`, `scripts/verify-manual-pms-ring-marker.ts`, `docs/work-packages/WP-014-pms-marker-im-zyklus-kreis.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle `scripts/verify-*`-Regressionen für PMS/Ring/Kalender/Perioden/Partner, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 6bfe934.
