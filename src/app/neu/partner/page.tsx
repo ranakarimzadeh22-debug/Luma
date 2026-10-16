@@ -5,7 +5,7 @@ import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
 import { getPartnerCycleView } from "@/lib/new-partner-cycle-view";
 import { getPartnerNotificationPreference } from "@/lib/new-partner-notification-preference";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
-import { manualPmsSymptomsForDate } from "@/lib/manual-pms";
+import { manualPmsSymptomsForDate, isWithinManualPmsSection } from "@/lib/manual-pms";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
 import NewPartnerCycleRing from "@/components/NewPartnerCycleRing";
@@ -68,6 +68,11 @@ export default async function NewPartnerPage() {
                 calendarView
                   ? manualPmsSymptomsForDate(calendarView.manualPmsSection, calendarView.today, calendarView.periods, calendarView.today)
                   : []
+              }
+              manualPmsOverride={
+                calendarView && isWithinManualPmsSection(calendarView.manualPmsSection, calendarView.today, calendarView.periods, calendarView.today)
+                  ? { startDate: calendarView.manualPmsSection!.startDate, endDate: calendarView.manualPmsSection!.endDate }
+                  : null
               }
             />
           )}

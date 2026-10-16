@@ -85,17 +85,40 @@ export function buildRingGeometry(prediction: CyclePrediction, today: string): R
 const PMS_LEAD_DAYS = 5;
 
 /**
- * WP-014 (Korrektur): Position für den übersteuerten Heute-Punkt innerhalb
- * des PMS-Segments. Das "PMS"-Textlabel sitzt auf der Segmentmitte
- * (labelAngle); der Punkt wird stattdessen ein Viertel der Segmentbreite vom
- * Segmentanfang entfernt platziert, mit einem Mindestabstand zur Mitte, damit
- * er bei sehr kurzen Segmenten nicht wieder auf dem Label landet.
+ * WP-014 (Korrektur, erweitert in Korrektur Version 3): Position für den
+ * übersteuerten Heute-Punkt innerhalb des PMS-Segments. Das "PMS"-Textlabel
+ * sitzt auf der Segmentmitte (labelAngle); der Punkt wird stattdessen
+ * möglichst nah an den Segmentrand gesetzt, mit einem kleinen
+ * Sicherheitsabstand zum Rand selbst, damit er noch sichtbar innerhalb des
+ * Segments bleibt. Seit Korrektur Version 3 kann das Segment (bei einem erst
+ * seit kurzem aktiven manuellen Abschnitt) deutlich kürzer sein als das
+ * bisherige 5-Tage-Schätzfenster, bis hin zu einem einzelnen Tag — ein fester
+ * Mindestabstand zur Mitte würde bei so kurzen Segmenten über den Rand
+ * hinausragen. Der Zielabstand zur Mitte ist daher der kleinere Wert aus
+ * "idealer Abstand für ausreichenden Pixelabstand zum Label" und "maximal im
+ * Segment verfügbarer Abstand abzüglich Randsicherheit".
  */
 function manualPmsMarkerAngle(startAngle: number, endAngle: number): number {
   const span = ((endAngle - startAngle + 360) % 360) || 360;
-  const minOffsetFromMid = Math.min(span / 2, 12);
-  const offsetFromStart = Math.max(span / 4, span / 2 - minOffsetFromMid);
-  return startAngle + offsetFromStart;
+  const idealOffsetFromMid = 12;
+  const edgeMargin = Math.min(span * 0.1, 3);
+  const maxOffsetFromMid = Math.max(span / 2 - edgeMargin, 0);
+  const offsetFromMid = Math.min(idealOffsetFromMid, maxOffsetFromMid);
+  return startAngle + span / 2 - offsetFromMid;
+}
+
+/**
+ * WP-014 Korrektur Version 3: wenn heute ein manueller PMS-Abschnitt aktiv
+ * ist, bestimmen dessen bereits vorhandene startDate/endDate (aus
+ * manual-pms.ts, hier unverändert übernommen) die sichtbaren Grenzen des
+ * PMS-Ringsegments, statt der rein rechnerischen pmsStart/pmsEnd. Es wird
+ * keine neue Vorhersage- oder Datumslogik eingeführt: nur dieselben, vom
+ * Aufrufer bereits abgeleiteten Datumswerte fließen in dieselbe bestehende
+ * Winkel-Geometrie ein.
+ */
+export interface ManualPmsRingOverride {
+  startDate: string;
+  endDate: string;
 }
 
 /**
@@ -103,45 +126,54 @@ function manualPmsMarkerAngle(startAngle: number, endAngle: number): number {
  * cycle window (derived from the latest confirmed period), not the next
  * upcoming period — the ring never states a next-period prediction.
  *
- * WP-014 (Korrektur): `isManualPmsToday` only moves where the already-computed
- * today marker is drawn — to a point inside the already-computed PMS segment,
- * offset away from the segment's own labelAngle so the dot never sits on top
- * of the "PMS" text — when the caller (manual-pms.ts via
- * isWithinManualPmsSection) says a manual PMS section is active today. It
- * never changes the segments themselves or any date/cycle calculation; a
- * real period day is excluded by the caller before this flag can ever be
- * true, so it never competes with period precedence.
+ * WP-014 (Korrektur Version 3): `manualPmsOverride` (present only when the
+ * caller's manual-pms.ts section is active today) replaces the PMS
+ * segment's start/end boundaries with its own startDate/endDate so the
+ * drawn pink segment visually starts where the user manually marked PMS,
+ * not just the calculated lead time. The today marker is then placed inside
+ * that same (possibly widened) segment, still offset from its label so it
+ * never sits on top of the "PMS" text. It never changes any other segment,
+ * date or cycle calculation; a real period day is excluded by the caller
+ * before this override can ever be passed, so it never competes with period
+ * precedence.
  */
 export function buildPersonalRingGeometry(
   view: PersonalCycleView,
   today: string,
-  isManualPmsToday = false,
+  manualPmsOverride: ManualPmsRingOverride | null = null,
 ): RingGeometry | null {
   if (!view.cycleLengthDays || !view.anchorPeriodStart || !view.periodLengthDays) return null;
 
   const { cycleLengthDays, periodLengthDays, anchorPeriodStart } = view;
   const periodStart = currentCyclePeriodStart(anchorPeriodStart, cycleLengthDays, today);
   const cycleStartDay = periodStart;
+  const normalizedDayOffset = (date: string) =>
+    ((daysBetween(cycleStartDay, date) % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
   const dayOffset = (date: string) => daysBetween(cycleStartDay, date);
 
   const ovulationDate = calculateOvulationDate(shiftDate(periodStart, cycleLengthDays));
   const fertileWindow = calculateFertileWindow(ovulationDate);
   const fertileWindowStart = fertileWindow.start;
   const fertileWindowEnd = fertileWindow.end;
-  const pmsStart = shiftDate(periodStart, cycleLengthDays - PMS_LEAD_DAYS);
-  const pmsEnd = shiftDate(periodStart, cycleLengthDays - 1);
+  const estimatedPmsStart = shiftDate(periodStart, cycleLengthDays - PMS_LEAD_DAYS);
+  const estimatedPmsEnd = shiftDate(periodStart, cycleLengthDays - 1);
 
   const periodStartAngle = angleForDay(dayOffset(periodStart), cycleLengthDays);
   const periodEndAngle = angleForDay(dayOffset(periodStart) + periodLengthDays, cycleLengthDays);
   const fertileStartAngle = angleForDay(dayOffset(fertileWindowStart), cycleLengthDays);
   const fertileEndAngle = angleForDay(dayOffset(fertileWindowEnd) + 1, cycleLengthDays);
-  const pmsStartAngle = angleForDay(dayOffset(pmsStart), cycleLengthDays);
-  const pmsEndAngle = angleForDay(dayOffset(pmsEnd) + 1, cycleLengthDays);
+
+  const pmsStartAngle = manualPmsOverride
+    ? angleForDay(normalizedDayOffset(manualPmsOverride.startDate), cycleLengthDays)
+    : angleForDay(dayOffset(estimatedPmsStart), cycleLengthDays);
+  const pmsEndAngle = manualPmsOverride
+    ? angleForDay(normalizedDayOffset(manualPmsOverride.endDate) + 1, cycleLengthDays)
+    : angleForDay(dayOffset(estimatedPmsEnd) + 1, cycleLengthDays);
 
   const midAngle = (start: number, end: number) => start + (((end - start + 360) % 360) / 2);
 
-  const todayDayOffset = ((daysBetween(cycleStartDay, today) % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
-  const todayAngle = isManualPmsToday
+  const todayDayOffset = normalizedDayOffset(today);
+  const todayAngle = manualPmsOverride
     ? manualPmsMarkerAngle(pmsStartAngle, pmsEndAngle)
     : angleForDay(todayDayOffset, cycleLengthDays);
 

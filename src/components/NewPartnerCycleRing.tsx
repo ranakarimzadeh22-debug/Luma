@@ -1,5 +1,6 @@
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
+import type { ManualPmsRingOverride } from "@/lib/cycle-ring-geometry";
 import CyclePersonalRing from "@/components/CyclePersonalRing";
 
 const PMS_SYMPTOM_LABELS: Record<PmsSymptom, string> = {
@@ -14,6 +15,13 @@ interface NewPartnerCycleRingProps {
   runningPeriodExpectedEndDate: string | null;
   today: string;
   manualPmsSymptoms: PmsSymptom[];
+  /**
+   * WP-014 Korrektur Version 3: dieselben, bereits serverseitig abgeleiteten
+   * startDate/endDate des aktiven manuellen PMS-Abschnitts (manual-pms.ts)
+   * wie in der Eigenansicht, nur zur Darstellung weitergereicht. `null`,
+   * wenn heute kein manueller Abschnitt aktiv ist.
+   */
+  manualPmsOverride: ManualPmsRingOverride | null;
 }
 
 function formatGermanDate(value: string): string {
@@ -34,11 +42,12 @@ export default function NewPartnerCycleRing({
   runningPeriodExpectedEndDate,
   today,
   manualPmsSymptoms,
+  manualPmsOverride,
 }: NewPartnerCycleRingProps) {
   return (
     <section aria-label="Zyklusübersicht deines Partners/deiner Partnerin" className="space-y-3">
       <p className="text-center text-lg text-[#28101f]">Zyklus-Kreis</p>
-      <CyclePersonalRing personalCycleView={personalCycleView} today={today} isManualPmsToday={manualPmsSymptoms.length > 0} />
+      <CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} />
       {personalCycleView.status === "no_data" && (
         <p className="text-center text-sm text-neutral-600">Noch nicht genügend Daten für eine Orientierung.</p>
       )}

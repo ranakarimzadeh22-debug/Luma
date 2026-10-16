@@ -141,3 +141,70 @@ technical_brief: complete
 - **Abweichungen:** keine. Reine Geometriekorrektur innerhalb des bereits freigestellten Spielraums („Die genaue Punktposition innerhalb des PMS-Segments ist Claude freigestellt, sofern sie sichtbar im Segment liegt, die Beschriftung nicht verdeckt“). Keine Änderung an `predictCycle`, `computePersonalCycleView`, Zykluslänge, Periodendauer, Eisprung, fruchtbarem Fenster, Unsicherheitslogik, Datenbank, API-Routen, Authentifizierung oder Partner-Gate.
 - **offene Punkte:** Owner-Prüfschritt (erneut): Auf `/neu` heute ein PMS-Symptom speichern und prüfen, dass der rote Punkt sichtbar im PMS-Segment, aber klar neben dem „PMS“-Text liegt; danach `/neu/partner` mit aktiver Verbindung öffnen und denselben Zustand rein lesend prüfen.
 - **Commit:** 6bfe934.
+
+## Soll-Ist-Prüfung – Codex, Korrektur Version 2
+
+- Ergebnis: Soll und Ist stimmen ausreichend überein. Der manuelle PMS-Marker liegt innerhalb des bestehenden PMS-Segments, aber nicht mehr auf dem PMS-Text. Die gezielte Prüfung belegt mindestens 20 px Abstand; die gemeldete Live-Prüfung bestätigt dies für eigene breite/mobile Ansicht und aktive Partneransicht.
+- Nachschärfung: keine.
+- Product-Map aktualisiert: ja.
+
+## Korrektur Version 3 – manuellen PMS-Abschnitt als Ringsegment darstellen
+
+### Owner-Entscheidung
+
+Die Ownerin präzisiert am 2026-10-16: Es genügt nicht, nur den roten Heute-Punkt in den bestehenden, automatisch geschätzten PMS-Balken zu verschieben. Wenn sie PMS früher selbst einträgt, muss auch der pinke PMS-Balken im Zyklus-Kreis an diesem selbst eingetragenen Starttag beginnen und bis zum bereits bestehenden Ende des manuellen PMS-Abschnitts reichen. Die Periodenvorhersage bleibt dabei unverändert.
+
+### Soll – Korrektur Version 3
+
+- Ist heute ein manueller PMS-Abschnitt aktiv, ersetzt dessen bestehendes `startDate`/`endDate` ausschließlich die sichtbaren Start- und Endgrenzen des pinken PMS-Ringsegments.
+- Der rote Heute-Punkt liegt innerhalb dieses manuellen pinken Segments und neben seinem lesbaren `PMS`-Text.
+- Die eigene Ansicht und die aktiv verbundene Partneransicht zeigen dieselbe Segmentlänge. Der Partner bleibt rein lesend.
+- Ohne aktiven manuellen PMS-Abschnitt bleibt das bisherige automatisch geschätzte PMS-Segment unverändert.
+- Ein tatsächlicher Periodentag beendet beziehungsweise übersteuert den manuellen Abschnitt weiterhin vollständig.
+- Nicht enthalten: keine neue Vorhersage, keine Änderung von `predictCycle`, `computePersonalCycleView`, Zykluslänge, Periodendauer, Eisprung, Fruchtbarkeitsfenster, Datenbank, API oder Partnerrechten.
+
+### Technischer Auftrag für Claude – Korrektur Version 3
+
+- `src/lib/manual-pms.ts` liefert bereits die einzige fachliche Quelle: `ManualPmsSection.startDate` und `endDate`. Diese Logik darf nicht dupliziert oder verändert werden.
+- Erweitere die gemeinsame Ringgeometrie beziehungsweise ihre Darstellungsübergabe so, dass ein vorhandener heute aktiver `ManualPmsSection` das gezeichnete PMS-Segment nur visuell von `startDate` bis `endDate` bestimmt. Die Winkel müssen aus derselben bestehenden Zyklus-Kreis-Geometrie abgeleitet werden; keine zweite Vorhersage oder Datumslogik einführen.
+- Das `PMS`-Label wird innerhalb des dadurch dargestellten manuellen Segments lesbar positioniert. Der rote Marker bleibt im selben Segment und hält ausreichend Abstand zum Label.
+- `NewCycleExample.tsx` nutzt den bereits abgeleiteten `manualPmsSection`. Die Partnerseite besitzt denselben Abschnitt bereits über `calendarView.manualPmsSection`; reiche nur die minimal nötigen vorhandenen Datumswerte an den gemeinsamen Ring weiter. Keine zusätzlichen Partnerdaten laden oder zurückgeben.
+- Für den Fall ohne manuellen Abschnitt bleibt die bestehende Ringgeometrie bytegleich. Echte Periodentage dürfen niemals durch einen manuellen PMS-Balken übermalt werden.
+
+### Pflichtprüfungen – Korrektur Version 3
+
+- Gezielte Tests: ein früher manuell gesetzter PMS-Start erweitert das pinke Segment bis zum bestehenden manuellen Ende; ohne manuellen Abschnitt bleiben Segmentgrenzen unverändert; echte Periodentage haben Vorrang.
+- Vergleichstest: Vorhersagewerte für Periode, Eisprung und Fruchtbarkeit sind vor und nach der reinen Ringdarstellung identisch.
+- Eigen- und Partneransicht erhalten für denselben manuellen Abschnitt gleiche Segmentgrenzen, lesbares Label und einen Marker innerhalb des Segments.
+- Bestehende PMS-, Ring-, Kalender-, Perioden- und Partnerregressionen, TypeScript und Produktions-Build ausführen.
+- Mobile und breite Sichtprüfung mit temporären Testdaten: früher PMS-Start macht den pinken Balken sichtbar länger; kein Überlauf und keine Partner-Eingabe. Testdaten wieder entfernen.
+
+### Abschluss durch Claude – Korrektur Version 3
+
+- `Ist` zu dieser Korrektur ergänzen und Abweichungen sichtbar nennen.
+- Status auf `review` setzen, Ledger ergänzen, `mark-updated WP-014` und `validate` ausführen.
+- Nur auftragsbezogene Dateien committen und nach `main` pushen; kein Deployment auslösen.
+
+## Ist – Korrektur Version 3 – von Claude
+
+- **umgesetzt:**
+  - `src/lib/cycle-ring-geometry.ts`: `buildPersonalRingGeometry(view, today, manualPmsOverride = null)` ersetzt den bisherigen dritten Parameter (`isManualPmsToday: boolean`) durch ein optionales `ManualPmsRingOverride`-Objekt (`{ startDate, endDate }`). Nur wenn gesetzt, werden `pmsStartAngle`/`pmsEndAngle` aus diesen Datumswerten abgeleitet (statt aus dem rechnerischen `pmsStart`/`pmsEnd` = Zyklusende minus 5 Tage) – mit derselben bestehenden `angleForDay`-Geometrie, jetzt über eine neue `normalizedDayOffset`-Hilfsfunktion, die den Tagesoffset korrekt in den aktuellen Zykluswindow faltet (nötig, weil ein manueller Start auch deutlich vor dem bisherigen 5-Tage-Fenster liegen kann). Segmente `period` und `fertile` sowie jede Datums-/Zyklusberechnung bleiben vollständig unverändert.
+  - `manualPmsMarkerAngle` (Korrektur Version 2) wurde robuster gemacht: statt eines festen 12°-Mindestabstands zur Segmentmitte wird jetzt der größtmögliche Abstand gewählt, der innerhalb eines kleinen Randsicherheitsabstands bleibt (`min(span*0.1, 3)`), gedeckelt auf maximal 12°. Grund: Seit dieser Korrektur kann das PMS-Segment durch einen gerade erst begonnenen manuellen Abschnitt auch nur einen einzigen Tag lang sein – der bisherige feste Abstand hätte dort über den Segmentrand hinausgeragt.
+  - `src/components/CyclePersonalRing.tsx`: Prop `isManualPmsToday?: boolean` wurde durch `manualPmsOverride?: ManualPmsRingOverride | null` ersetzt und unverändert an `buildPersonalRingGeometry` durchgereicht. Ohne die Prop (oder mit `null`) bleibt die Ringgeometrie bytegleich zur bisherigen Berechnung.
+  - `src/components/NewCycleExample.tsx`: leitet `manualPmsRingOverride` aus dem bereits vorhandenen `manualPmsSection` (WP-013/`manual-pms.ts`) ab, wenn `isManualPmsToday` zutrifft – keine neue Datums- oder Symptomlogik, nur Weiterreichen bereits abgeleiteter Werte.
+  - `src/components/NewPartnerCycleRing.tsx`: neue Pflicht-Prop `manualPmsOverride: ManualPmsRingOverride | null`, unverändert an `CyclePersonalRing` durchgereicht.
+  - `src/app/neu/partner/page.tsx`: leitet `manualPmsOverride` aus dem bereits serverseitig geladenen `calendarView.manualPmsSection` ab (`getPartnerCalendarView`, WP-013), geprüft über das bestehende `isWithinManualPmsSection`. Keine zusätzlichen Partnerdaten geladen oder zurückgegeben – derselbe Abschnitt, der bereits für `NewPartnerCalendar` und die Symptomanzeige genutzt wird.
+  - Echte Periodentage bleiben strukturell vorrangig: `isWithinManualPmsSection` liefert an einem echten Periodentag weiterhin `false` (unverändert in `manual-pms.ts`), sodass `manualPmsOverride` dort nie gesetzt wird und die PMS-Segmentgrenzen rein rechnerisch bleiben.
+  - Keine Änderung an `predictCycle`, `computePersonalCycleView`, Zykluslänge, Periodendauer, Eisprung, fruchtbarem Fenster, Unsicherheitslogik, Datenbank, API-Routen, Authentifizierung oder Partner-Gate.
+- **nicht umgesetzt:** nichts aus dem Korrektur-Umfang offen.
+- **Tests:**
+  - `scripts/verify-manual-pms-ring-marker.ts` vollständig überarbeitet (24 Prüfungen, alle bestanden): (1) ohne manuellen Abschnitt bleibt die gesamte Ringgeometrie bytegleich; (2) ein mehrtägiger manueller Abschnitt (15.–18.09., Start 4 Tage vor dem rechnerischen Fenster) verändert sichtbar den gezeichneten PMS-Pfad und die Label-Mitte, lässt Perioden- und Fruchtbarkeitssegment aber unverändert, und der Marker hält weiterhin ≥20px Abstand zum Label (gemessen: 26,1px); (3) neuer Grenzfalltest für einen eintägigen manuellen Abschnitt (nur heute markiert) – das Segment ist dann nur ca. 12,9° breit, der Marker kann physikalisch keine 20px erreichen, bleibt aber nachweislich innerhalb des Segments und niemals exakt auf der Labelmitte (gemessen: 11,2px, > 0); (4) ein echter Periodentag erzwingt weiterhin keinen manuellen PMS-Abschnitt, Ringgeometrie bleibt identisch zum Fall ohne Override.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-manual-pms-prediction-isolation.ts`, `scripts/verify-manual-pms-symptom-ui.ts`, `scripts/verify-partner-pms-symptoms.mts`, `scripts/verify-partner-cycle-ring.mts`, `scripts/verify-partner-calendar.mts`, `scripts/verify-partner-estimated-period.mts`, `scripts/verify-my-periods.mts`, `scripts/verify-cycle-today-and-estimate.mts`, `scripts/verify-period-day-actions.mts`, `scripts/verify-partner-fixed-view.ts`, `scripts/verify-day-detail.ts`, `scripts/verify-period-history.ts`, `scripts/verify-history-month-jump.ts`, `scripts/verify-calendar-legend-collapsible.ts`, `scripts/verify-home-actions-consistent.ts`, `scripts/verify-start-help-no-data.ts`, `scripts/verify-action-success-toast.ts`.
+  - `scripts/verify-home-screen-layout.ts`: zwei Assertions auf die neue, korrekte JSX-Übergabe `<CyclePersonalRing ... manualPmsOverride={manualPmsRingOverride} />` aktualisiert (bewusste Verhaltensänderung, keine stille Fehlerreparatur). Alle 27 Prüfungen bestehen weiterhin.
+  - `scripts/verify-personal-cycle-view.ts`: weiterhin dieselben, seit WP-004 Version 6 bekannten 9 vorbestehenden Fehlschläge (Gradient-Quelltextsuche in falscher Datei) – unverändert, nicht durch diese Korrektur verursacht.
+  - `node --experimental-strip-types --test tests/*.test.ts`: 83/84, der eine Fehlschlag ist der bereits mehrfach dokumentierte, vorbestehende Defekt in `tests/calendar-day-info.test.ts`.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build`: erfolgreich, Routenliste unverändert.
+  - Live-Prüfung mit temporär installiertem Playwright gegen den lokalen Dev-Server mit echten Testkonten: Vier echte, abgeschlossene Perioden im 28-Tage-Rhythmus (letzte 20.–24.09.2026), heute = 16.10.2026 liegt im rechnerischen PMS-Fenster (13.–17.10.). Zustand ohne manuelles PMS: gezeichneter PMS-Pfad beginnt bei den rechnerischen Winkeln. Nach Markierung von Symptomen ab dem 12.10. (4 Tage vor dem rechnerischen Fenster) in Eigenansicht breit (1280px), mobil (375px) und Partneransicht breit: identischer, sichtbar veränderter (früher beginnender) PMS-Pfad in allen drei Ansichten, Marker-Label-Abstand konstant 26,1px, kein horizontaler Überlauf mobil, Kalender markiert den manuellen Bereich korrekt ab dem 12.10., Partneransicht weiterhin ohne jede Eingabemöglichkeit im DOM (0 Checkbox-/Submit-Elemente). Screenshots geprüft und danach gelöscht; Playwright wieder deinstalliert; temporäre Test-/Cleanup-Skripte entfernt.
+- **Abweichungen:** keine. Die Implementierung hält sich an den freigestellten Spielraum der Korrektur Version 3 (exakte Platzierung innerhalb des Segments weiterhin Claude überlassen, solange sichtbar im Segment und ohne Labelüberdeckung). Der robustere `manualPmsMarkerAngle`-Algorithmus war technisch nötig, weil ein einzelner manuell markierter Tag ein deutlich schmaleres Segment als das bisherige 5-Tage-Fenster erzeugen kann – im Soll nicht explizit benannt, aber zur Erfüllung von „Marker bleibt innerhalb des Segments, kein Überdecken des Labels" für alle zulässigen Abschnittslängen erforderlich.
+- **offene Punkte:** Owner-Prüfschritt: Auf `/neu` ein PMS-Symptom einige Tage vor dem bisherigen automatischen PMS-Beginn eintragen und prüfen, dass der pinke Balken sichtbar früher beginnt (nicht nur der Punkt sich verschiebt); danach `/neu/partner` mit aktiver Verbindung öffnen und denselben, verlängerten Balken rein lesend prüfen.
+- **Commit:** folgt.

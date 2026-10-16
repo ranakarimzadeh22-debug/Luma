@@ -1,5 +1,5 @@
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
-import { buildPersonalRingGeometry, ringPointAt } from "@/lib/cycle-ring-geometry";
+import { buildPersonalRingGeometry, ringPointAt, type ManualPmsRingOverride } from "@/lib/cycle-ring-geometry";
 
 const personalPhaseLabel: Record<Exclude<PersonalCycleView["todayPhase"], null>, string> = {
   period: "Periode",
@@ -12,12 +12,15 @@ interface CyclePersonalRingProps {
   personalCycleView: PersonalCycleView;
   today: string;
   /**
-   * WP-014: true only when a manual PMS section (manual-pms.ts) is active
-   * today — moves the today marker into the PMS segment instead of its
-   * usual calculated position. Defaults to false so every existing caller
-   * keeps the prior calculated marker position unchanged.
+   * WP-014 Korrektur Version 3: present only when a manual PMS section
+   * (manual-pms.ts) is active today — its startDate/endDate (unchanged,
+   * already derived by the caller) then determine the drawn PMS segment's
+   * boundaries instead of the usual calculated lead time, and the today
+   * marker is placed inside that same segment. `null`/omitted keeps every
+   * existing caller's prior calculated segment and marker position
+   * unchanged.
    */
-  isManualPmsToday?: boolean;
+  manualPmsOverride?: ManualPmsRingOverride | null;
 }
 
 /**
@@ -35,8 +38,8 @@ function isUncertainOvulationOrFertile(view: PersonalCycleView): boolean {
  * and on the connected partner's read-only view (WP-004 Version 6). No
  * editing affordances live here — callers own any surrounding buttons/modals.
  */
-export default function CyclePersonalRing({ personalCycleView, today, isManualPmsToday = false }: CyclePersonalRingProps) {
-  const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, isManualPmsToday);
+export default function CyclePersonalRing({ personalCycleView, today, manualPmsOverride = null }: CyclePersonalRingProps) {
+  const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, manualPmsOverride);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
 
   return (

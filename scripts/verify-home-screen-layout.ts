@@ -29,7 +29,7 @@ console.log("\n== WP-009: Home-Screen-Hauptbereiche wurden gefunden ==");
 console.log("\n== WP-009: Reihenfolge Heute-Karte vor Zyklus-Kreis vor Kalender bleibt erhalten ==");
 {
   const todayCardIndex = body.indexOf("<TodayCard personalCycleView={displayedPersonalCycleView} />");
-  const cycleRingIndex = body.indexOf("<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} isManualPmsToday={isManualPmsToday} />");
+  const cycleRingIndex = body.indexOf("<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />");
   const calendarIndex = body.indexOf("<CalendarTodayLine today={todayKey} />");
 
   assert(todayCardIndex !== -1, "TodayCard wird gerendert");
@@ -48,8 +48,8 @@ console.log("\n== WP-009: Hauptkomponenten, Props und Handler sind unverändert 
     "TodayCard erhält weiterhin die aufbereitete personalCycleView (WP-013: inklusive manueller PMS-Übersteuerung)",
   );
   assert(
-    body.includes('<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} isManualPmsToday={isManualPmsToday} />'),
-    "CyclePersonalRing erhält weiterhin die aufbereitete personalCycleView und today sowie (WP-014) isManualPmsToday für die Marker-Position",
+    body.includes('<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />'),
+    "CyclePersonalRing erhält weiterhin die aufbereitete personalCycleView und today sowie (WP-014 Korrektur V3) manualPmsRingOverride für Segment- und Marker-Position",
   );
   assert(body.includes('<CalendarTodayLine today={todayKey} />'), "CalendarTodayLine erhält unverändert today");
   assert(body.includes("onClick={() => changeMonth(-1)}") && body.includes("onClick={() => changeMonth(1)}"), "die Monatsnavigation ruft weiterhin changeMonth auf");
