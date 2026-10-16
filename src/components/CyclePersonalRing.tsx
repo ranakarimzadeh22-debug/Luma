@@ -11,6 +11,13 @@ const personalPhaseLabel: Record<Exclude<PersonalCycleView["todayPhase"], null>,
 interface CyclePersonalRingProps {
   personalCycleView: PersonalCycleView;
   today: string;
+  /**
+   * WP-014: true only when a manual PMS section (manual-pms.ts) is active
+   * today — moves the today marker into the PMS segment instead of its
+   * usual calculated position. Defaults to false so every existing caller
+   * keeps the prior calculated marker position unchanged.
+   */
+  isManualPmsToday?: boolean;
 }
 
 /**
@@ -28,8 +35,8 @@ function isUncertainOvulationOrFertile(view: PersonalCycleView): boolean {
  * and on the connected partner's read-only view (WP-004 Version 6). No
  * editing affordances live here — callers own any surrounding buttons/modals.
  */
-export default function CyclePersonalRing({ personalCycleView, today }: CyclePersonalRingProps) {
-  const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today);
+export default function CyclePersonalRing({ personalCycleView, today, isManualPmsToday = false }: CyclePersonalRingProps) {
+  const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, isManualPmsToday);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
 
   return (

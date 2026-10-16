@@ -38,7 +38,7 @@ export default function NewPartnerCycleRing({
   return (
     <section aria-label="Zyklusübersicht deines Partners/deiner Partnerin" className="space-y-3">
       <p className="text-center text-lg text-[#28101f]">Zyklus-Kreis</p>
-      <CyclePersonalRing personalCycleView={personalCycleView} today={today} />
+      <CyclePersonalRing personalCycleView={personalCycleView} today={today} isManualPmsToday={manualPmsSymptoms.length > 0} />
       {personalCycleView.status === "no_data" && (
         <p className="text-center text-sm text-neutral-600">Noch nicht genügend Daten für eine Orientierung.</p>
       )}

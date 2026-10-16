@@ -1090,7 +1090,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       >
         <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
 
-        <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} />
+        <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} isManualPmsToday={isManualPmsToday} />
         {isManualPmsToday && (
           <p className="text-center text-xs font-medium text-[#6d153f]">
             Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey, periods, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}

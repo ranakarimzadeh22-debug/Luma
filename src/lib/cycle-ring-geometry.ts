@@ -88,8 +88,20 @@ const PMS_LEAD_DAYS = 5;
  * Ring geometry for WP-002's personal cycle view: anchored on the *current*
  * cycle window (derived from the latest confirmed period), not the next
  * upcoming period — the ring never states a next-period prediction.
+ *
+ * WP-014: `isManualPmsToday` only moves where the already-computed today
+ * marker is drawn — into the middle of the already-computed PMS segment —
+ * when the caller (manual-pms.ts via isWithinManualPmsSection) says a
+ * manual PMS section is active today. It never changes the segments
+ * themselves or any date/cycle calculation; a real period day is excluded
+ * by the caller before this flag can ever be true, so it never competes
+ * with period precedence.
  */
-export function buildPersonalRingGeometry(view: PersonalCycleView, today: string): RingGeometry | null {
+export function buildPersonalRingGeometry(
+  view: PersonalCycleView,
+  today: string,
+  isManualPmsToday = false,
+): RingGeometry | null {
   if (!view.cycleLengthDays || !view.anchorPeriodStart || !view.periodLengthDays) return null;
 
   const { cycleLengthDays, periodLengthDays, anchorPeriodStart } = view;
@@ -111,10 +123,12 @@ export function buildPersonalRingGeometry(view: PersonalCycleView, today: string
   const pmsStartAngle = angleForDay(dayOffset(pmsStart), cycleLengthDays);
   const pmsEndAngle = angleForDay(dayOffset(pmsEnd) + 1, cycleLengthDays);
 
-  const todayDayOffset = ((daysBetween(cycleStartDay, today) % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
-  const todayAngle = angleForDay(todayDayOffset, cycleLengthDays);
-
   const midAngle = (start: number, end: number) => start + (((end - start + 360) % 360) / 2);
+
+  const todayDayOffset = ((daysBetween(cycleStartDay, today) % cycleLengthDays) + cycleLengthDays) % cycleLengthDays;
+  const todayAngle = isManualPmsToday
+    ? midAngle(pmsStartAngle, pmsEndAngle)
+    : angleForDay(todayDayOffset, cycleLengthDays);
 
   const segments: RingSegment[] = [
     { key: "period", path: arcPath(periodStartAngle, periodEndAngle), labelAngle: midAngle(periodStartAngle, periodEndAngle) },
