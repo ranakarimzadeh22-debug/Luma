@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 0585a2b
 ---
 
 # Manuellen PMS-Status im Zyklus-Kreis konsistent markieren (WP-014)
@@ -41,4 +41,4 @@ Owner prüft `/neu` und `/neu/partner` wie im Prüfschritt beschrieben. Danach S
 
 - Betroffene Dateien: `src/lib/cycle-ring-geometry.ts`, `src/components/CyclePersonalRing.tsx`, `src/components/NewCycleExample.tsx`, `src/components/NewPartnerCycleRing.tsx`, `scripts/verify-manual-pms-ring-marker.ts` (neu), `scripts/verify-home-screen-layout.ts`, `docs/work-packages/WP-014-pms-marker-im-zyklus-kreis.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: pending.
+- Commit oder Referenz: 0585a2b.

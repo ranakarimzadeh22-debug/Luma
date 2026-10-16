@@ -122,7 +122,7 @@ technical_brief: complete
 - **offene Punkte:**
   - Owner-Prüfschritt steht aus: Auf `/neu` heute ein PMS-Symptom speichern und Kreis sowie Kalender vergleichen; danach `/neu/partner` mit einer aktiven Verbindung öffnen und den Kreis vergleichen.
   - Kein Deploy ausgelöst – wie beauftragt.
-- **Commit:** wird nach dem Commit ergänzt.
+- **Commit:** 0585a2b.
 
 ## Soll-Ist-Prüfung – von Codex
 
