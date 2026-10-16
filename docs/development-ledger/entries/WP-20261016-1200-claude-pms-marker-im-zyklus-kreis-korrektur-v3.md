@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: ac0f1a9
 ---
 
 # Manuellen PMS-Abschnitt als eigenes, sichtbar verlängertes Ringsegment darstellen (WP-014 Korrektur Version 3)
@@ -40,4 +40,4 @@ Owner prüft `/neu` und `/neu/partner` wie im Prüfschritt beschrieben. Danach e
 
 - Betroffene Dateien: `src/lib/cycle-ring-geometry.ts`, `src/components/CyclePersonalRing.tsx`, `src/components/NewCycleExample.tsx`, `src/components/NewPartnerCycleRing.tsx`, `src/app/neu/partner/page.tsx`, `scripts/verify-manual-pms-ring-marker.ts`, `scripts/verify-home-screen-layout.ts`, `docs/work-packages/WP-014-pms-marker-im-zyklus-kreis.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle `scripts/verify-*`-Regressionen für PMS/Ring/Kalender/Perioden/Partner, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: ac0f1a9.
