@@ -7,7 +7,7 @@ status: completed
 screens: Startseite
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 95924ef
 ---
 
 # Mobile Tageszahlen, Heute-Karte, Heute-Datumzeile und Aktionsbuttons zusätzlich verkleinern (WP-016 Korrektur Version 2)
@@ -42,4 +42,4 @@ Owner prüft `/neu` auf dem Handy erneut. Danach erneute Soll-Ist-Prüfung durch
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `src/components/CalendarTodayLine.tsx`, `scripts/verify-mobile-home-compact.ts`, `scripts/verify-home-screen-layout.ts`, `docs/work-packages/WP-016-mobile-home-verdichten.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, Eigen- und Partneransicht).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 95924ef.
