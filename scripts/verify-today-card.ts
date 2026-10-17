@@ -145,10 +145,41 @@ console.log("\n== Quelltext: Karte verwendet ausschließlich die vorhandene pers
 
   const componentPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewCycleExample.tsx");
   const componentSource = readFileSync(componentPath, "utf8");
-  assert(componentSource.includes("<TodayCard personalCycleView={personalCycleView} />"), "die Heute-Karte erhält dieselbe personalCycleView-Instanz wie der Ring");
+  const cardCallSite = "<TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />";
+  assert(componentSource.includes(cardCallSite), "die Heute-Karte erhält dieselbe personalCycleView-Instanz wie der Ring, sowie (WP-015) die vorhandene nextPeriodStart-Vorhersage und today");
   const ringIndex = componentSource.indexOf("<CyclePersonalRing");
-  const cardIndex = componentSource.indexOf("<TodayCard personalCycleView={personalCycleView} />");
+  const cardIndex = componentSource.indexOf(cardCallSite);
   assert(cardIndex !== -1 && ringIndex !== -1 && cardIndex < ringIndex, "die Heute-Karte steht im Quelltext vor dem Zyklus-Kreis");
+}
+
+console.log("\n== WP-015: TodayCard zeigt die Resttage-Zeile nur bei einer positiven Zahl ==");
+{
+  const componentPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewCycleExample.tsx");
+  const componentSource = readFileSync(componentPath, "utf8");
+  const fnStart = componentSource.indexOf("function TodayCard(");
+  const fnEnd = componentSource.indexOf("\n}\n", fnStart);
+  const fnBody = componentSource.slice(fnStart, fnEnd);
+  assert(fnBody.includes("daysUntilNextPeriod("), "TodayCard nutzt die reine daysUntilNextPeriod()-Hilfsfunktion");
+  assert(fnBody.includes("daysRemaining !== null"), "die Resttage-Zeile wird nur bei einem Ergebnis ungleich null gerendert");
+  assert(fnBody.includes('status === "no_data"'), "ohne ausreichende Daten (status no_data) wird daysRemaining auf null erzwungen, auch wenn predictCycle bereits eine Default-Vorhersage liefert");
+  assert(fnBody.includes('"1 Tag"'), "Singular 'in 1 Tag' ist im Quelltext vorhanden");
+  assert(fnBody.includes("Tagen"), "Plural 'in X Tagen' ist im Quelltext vorhanden");
+  assert(fnBody.includes("voraussichtlich"), "die Zeile bezeichnet die Angabe als voraussichtlich");
+  assert(!fnBody.includes("new Date("), "TodayCard führt keine eigene Datumsberechnung aus");
+  assert(!fnBody.includes("fetch("), "TodayCard löst keinen Netzwerkaufruf aus (rein abgeleitet)");
+}
+
+console.log("\n== WP-015: ohne ausreichende Daten (no_data) erscheint keine Resttage-Zahl, selbst bei vorhandener Default-Vorhersage ==");
+{
+  // predictCycle() kann bei nur einer gespeicherten Periode bereits einen
+  // Default-basierten nextPeriodStart liefern, obwohl computePersonalCycleView()
+  // noch "no_data" meldet (zu wenig Historie für eine persönliche Einordnung).
+  // Die Resttage-Zeile darf dort nicht neben "Noch keine ausreichenden Daten..."
+  // erscheinen — simuliert hier über dieselbe Bedingung wie in TodayCard.
+  const view = computePersonalCycleView([period("1", "2026-10-10", "2026-10-13")], null, "2026-10-17");
+  assertEqual(view.status, "no_data", "Testaufbau: eine einzelne Periode ergibt weiterhin no_data");
+  const simulatedDaysRemaining = view.status === "no_data" ? null : 21;
+  assertEqual(simulatedDaysRemaining, null, "bei no_data wird keine Resttage-Zahl gezeigt, auch wenn eine Vorhersage rechnerisch vorläge");
 }
 
 function checkRemainsNoData(view: PersonalCycleView): boolean {

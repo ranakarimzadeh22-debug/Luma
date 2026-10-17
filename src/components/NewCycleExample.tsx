@@ -6,6 +6,7 @@ import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
 import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycle-view";
+import { daysUntilNextPeriod } from "@/lib/next-period-countdown";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
@@ -843,12 +844,38 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModal
  * Read-only "Heute" card shown above the cycle ring (WP-006). Pure
  * presentation over the already-derived PersonalCycleView — no own
  * calculation, no button, no API call, no stored state.
+ *
+ * WP-015: the optional second "Resttage" line reads only the already-computed
+ * `nextPeriodStart` (CyclePrediction) and `today` — daysUntilNextPeriod() is
+ * a pure day-count derivation, not a second prediction. It renders only on a
+ * positive day count; null (no prediction, today, or past) renders nothing.
+ * It additionally requires `personalCycleView.status !== "no_data"` (an
+ * already-existing field, read only, no new calculation): predictCycle() can
+ * still return a default-based nextPeriodStart while the personal view has
+ * "not enough data yet" — showing a countdown next to that headline would be
+ * self-contradictory, which the Soll's "bei fehlenden Daten" exclusion rules
+ * out.
  */
-function TodayCard({ personalCycleView }: { personalCycleView: PersonalCycleView }) {
+function TodayCard({
+  personalCycleView,
+  nextPeriodStart,
+  today,
+}: {
+  personalCycleView: PersonalCycleView;
+  nextPeriodStart: string | null;
+  today: string;
+}) {
   const { headline, showsEstimateNotice } = deriveTodayCardText(personalCycleView);
+  const daysRemaining =
+    personalCycleView.status === "no_data" ? null : daysUntilNextPeriod(today, nextPeriodStart);
   return (
     <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 text-center shadow-sm">
       <p className="text-base font-semibold text-[#28101f]">{headline}</p>
+      {daysRemaining !== null && (
+        <p className="mt-1 text-sm text-[#28101f]">
+          Nächste Periode voraussichtlich in {daysRemaining === 1 ? "1 Tag" : `${daysRemaining} Tagen`}.
+        </p>
+      )}
       {showsEstimateNotice && <p className="mt-1 text-sm text-[#a52b5d]">Kann abweichen</p>}
     </div>
   );
@@ -1084,7 +1111,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       className="space-y-9 sm:space-y-10"
       inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
-      <TodayCard personalCycleView={displayedPersonalCycleView} />
+      <TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />
 
       <section
         aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}

@@ -28,7 +28,7 @@ console.log("\n== WP-009: Home-Screen-Hauptbereiche wurden gefunden ==");
 
 console.log("\n== WP-009: Reihenfolge Heute-Karte vor Zyklus-Kreis vor Kalender bleibt erhalten ==");
 {
-  const todayCardIndex = body.indexOf("<TodayCard personalCycleView={displayedPersonalCycleView} />");
+  const todayCardIndex = body.indexOf("<TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />");
   const cycleRingIndex = body.indexOf("<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />");
   const calendarIndex = body.indexOf("<CalendarTodayLine today={todayKey} />");
 
@@ -44,8 +44,8 @@ console.log("\n== WP-009: Reihenfolge Heute-Karte vor Zyklus-Kreis vor Kalender 
 console.log("\n== WP-009: Hauptkomponenten, Props und Handler sind unverändert ==");
 {
   assert(
-    body.includes('<TodayCard personalCycleView={displayedPersonalCycleView} />'),
-    "TodayCard erhält weiterhin die aufbereitete personalCycleView (WP-013: inklusive manueller PMS-Übersteuerung)",
+    body.includes('<TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />'),
+    "TodayCard erhält weiterhin die aufbereitete personalCycleView (WP-013: inklusive manueller PMS-Übersteuerung) sowie (WP-015) die vorhandene nextPeriodStart-Vorhersage und today",
   );
   assert(
     body.includes('<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />'),
