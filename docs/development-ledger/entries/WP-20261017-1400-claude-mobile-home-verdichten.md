@@ -7,7 +7,7 @@ status: completed
 screens: Startseite
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 0a78988
 ---
 
 # Mobile Home-Ansicht ruhig verdichten (WP-016)
@@ -43,4 +43,4 @@ Owner prüft `/neu` auf dem Handy wie im Prüfschritt beschrieben. Danach Soll-I
 
 - Betroffene Dateien: `src/components/CyclePersonalRing.tsx`, `src/components/NewCycleExample.tsx`, `scripts/verify-mobile-home-compact.ts` (neu), `scripts/verify-home-screen-layout.ts`, `scripts/verify-home-actions-consistent.ts`, `docs/work-packages/WP-016-mobile-home-verdichten.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil und breit, Eigen- und Partneransicht).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 0a78988.
