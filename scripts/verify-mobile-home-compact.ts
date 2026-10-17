@@ -18,6 +18,12 @@ const componentSource = readFileSync(componentPath, "utf8");
 const partnerRingPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewPartnerCycleRing.tsx");
 const partnerRingSource = readFileSync(partnerRingPath, "utf8");
 
+const todayLinePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "CalendarTodayLine.tsx");
+const todayLineSource = readFileSync(todayLinePath, "utf8");
+
+const partnerCalendarPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewPartnerCalendar.tsx");
+const partnerCalendarSource = readFileSync(partnerCalendarPath, "utf8");
+
 console.log("\n== WP-016: CyclePersonalRing bekommt eine rein optionale, standardmäßig aus geschaltete compact-Prop ==");
 {
   assert(ringSource.includes("compact?: boolean;"), "compact ist eine optionale Prop");
@@ -99,6 +105,59 @@ console.log("\n== WP-016: keine Textkürzung, kein Entfernen bestehender Hinweis
   assert(componentSource.includes("Kann abweichen"), "der Unsicherheitshinweis bleibt vollständig vorhanden");
   assert(componentSource.includes("Von dir eingetragen:"), "der manuelle PMS-Hinweis bleibt vollständig vorhanden");
   assert(!componentSource.includes("text-ellipsis") && !componentSource.includes("truncate"), "keine CSS-Textabschneidung (truncate/text-ellipsis) wurde eingeführt");
+}
+
+console.log("\n== WP-016 Korrektur V2: Kalender-Haupt-Tageszahl ist mobil kleiner, ab sm unverändert text-base ==");
+{
+  assert(
+    componentSource.includes('const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-sm sm:text-base ${'),
+    "dayClassName nutzt unterhalb sm text-sm, ab sm weiterhin die bisherige text-base",
+  );
+}
+
+console.log("\n== WP-016 Korrektur V2: TodayCard wird mobil nochmals verdichtet, ab sm unverändert ==");
+{
+  assert(
+    componentSource.includes('<div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-3 py-2.5 text-center shadow-sm sm:px-5 sm:py-4">'),
+    "der Karten-Innenabstand ist unterhalb sm enger (px-3 py-2.5), ab sm weiterhin px-5 py-4 wie vor der Korrektur",
+  );
+  assert(componentSource.includes("text-sm font-semibold text-[#28101f] sm:text-base"), "die Headline bleibt bei text-sm (mobil) / text-base (ab sm)");
+  assert(componentSource.includes("text-xs text-[#28101f] sm:mt-1 sm:text-sm"), "die Resttage-Zeile bleibt bei text-xs (mobil) / text-sm (ab sm)");
+  assert(componentSource.includes("text-xs text-[#a52b5d] sm:mt-1 sm:text-sm"), "'Kann abweichen' bleibt bei text-xs (mobil) / text-sm (ab sm)");
+  assert(componentSource.includes("Nächste Periode voraussichtlich in"), "die Resttage-Logik/der Text bleibt unverändert vorhanden");
+}
+
+console.log("\n== WP-016 Korrektur V2: CalendarTodayLine bekommt eine rein optionale compact-Prop, nur der Owner setzt sie ==");
+{
+  assert(todayLineSource.includes("compact?: boolean;"), "compact ist eine optionale Prop");
+  assert(todayLineSource.includes("compact = false"), "compact ist standardmäßig false (unverändertes Verhalten ohne die Prop)");
+  assert(
+    todayLineSource.includes('compact ? "text-xs sm:text-sm" : "text-sm"'),
+    "ohne compact bleibt die Zeile exakt text-sm (unverändert); nur mit compact wird sie unterhalb sm kleiner",
+  );
+  assert(componentSource.includes("<CalendarTodayLine today={todayKey} compact />"), "der Owner-Aufruf setzt compact");
+  assert(!partnerCalendarSource.includes("compact"), "NewPartnerCalendar.tsx enthält keinerlei Referenz auf compact — die Partner-Datumzeile bleibt unverändert");
+  assert(partnerCalendarSource.includes("<CalendarTodayLine today={todayKey} />"), "der Partner-Aufruf von CalendarTodayLine bleibt unverändert, ohne compact");
+}
+
+console.log("\n== WP-016 Korrektur V2: die drei Home-Aktionsbuttons sind mobil kleiner, behalten aber mindestens 40px Höhe ==");
+{
+  const buttonTexts = ["Zykluslänge ergänzen", "Meine Periode aktualisieren", "Erklärungen ausblenden"];
+  for (const label of buttonTexts) {
+    assert(componentSource.includes(label), `Button-Text '${label}' bleibt unverändert vorhanden`);
+  }
+  const minH10Count = (componentSource.match(/min-h-10/g) ?? []).length;
+  assert(minH10Count >= 3, `mindestens drei Buttons tragen min-h-10 (gefunden: ${minH10Count})`);
+  assert(componentSource.includes('text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm'), "'Zykluslänge ergänzen' und 'Erklärungen...' nutzen mobil text-xs, ab sm weiterhin text-sm");
+  assert(componentSource.includes('text-xs font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm'), "'Meine Periode aktualisieren' nutzt mobil text-xs, ab sm weiterhin text-sm");
+}
+
+console.log("\n== WP-016 Korrektur V2: keine Tagescontainer-, Grid-, Badge- oder Markerklasse wurde angefasst ==");
+{
+  assert(componentSource.includes("aspect-square min-w-0"), "Tagesfeld-Container (aspect-square) bleibt unverändert");
+  assert(componentSource.includes('absolute right-1 top-0.5 text-[9px] font-bold'), "Status-Badges (P/Läuft/Gsch./M·Du) bleiben in Position und Größe unverändert");
+  assert(componentSource.includes('size-2 -translate-x-1/2 rounded-full border border-white bg-red-600'), "der Heute-Marker-Punkt im Kalender bleibt unverändert");
+  assert(componentSource.includes('text-[8px] font-semibold leading-none text-[#4c279a]'), "das 'Heute'-Badge bleibt unverändert");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

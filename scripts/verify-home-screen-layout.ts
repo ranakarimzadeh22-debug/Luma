@@ -30,7 +30,7 @@ console.log("\n== WP-009: Reihenfolge Heute-Karte vor Zyklus-Kreis vor Kalender 
 {
   const todayCardIndex = body.indexOf("<TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />");
   const cycleRingIndex = body.indexOf("<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />");
-  const calendarIndex = body.indexOf("<CalendarTodayLine today={todayKey} />");
+  const calendarIndex = body.indexOf("<CalendarTodayLine today={todayKey} compact />");
 
   assert(todayCardIndex !== -1, "TodayCard wird gerendert");
   assert(cycleRingIndex !== -1, "CyclePersonalRing wird gerendert");
@@ -51,7 +51,7 @@ console.log("\n== WP-009: Hauptkomponenten, Props und Handler sind unverändert 
     body.includes('<CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />'),
     "CyclePersonalRing erhält weiterhin die aufbereitete personalCycleView und today sowie (WP-014 Korrektur V3) manualPmsRingOverride für Segment- und Marker-Position",
   );
-  assert(body.includes('<CalendarTodayLine today={todayKey} />'), "CalendarTodayLine erhält unverändert today");
+  assert(body.includes('<CalendarTodayLine today={todayKey} compact />'), "CalendarTodayLine erhält unverändert today sowie (seit WP-016 Korrektur V2) compact für die mobile Verdichtung");
   assert(body.includes("onClick={() => changeMonth(-1)}") && body.includes("onClick={() => changeMonth(1)}"), "die Monatsnavigation ruft weiterhin changeMonth auf");
   assert(body.includes("onClick={() => setIsPeriodHistoryOpen(true)}"), "die Monatsanzeige öffnet weiterhin die Periodenhistorie");
 }
@@ -76,8 +76,8 @@ console.log("\n== WP-009 Version 2 / WP-016: Zyklus- und Kalender-section bleibe
   }
 
   assert(
-    source.includes('<div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-4 py-3 text-center shadow-sm sm:px-5 sm:py-4">'),
-    "die Heute-Karte (TodayCard) behält ihre Kartenrahmung; seit WP-016 mit engerem mobilem Innenabstand (px-4 py-3), ab sm weiterhin px-5 py-4",
+    source.includes('<div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-3 py-2.5 text-center shadow-sm sm:px-5 sm:py-4">'),
+    "die Heute-Karte (TodayCard) behält ihre Kartenrahmung; seit WP-016 Korrektur V2 mit engerem mobilem Innenabstand (px-3 py-2.5), ab sm weiterhin px-5 py-4",
   );
 
   assert(body.includes("Dein Zyklus"), "kein Text in der Zyklus-section wurde entfernt oder verändert");

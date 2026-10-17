@@ -869,7 +869,7 @@ function TodayCard({
   const daysRemaining =
     personalCycleView.status === "no_data" ? null : daysUntilNextPeriod(today, nextPeriodStart);
   return (
-    <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-4 py-3 text-center shadow-sm sm:px-5 sm:py-4">
+    <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-3 py-2.5 text-center shadow-sm sm:px-5 sm:py-4">
       <p className="text-sm font-semibold text-[#28101f] sm:text-base">{headline}</p>
       {daysRemaining !== null && (
         <p className="mt-0.5 text-xs text-[#28101f] sm:mt-1 sm:text-sm">
@@ -1135,7 +1135,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             <button
               type="button"
               onClick={() => setIsAddCycleLengthModalOpen(true)}
-              className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+              className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
             >
               Zykluslänge ergänzen
             </button>
@@ -1152,7 +1152,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       )}
 
       <section aria-label="Kalender zur Orientierung" className="space-y-3 sm:space-y-5">
-        <CalendarTodayLine today={todayKey} />
+        <CalendarTodayLine today={todayKey} compact />
         <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
           <h2 className="text-center font-serif text-2xl font-semibold capitalize text-[#28101f] sm:text-3xl">
@@ -1215,7 +1215,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 })
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
-            const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-base ${
+            const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-sm sm:text-base ${
               storedPeriod || runningPeriod
                 ? "bg-[#6d153f] text-white"
                 : expectedPeriod
@@ -1305,7 +1305,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           <button
             type="button"
             onClick={openMyPeriods}
-            className="rounded-full bg-[#6d153f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            className="flex min-h-10 items-center justify-center rounded-full bg-[#6d153f] px-6 py-3 text-xs font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
           >
             Meine Periode aktualisieren
           </button>
@@ -1323,7 +1323,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             aria-expanded={isCalendarLegendOpen}
             aria-controls="calendar-legend-panel"
             onClick={() => setIsCalendarLegendOpen((current) => !current)}
-            className="rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-sm font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+            className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
           >
             {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
           </button>
