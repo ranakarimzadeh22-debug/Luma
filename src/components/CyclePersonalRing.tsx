@@ -21,6 +21,15 @@ interface CyclePersonalRingProps {
    * unchanged.
    */
   manualPmsOverride?: ManualPmsRingOverride | null;
+  /**
+   * WP-016: purely visual, mobile-only compacting for the owner's own /neu
+   * page — smaller container and narrower ring bands/labels within the same
+   * fixed 320x320 viewBox. Defaults to false so the partner view
+   * (NewPartnerCycleRing.tsx never passes this) and any sm-and-above
+   * rendering stay byte-identical to before. Never changes
+   * buildPersonalRingGeometry's segments, angles, or marker position.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -38,12 +47,19 @@ function isUncertainOvulationOrFertile(view: PersonalCycleView): boolean {
  * and on the connected partner's read-only view (WP-004 Version 6). No
  * editing affordances live here — callers own any surrounding buttons/modals.
  */
-export default function CyclePersonalRing({ personalCycleView, today, manualPmsOverride = null }: CyclePersonalRingProps) {
+export default function CyclePersonalRing({
+  personalCycleView,
+  today,
+  manualPmsOverride = null,
+  compact = false,
+}: CyclePersonalRingProps) {
   const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, manualPmsOverride);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
+  const ringStrokeWidth = compact ? "30" : "38";
+  const labelFontSize = compact ? "12" : "14";
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[22rem]">
+    <div className={`relative mx-auto aspect-square w-full ${compact ? "max-w-[17rem]" : "max-w-[22rem]"}`}>
       <svg viewBox="0 0 320 320" role="img" aria-labelledby="cycle-ring-title cycle-ring-description" className="h-full w-full scale-[1.08] overflow-visible sm:scale-100">
         <title id="cycle-ring-title">
           {hasPersonalCircle ? "Zyklusübersicht – heutiger Stand" : "Zyklusübersicht – noch keine Daten"}
@@ -68,11 +84,11 @@ export default function CyclePersonalRing({ personalCycleView, today, manualPmsO
           </linearGradient>
         </defs>
 
-        <circle cx="160" cy="160" r="125" fill="none" stroke="#f1dfe6" strokeWidth="38" />
+        <circle cx="160" cy="160" r="125" fill="none" stroke="#f1dfe6" strokeWidth={ringStrokeWidth} />
 
         {personalRingGeometry ? (
           <>
-            <g fill="none" strokeWidth="38" strokeLinecap="round" filter="url(#ring-shadow)">
+            <g fill="none" strokeWidth={ringStrokeWidth} strokeLinecap="round" filter="url(#ring-shadow)">
               {personalRingGeometry.segments.map((segment) => (
                 <path
                   key={segment.key}
@@ -98,7 +114,7 @@ export default function CyclePersonalRing({ personalCycleView, today, manualPmsO
                   y={point.y}
                   textAnchor="middle"
                   fill="white"
-                  fontSize="14"
+                  fontSize={labelFontSize}
                   fontWeight="700"
                   stroke="rgba(40,16,31,0.35)"
                   strokeWidth="2.5"
@@ -121,7 +137,7 @@ export default function CyclePersonalRing({ personalCycleView, today, manualPmsO
             })()}
           </>
         ) : (
-          <circle cx="160" cy="160" r="125" fill="none" stroke="#e7d3da" strokeWidth="38" strokeDasharray="2 14" strokeLinecap="round" />
+          <circle cx="160" cy="160" r="125" fill="none" stroke="#e7d3da" strokeWidth={ringStrokeWidth} strokeDasharray="2 14" strokeLinecap="round" />
         )}
 
         <g textAnchor="middle">

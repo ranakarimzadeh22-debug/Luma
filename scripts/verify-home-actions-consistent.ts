@@ -67,13 +67,13 @@ console.log("\n== WP-010: beide Hilfsaktionen sind jetzt visuell konsistent (gle
   );
 }
 
-console.log("\n== WP-010: keine neuen Card-Rahmen, Hintergrundflächen oder Schatten um Zyklus-Kreis oder Kalender ==");
+console.log("\n== WP-010 / WP-016: keine neuen Card-Rahmen, Hintergrundflächen oder Schatten um Zyklus-Kreis oder Kalender ==");
 {
   const cycleSectionMatch = body.match(/<section\s+aria-label=\{hasPersonalCircle[\s\S]*?className="([^"]*)"/);
   const calendarSectionMatch = body.match(/<section\s+aria-label="Kalender zur Orientierung"\s+className="([^"]*)"/);
 
-  assert(cycleSectionMatch?.[1] === "space-y-3", "die Zyklus-section bleibt rahmenlos (nur 'space-y-3')");
-  assert(calendarSectionMatch?.[1] === "space-y-5", "die Kalender-section bleibt rahmenlos (nur 'space-y-5')");
+  assert(cycleSectionMatch?.[1] === "space-y-2 sm:space-y-3", "die Zyklus-section bleibt rahmenlos (seit WP-016 'space-y-2 sm:space-y-3')");
+  assert(calendarSectionMatch?.[1] === "space-y-3 sm:space-y-5", "die Kalender-section bleibt rahmenlos (seit WP-016 'space-y-3 sm:space-y-5')");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

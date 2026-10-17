@@ -869,14 +869,14 @@ function TodayCard({
   const daysRemaining =
     personalCycleView.status === "no_data" ? null : daysUntilNextPeriod(today, nextPeriodStart);
   return (
-    <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 text-center shadow-sm">
-      <p className="text-base font-semibold text-[#28101f]">{headline}</p>
+    <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-4 py-3 text-center shadow-sm sm:px-5 sm:py-4">
+      <p className="text-sm font-semibold text-[#28101f] sm:text-base">{headline}</p>
       {daysRemaining !== null && (
-        <p className="mt-1 text-sm text-[#28101f]">
+        <p className="mt-0.5 text-xs text-[#28101f] sm:mt-1 sm:text-sm">
           Nächste Periode voraussichtlich in {daysRemaining === 1 ? "1 Tag" : `${daysRemaining} Tagen`}.
         </p>
       )}
-      {showsEstimateNotice && <p className="mt-1 text-sm text-[#a52b5d]">Kann abweichen</p>}
+      {showsEstimateNotice && <p className="mt-0.5 text-xs text-[#a52b5d] sm:mt-1 sm:text-sm">Kann abweichen</p>}
     </div>
   );
 }
@@ -1108,18 +1108,23 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   return (
     <>
     <div
-      className="space-y-9 sm:space-y-10"
+      className="space-y-6 sm:space-y-10"
       inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
       <TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />
 
       <section
         aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}
-        className="space-y-3"
+        className="space-y-2 sm:space-y-3"
       >
-        <p className="text-center text-lg text-[#28101f]">Dein Zyklus</p>
+        <p className="text-center text-base text-[#28101f] sm:text-lg">Dein Zyklus</p>
 
-        <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />
+        <div className="sm:hidden">
+          <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} compact />
+        </div>
+        <div className="hidden sm:block">
+          <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />
+        </div>
         {isManualPmsToday && (
           <p className="text-center text-xs font-medium text-[#6d153f]">
             Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey, periods, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
@@ -1146,11 +1151,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         </div>
       )}
 
-      <section aria-label="Kalender zur Orientierung" className="space-y-5">
+      <section aria-label="Kalender zur Orientierung" className="space-y-3 sm:space-y-5">
         <CalendarTodayLine today={todayKey} />
-        <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
-          <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
-          <h2 className="text-center font-serif text-3xl font-semibold capitalize text-[#28101f]">
+        <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
+          <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
+          <h2 className="text-center font-serif text-2xl font-semibold capitalize text-[#28101f] sm:text-3xl">
             <button
               type="button"
               onClick={() => setIsPeriodHistoryOpen(true)}
@@ -1160,11 +1165,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               {monthName}
             </button>
           </h2>
-          <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
+          <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
         </div>
 
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
-          {weekdayLabels.map((label) => <div key={label} className="pb-1 text-sm font-medium text-[#4b3a44]">{label}</div>)}
+          {weekdayLabels.map((label) => <div key={label} className="pb-0.5 text-xs font-medium text-[#4b3a44] sm:pb-1 sm:text-sm">{label}</div>)}
           {cells.map((day, index) => {
             const date = day
               ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day)
