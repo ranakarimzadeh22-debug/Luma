@@ -7,7 +7,7 @@ status: completed
 screens: Startseite
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 909c282
 ---
 
 # Resttage bis zur nächsten geschätzten Periode in der Heute-Karte anzeigen (WP-015)
@@ -40,4 +40,4 @@ Owner prüft `/neu` wie im Prüfschritt beschrieben. Danach Soll-Ist-Prüfung du
 
 - Betroffene Dateien: `src/lib/next-period-countdown.ts` (neu), `src/components/NewCycleExample.tsx`, `scripts/verify-next-period-countdown.ts` (neu), `scripts/verify-today-card.ts`, `scripts/verify-home-screen-layout.ts`, `docs/work-packages/WP-015-resttage-bis-zur-naechsten-periode.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 909c282.
