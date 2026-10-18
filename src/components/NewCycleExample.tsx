@@ -798,9 +798,17 @@ interface PeriodHistoryModalProps {
   rows: PeriodHistoryRow[];
   onClose: () => void;
   onSelectMonth: (startDate: string) => void;
+  onOpenMyPeriods: () => void;
 }
 
-function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModalProps) {
+/**
+ * WP-019: this modal is the "Periodenübersicht" — the existing history
+ * dialog, now also the single home for the "Meine Periode aktualisieren"
+ * entry point (removed from under the home calendar). onOpenMyPeriods closes
+ * this dialog first, then calls the already-existing openMyPeriods() local
+ * state path — no new modal/form logic, never two dialogs open at once.
+ */
+function PeriodHistoryModal({ rows, onClose, onSelectMonth, onOpenMyPeriods }: PeriodHistoryModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -820,8 +828,16 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth }: PeriodHistoryModal
     >
       <div className="flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl bg-white p-6 shadow-lg">
         <h2 id="period-history-title" className="text-lg font-semibold text-[#28101f]">
-          Periodenhistorie
+          Periodenübersicht
         </h2>
+
+        <button
+          type="button"
+          onClick={onOpenMyPeriods}
+          className="mt-3 flex min-h-10 items-center justify-center rounded-full bg-[#6d153f] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+        >
+          Meine Periode aktualisieren
+        </button>
 
         <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
           {sortedNewestFirst.length === 0 && (
@@ -1344,16 +1360,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           })}
         </div>
 
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={openMyPeriods}
-            className="flex min-h-10 items-center justify-center rounded-full bg-[#6d153f] px-6 py-3 text-xs font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
-          >
-            Meine Periode aktualisieren
-          </button>
-        </div>
-
         {prediction?.isUncertain && (
           <p className="text-center text-xs font-semibold text-[#a52b5d]">
             Vorhersage unsicher - Kann abweichen
@@ -1438,6 +1444,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         rows={computePeriodHistory(periods)}
         onClose={() => setIsPeriodHistoryOpen(false)}
         onSelectMonth={jumpToHistoryMonth}
+        onOpenMyPeriods={() => {
+          setIsPeriodHistoryOpen(false);
+          openMyPeriods();
+        }}
       />
     )}
     </>

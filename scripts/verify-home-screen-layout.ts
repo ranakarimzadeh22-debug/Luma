@@ -81,7 +81,10 @@ console.log("\n== WP-009 Version 2 / WP-016: Zyklus- und Kalender-section bleibe
   );
 
   assert(body.includes("Dein Zyklus"), "kein Text in der Zyklus-section wurde entfernt oder verändert");
-  assert(body.includes("Meine Periode aktualisieren"), "kein Text/Button im Kalenderbereich wurde entfernt oder verändert");
+  // WP-019: "Meine Periode aktualisieren" wurde bewusst aus dem Kalenderbereich
+  // der Home-Ansicht entfernt und lebt jetzt in PeriodHistoryModal
+  // ("Periodenübersicht") — siehe scripts/verify-period-history-overview.ts.
+  assert(body.includes("Erklärungen zum Kalender anzeigen"), "der Info-Button-aria-label im Kalenderbereich bleibt vorhanden (kein unbeabsichtigter Textverlust)");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

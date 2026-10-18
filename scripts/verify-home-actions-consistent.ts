@@ -21,16 +21,21 @@ const source = readFileSync(componentPath, "utf8");
 const exportStart = source.indexOf("export default function NewCycleExample");
 const body = exportStart !== -1 ? source.slice(exportStart) : "";
 
-console.log("\n== WP-010: die drei bestehenden Home-Aktionen wurden gefunden ==");
+console.log("\n== WP-010: der Quelltextbereich der Home-Komponente wurde isoliert (seit WP-019 verbleiben zwei bedingte Home-Hilfsaktionen) ==");
 {
   assert(body.length > 0, "der Quelltextbereich von NewCycleExample wurde isoliert");
 }
 
-console.log("\n== WP-010: Hauptaktion bleibt klar erkennbar und unverändert in Funktion und Text ==");
+console.log("\n== WP-019: die frühere Home-Hauptaktion 'Meine Periode aktualisieren' ist aus der Home-Ansicht entfernt, lebt jetzt in der Periodenübersicht ==");
 {
-  const mainActionMatch = body.match(/<button\s+type="button"\s+onClick=\{openMyPeriods\}\s+className="([^"]*)"\s*>\s*Meine Periode aktualisieren\s*<\/button>/);
-  assert(Boolean(mainActionMatch), "die Hauptaktion 'Meine Periode aktualisieren' ruft weiterhin openMyPeriods auf, unveränderter Text");
-  assert(Boolean(mainActionMatch?.[1].includes("bg-[#6d153f]") && mainActionMatch?.[1].includes("text-white")), "die Hauptaktion bleibt visuell als gefüllter, primärer Button von den Hilfsaktionen unterscheidbar");
+  // WP-019 entfernte den großen Button unter dem Home-Kalender vollständig;
+  // er existiert jetzt ausschließlich innerhalb von PeriodHistoryModal
+  // ("Periodenübersicht"), siehe scripts/verify-period-history-overview.ts.
+  assert(!body.includes('onClick={openMyPeriods}\n            className="flex min-h-10 items-center justify-center rounded-full bg-[#6d153f]'), "kein Home-Button mehr mit diesem Muster unter dem Kalender");
+  const calendarGridEnd = body.indexOf("grid-cols-7 gap-1.5");
+  const uncertainHintIndex = body.indexOf("Vorhersage unsicher - Kann abweichen", calendarGridEnd);
+  const betweenCalendarAndUncertainHint = calendarGridEnd !== -1 && uncertainHintIndex !== -1 ? body.slice(calendarGridEnd, uncertainHintIndex) : "";
+  assert(!betweenCalendarAndUncertainHint.includes("Meine Periode aktualisieren"), "zwischen Kalendergrid und Unsicherheitshinweis steht kein 'Meine Periode aktualisieren'-Button mehr (die Stelle, an der er vor WP-019 stand)");
 }
 
 console.log("\n== WP-010: Hilfsaktion 'Zykluslänge ergänzen' bleibt an ihre bestehende Sichtbarkeitsbedingung und Funktion gebunden ==");

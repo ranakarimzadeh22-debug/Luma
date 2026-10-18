@@ -141,20 +141,19 @@ console.log("\n== WP-016 Korrektur V2: CalendarTodayLine bekommt eine rein optio
   void partnerCalendarSource;
 }
 
-console.log("\n== WP-016 Korrektur V2 / WP-018: die verbliebenen zwei Pill-Aktionsbuttons sind mobil kleiner, behalten aber mindestens 40px Höhe ==");
+console.log("\n== WP-016 Korrektur V2 / WP-018 / WP-019: die verbliebene Home-Pill-Aktion ist mobil kleiner, behält aber mindestens 40px Höhe ==");
 {
   // WP-018: "Erklärungen zum Kalender anzeigen"/"ausblenden" ist seit WP-018
   // kein Pill-Button mehr neben "Zykluslänge ergänzen", sondern ein kleiner
   // ⓘ-Info-Button in der Monatszeile (siehe verify-calendar-legend-collapsible.ts).
-  // Hier bleiben daher nur noch die zwei verbliebenen Pill-Buttons relevant.
-  const buttonTexts = ["Zykluslänge ergänzen", "Meine Periode aktualisieren"];
-  for (const label of buttonTexts) {
-    assert(componentSource.includes(label), `Button-Text '${label}' bleibt unverändert vorhanden`);
-  }
+  // WP-019: "Meine Periode aktualisieren" ist seit WP-019 kein Home-Button
+  // mehr, sondern lebt in PeriodHistoryModal ("Periodenübersicht") — siehe
+  // scripts/verify-period-history-overview.ts. In der Home-Ansicht bleibt
+  // daher nur noch "Zykluslänge ergänzen" als Pill-Button relevant.
+  assert(componentSource.includes("Zykluslänge ergänzen"), "Button-Text 'Zykluslänge ergänzen' bleibt unverändert vorhanden");
   const minH10Count = (componentSource.match(/min-h-10/g) ?? []).length;
-  assert(minH10Count >= 2, `mindestens zwei Pill-Buttons tragen min-h-10 (gefunden: ${minH10Count})`);
+  assert(minH10Count >= 1, `mindestens ein Home-Pill-Button trägt min-h-10 (gefunden: ${minH10Count})`);
   assert(componentSource.includes('text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm'), "'Zykluslänge ergänzen' nutzt mobil text-xs, ab sm weiterhin text-sm");
-  assert(componentSource.includes('text-xs font-semibold text-white shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm'), "'Meine Periode aktualisieren' nutzt mobil text-xs, ab sm weiterhin text-sm");
 }
 
 console.log("\n== WP-016 Korrektur V2: keine Tagescontainer-, Grid-, Badge- oder Markerklasse wurde angefasst ==");

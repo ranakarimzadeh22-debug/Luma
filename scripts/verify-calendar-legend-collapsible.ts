@@ -113,12 +113,15 @@ console.log("\n== WP-007 V2: keine Marker-, Berechnungs- oder Datenlogik wurde v
 console.log("\n== WP-018: der alte lange Steuerbutton unter dem Kalender ist entfernt ==");
 {
   assert(!source.includes('>{isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}<'), "kein sichtbarer Button-Text mehr mit dem alten Umschalt-Muster");
+  // WP-019 verlegte "Meine Periode aktualisieren" aus der Home-Ansicht in die
+  // Periodenübersicht (PeriodHistoryModal); der Info-Button-Lagenachweis wird
+  // daher gegen das Kalendergrid statt gegen diesen Button geführt.
   const monthRowIndex = source.indexOf("grid-cols-[2.5rem_1fr_2.5rem]");
   const infoButtonIndex = source.indexOf('aria-expanded={isCalendarLegendOpen}');
-  const updatePeriodIndex = source.indexOf("Meine Periode aktualisieren");
+  const calendarGridIndex = source.indexOf("grid-cols-7 gap-1.5", monthRowIndex);
   assert(
-    monthRowIndex !== -1 && infoButtonIndex !== -1 && updatePeriodIndex !== -1 && infoButtonIndex < updatePeriodIndex,
-    "der Info-Button-Aufruf steht im Quelltext vor (nicht mehr unterhalb) dem 'Meine Periode aktualisieren'-Button — er sitzt in der Monatszeile",
+    monthRowIndex !== -1 && infoButtonIndex !== -1 && calendarGridIndex !== -1 && infoButtonIndex < calendarGridIndex,
+    "der Info-Button-Aufruf steht im Quelltext in der Monatszeile, vor dem Kalendergrid",
   );
 }
 
