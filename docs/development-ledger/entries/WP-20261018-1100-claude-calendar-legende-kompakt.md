@@ -7,7 +7,7 @@ status: completed
 screens: Startseite
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 556c841
 ---
 
 # Kalenderlegende kompakt an der Monatsüberschrift öffnen (WP-018)
@@ -41,4 +41,4 @@ Owner prüft `/neu` wie im Prüfschritt beschrieben. Danach Soll-Ist-Prüfung du
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-calendar-legend-collapsible.ts`, `scripts/verify-home-actions-consistent.ts`, `scripts/verify-mobile-home-compact.ts`, `docs/work-packages/WP-018-calendar-legende-kompakt.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, echter Fokus-Klick für Escape-Verhalten).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 556c841.
