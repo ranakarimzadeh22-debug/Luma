@@ -7,7 +7,7 @@ status: completed
 screens: Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: c0f11c4
 ---
 
 # Mobile Partneransicht ruhig verdichten (WP-017)
@@ -41,4 +41,4 @@ Owner prüft `/neu/partner` als aktiver Partner auf dem Handy und breit wie im P
 
 - Betroffene Dateien: `src/app/neu/partner/page.tsx`, `src/components/NewPartnerCycleRing.tsx`, `src/components/NewPartnerCalendar.tsx`, `scripts/verify-mobile-partner-compact.ts` (neu), `scripts/verify-mobile-home-compact.ts`, `docs/work-packages/WP-017-mobile-partneransicht-verdichten.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, Partner- und Eigenansicht, manuelles PMS).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: c0f11c4.
