@@ -128,4 +128,151 @@ technical_brief: complete
 
 ## Soll-Ist-Prüfung – von Codex
 
-_Noch nicht geprüft. Diese Prüfung erfolgt erst nach der Claude-Umsetzung._
+- Ergebnis: Soll und Ist stimmen ausreichend überein. Der lange Steuerbutton unter dem Kalender ist entfernt; der kleine, zugängliche `ⓘ`-Button sitzt als separates Geschwisterelement neben dem weiterhin unveränderten Monatsnamen-Button. Er nutzt denselben bestehenden State und dasselbe Panel. Historie, Legende, P/M/E-Escape-Verhalten und Monatswechsel bleiben getrennt funktionsfähig.
+- Unsicherheitshinweis: erfüllt. Er bleibt außerhalb des Panels und unabhängig von dessen Öffnungszustand sichtbar.
+- Dokumentierte Abweichung: keine fachliche Abweichung. Der Info-Button misst 32 x 32px. Dieses Paket verlangte eine ausreichende Antippbarkeit, jedoch keine feste 40px-Untergrenze wie frühere Pakete für Monatsnavigation und Tagesfelder. Die Owner-Prüfung entscheidet, ob diese kompakte Größe sich auf dem eigenen Gerät angenehm anfühlt.
+- Nachschärfung: keine.
+- Product-Map aktualisiert: ja.
+
+## Korrektur Version 2 – kurze Popover-Legende direkt am Info-Button
+
+### Owner-Entscheidung
+
+Die Ownerin hat nach der Prüfung präzisiert: Nach dem Antippen von `ⓘ` soll die Legende nicht mehr unterhalb des Kalenders erscheinen. Stattdessen öffnet sich ein kleines Fenster direkt am Info-Button. Es enthält nur kurze Farbzeilen und keine langen Erklärungen oder innere Scrollfläche.
+
+### Soll – Korrektur Version 2
+
+- Ersetze den bisherigen unterhalb des Kalenders gerenderten Bereich `calendar-legend-panel` durch ein kompaktes, nicht modales Popover, das optisch unmittelbar unter oder neben dem `ⓘ`-Button verankert ist.
+- Das Popover zeigt ausschließlich kurze Farbzeilen. Vereinbarter Inhalt:
+  1. `Periode`
+  2. `PMS`
+  3. eine kurze Kennzeichnung `Geschätzt` für die folgenden Vorhersagezeilen
+  4. `Fruchtbare Tage`
+  5. `Eisprung`
+  6. `Nächste Periode`
+- Die drei Vorhersagezeilen stehen sichtbar unter `Geschätzt`, damit Fruchtbarkeit, Eisprung und nächste Periode weiterhin nicht als bestätigte biologische oder tatsächliche Ereignisse gelesen werden.
+- Die bisherigen langen Legendentexte und die klickbaren P/M/E-Einzelerklärungen gehören nicht mehr zur sichtbaren Owner-Home-Legende. Sie werden nicht in einen anderen dauerhaft sichtbaren Bereich verschoben.
+- Das Popover ist anfangs geschlossen, öffnet und schließt über denselben `ⓘ`-Button und schließt zusätzlich bei Escape sowie bei einem Klick/Tipp außerhalb. Es bleibt über `aria-expanded`, `aria-controls`, `aria-haspopup="dialog"` und eine eindeutige Dialog-Beschriftung zugänglich.
+- Die bestehende Monatsüberschrift bleibt unverändert ein separater Button für die Periodenhistorie.
+- Der Hinweis `Vorhersage unsicher - Kann abweichen` bleibt außerhalb des Popovers und immer sichtbar.
+- Auf schmalen Bildschirmen darf das Popover bei wenig Platz nach links unter den Button ausweichen, muss aber im sichtbaren Bereich bleiben, ohne horizontalen Überlauf oder eine innere Scrollfläche. Kein Bottom Sheet und kein erneutes Aufklappen unterhalb des Kalenders.
+- Keine Änderung an Kalenderdaten, Berechnungen, Markern, Unsicherheitslogik, Monatswechsel, Historie, Tagesfenster, Partneransicht, API, Datenbank, Migration, Route oder Authentifizierung.
+
+### Technischer Auftrag für Claude – Korrektur Version 2
+
+- `src/components/NewCycleExample.tsx` bleibt der einzige erwartete UI-Startpunkt. Verwende den vorhandenen `isCalendarLegendOpen`-State weiter; er steuert jetzt ausschließlich das Popover.
+- Ordne Trigger und Popover in einer positionsfähigen, semantisch klaren Hülle um den vorhandenen Info-Button an. Der Popover darf nicht im normalen vertikalen Dokumentfluss unterhalb des Kalenders wachsen.
+- Nutze kurze, lokal definierte Präsentationszeilen mit den bestehenden Farbkennzeichnungen. Wiederverwende vorhandene Farbwerte und Formulierungen, soweit sie zu den vereinbarten kurzen Labels passen; führe keine zweite Vorhersage-, Phasen- oder Markerberechnung ein.
+- Der Popover erhält `role="dialog"` und eine klare zugängliche Beschriftung; der Trigger erhält zusätzlich `aria-haspopup="dialog"`. Implementiere Schließen durch Escape und durch Klick/Tipp außerhalb ohne neue Abhängigkeit. Fokus, Trigger und Monatsname müssen bedienbar bleiben.
+- Entferne den bisherigen langen Panel-Inhalt und die P/M/E-Detailinteraktion aus dieser Owner-Home-Legende vollständig, damit weder der alte Bereich unter dem Kalender noch lange Texte im Popover verbleiben. Falls dadurch lokaler, ungenutzter UI-State entsteht, darf er ausschließlich in derselben Komponente entfernt werden.
+- Bewahre den bestehenden Unsicherheitshinweis außerhalb und unabhängig von `isCalendarLegendOpen`.
+
+### Invarianten – Korrektur Version 2
+
+- Der `ⓘ`-Button, Monatsname, beide Monatspfeile und Popover dürfen sich weder überlappen noch gegenseitig auslösen.
+- Vorhersagen bleiben klar als `Geschätzt` gekennzeichnet. Das Popover darf keine medizinische Sicherheit oder bestätigte Fruchtbarkeit/Eisprung suggerieren.
+- Keine neue Erklärung, Speicherung, Route, API, Datenbankwirkung oder Partnerinformation.
+- Die eigene Home-Ansicht bleibt außerhalb der Legendenpräsentation unverändert; Partneransicht und alle Berechnungs-/Kalenderlogiken bleiben unberührt.
+
+### Pflichtprüfungen – Korrektur Version 2
+
+- Gezielte Prüfung: Popover anstatt Inline-Panel; geschlossen beim Start; sechs kurzen sichtbaren Begriffe einschließlich `Geschätzt`; keine alten langen Legendentexte oder P/M/E-Detailbuttons in der Owner-Home-Legende.
+- Prüfe `aria-expanded`, `aria-controls`, `aria-haspopup`, Dialog-Beschriftung, Trigger-Klick, Außenklick und Escape.
+- Prüfe, dass Monatsname weiterhin nur die Historie und der Info-Button nur das Popover öffnet; Monatspfeile und Tagesfenster funktionieren unverändert.
+- Prüfe den Unsicherheitshinweis vor, während und nach offenem Popover.
+- TypeScript, Produktions-Build und Sichtprüfung auf 375 x 812 sowie 1280 x 900: kein horizontaler Überlauf, kein abgeschnittenes Popover, keine innere Scrollfläche und keine Kollision im Monatstitelbereich.
+
+### Stoppbedingungen – Korrektur Version 2
+
+- Stoppe, wenn ein positioniertes Popover auf kleinen Bildschirmen nicht ohne Abschneiden, horizontales Scrollen oder Überdeckung des Info-Buttons erreichbar bleibt.
+- Stoppe vor jeder Änderung an Daten, Berechnungen, Unsicherheitslogik, Markern, Historie, Partneransicht, API, Datenbank, Migration, Route oder Authentifizierung.
+- Stoppe, wenn die kurze Darstellung Vorhersagen nicht mehr klar als geschätzt kennzeichnen kann.
+
+### Abschluss durch Claude – Korrektur Version 2
+
+- `Ist – Korrektur Version 2` vollständig ergänzen und Abweichungen sichtbar nennen.
+- Status auf `review` setzen.
+- Entwicklungsledger ergänzen.
+- `node scripts/work-package-state.mjs mark-updated WP-018` und `node scripts/work-package-state.mjs validate` ausführen.
+- Nur auftragsbezogene Dateien committen und nach `main` pushen; kein manuelles Deployment auslösen.
+
+## Ist – Korrektur Version 2 – von Claude
+
+- **umgesetzt:**
+  - `src/components/NewCycleExample.tsx`: Das bisherige, im normalen Dokumentfluss unterhalb des Kalenders gerenderte `calendar-legend-panel` (lange Legende + klickbare P/M/E-Detailinteraktion) ist vollständig entfernt. An seiner Stelle rendert eine neue, lokal definierte `CalendarLegendPopover`-Komponente ein `role="dialog"`-Element mit `aria-label="Kalender-Erklärung"` und `id="calendar-legend-panel"` (dieselbe `id`, damit `aria-controls` am Trigger unverändert gültig bleibt). Das Popover ist `absolute right-0 top-full mt-2` innerhalb eines neuen `<div className="relative">`-Wrappers positioniert, der ausschließlich den `ⓘ`-Button umschließt — es wächst nicht im Dokumentfluss, sondern legt sich als Overlay über nachfolgende Inhalte.
+  - Inhalt des Popovers: genau sechs kurze, lokal definierte Zeilen (`calendarLegendRows`) mit wiederverwendeten Farbwerten aus der vorherigen Legende/`phaseStyles` — `Periode` (`#6d153f`), `PMS` (`#f8c2d0`), `Geschätzt` (reine Textkennzeichnung, kein Farbpunkt), `Fruchtbare Tage` (`#a988da`), `Eisprung` (`#d2b9ef`), `Nächste Periode` (`#c9b3ea`). Die drei Vorhersagezeilen stehen im Quelltext (und damit visuell) unter der `Geschätzt`-Kennzeichnung. Keine neue Vorhersage-, Phasen- oder Markerberechnung — alle Werte sind reine, hartcodierte Textpräsentation, unabhängig von `prediction`/`personalCycleView`.
+  - Der Info-Button erhielt zusätzlich `aria-haspopup="dialog"`; `aria-expanded`, `aria-controls="calendar-legend-panel"` und der dynamische `aria-label` blieben unverändert.
+  - Schließen des Popovers: `useEffect` mit `document`-Listenern für `mousedown` (schließt, wenn der Klick außerhalb der per `useRef` referenzierten Popover-Fläche liegt) und `keydown`/Escape — beide Listener werden nur registriert, während das Popover offen ist, und beim Unmount/Schließen wieder entfernt. Keine neue npm-Abhängigkeit, reines React/DOM.
+  - Vollständig entfernt als ungenutzter Code (da nur noch von der gelöschten langen Legende gebraucht): `PhaseLegendItem`-Komponente samt Props-Interface, `phaseLegendStyles`, `phaseExplanations`, der `activePhase`/`setActivePhase`-State und der zuvor nur dafür genutzte `Phase`-Typ. `phaseStyles`, `phaseLetters`, `phaseLabels` blieben unverändert, da sie weiterhin für die Tagesfeld-Badges im Kalendergrid gebraucht werden.
+  - Der Unsicherheitshinweis `Vorhersage unsicher - Kann abweichen` blieb an seiner bestehenden, von `isCalendarLegendOpen` komplett unabhängigen Position (gebunden ausschließlich an `prediction?.isUncertain`) unverändert erhalten.
+  - Die Monatsüberschrift bleibt unverändert ein separater Button für die Periodenhistorie; Monatspfeile, Tagesraster, Tagesfenster, Monatswechsel und alle Marker/Badges wurden nicht angefasst.
+  - Keine Änderung an `primaryCalendarPhase`, `showsFertileMarker`, `predictCycle`, `computePersonalCycleView`, Datenzugriff, API, Datenbank, Partneransicht, Migrationen, Routen oder Authentifizierung.
+- **nicht umgesetzt:** nichts aus dem Korrektur-Umfang offen.
+- **Tests:**
+  - `scripts/verify-calendar-legend-collapsible.ts` grundlegend überarbeitet (37 Prüfungen, alle bestanden): Popover-Start geschlossen; `aria-expanded`/`aria-haspopup="dialog"`/`aria-controls`/dynamischer `aria-label` am Trigger; Popover selbst mit `role="dialog"`, eindeutiger Beschriftung, absoluter Positionierung außerhalb des normalen Dokumentflusses, ohne innere Scrollfläche; Escape- und Außenklick-Schließlogik im Quelltext nachgewiesen; genau sechs definierte Zeilen inklusive `Geschätzt`-Kennzeichnung, die im Quelltext vor allen drei Vorhersagezeilen steht; vollständige Entfernung von `PhaseLegendItem`, `phaseExplanations`, `phaseLegendStyles`, `activePhase` und der alten langen Legendentexte; Unsicherheitshinweis bleibt unabhängig vom Popover-Zustand; keine Marker-/Berechnungs-/Datenlogik verändert; alter langer Steuerbutton entfernt; Info-Button-Position und getrennte, nicht verschachtelte Handler für Info-Button/Monatsname unverändert nachgewiesen.
+  - Bestehende Regressionen erneut ausgeführt und grün: `scripts/verify-home-actions-consistent.ts`, `scripts/verify-mobile-home-compact.ts`, `scripts/verify-mobile-partner-compact.ts`, `scripts/verify-partner-calendar-legend-collapsible.ts`, `scripts/verify-home-screen-layout.ts`, `scripts/verify-history-month-jump.ts`, `scripts/verify-period-history.ts`, `scripts/verify-day-detail.ts`, `scripts/verify-cycle-today-and-estimate.mts`, `scripts/verify-start-help-no-data.ts`, `scripts/verify-next-period-countdown.ts`, `scripts/verify-manual-pms-ring-marker.ts`. `scripts/verify-today-card.ts` zeigt weiterhin ausschließlich die bereits mehrfach dokumentierten, vorbestehenden 2 Fehlschläge (nicht durch diese Korrektur verursacht).
+  - `node --experimental-strip-types --test tests/*.test.ts`: 83/84, der eine Fehlschlag ist der bereits mehrfach dokumentierte, vorbestehende Defekt in `tests/calendar-day-info.test.ts`, nicht durch diese Korrektur verursacht.
+  - `npx tsc --noEmit`: keine Fehler. `npm run build`: erfolgreich, Routenliste unverändert.
+  - Live-Prüfung mit temporär installiertem Playwright gegen den lokalen Dev-Server mit echten Testkonten: Mobil (375×812): Popover öffnet mit exakt dem Text „Periode / PMS / GESCHÄTZT / Fruchtbare Tage / Eisprung / Nächste Periode“; `role="dialog"`, `aria-label="Kalender-Erklärung"`, `aria-expanded`/`aria-haspopup="dialog"` korrekt; kein horizontaler Überlauf (geschlossen und geöffnet); Popover bleibt vollständig innerhalb des 375px-Viewports (gemessen: 74–298px), keine innere Scrollfläche; Escape schließt zuverlässig; ein Klick außerhalb (Bildschirmecke) schließt ebenfalls zuverlässig; Antippen des Monatsnamens öffnet separat die Periodenhistorie, das Popover bleibt dabei geschlossen; Monatswechsel (→ November 2026) funktioniert unverändert; mit einem gezielt unregelmäßigen Perioden-Set (Zyklus-Gap-Spanne 22 Tage, über der 10-Tage-Unsicherheitsschwelle) blieb der Unsicherheitshinweis „Vorhersage unsicher - Kann abweichen“ nachweislich vor, während und nach dem Öffnen des Popovers sichtbar; das Tagesfenster (Antippen eines Tages) öffnet weiterhin unverändert mit allen bestehenden Aktionen. Breit (1280×900): identisches Verhalten, Popover bleibt vollständig innerhalb des Viewports (548–772px), kein horizontaler Überlauf, keine Kollision mit Monatspfeilen oder Monatsname. Screenshots geprüft und danach gelöscht; Playwright wieder deinstalliert; temporäre Test-/Cleanup-Skripte entfernt.
+- **Abweichungen:** keine fachliche Abweichung vom Soll. Die Popover-Breite (`w-56`, 224px) und das Schließverhalten bei Außenklick wurden technisch frei gewählt, da das Soll hierzu keine exakten Werte vorgibt, sondern nur "kompakt", "ohne horizontalen Überlauf" und "ohne innere Scrollfläche" verlangt — alle drei Kriterien wurden live gemessen und erfüllt.
+- **offene Punkte:** Owner-Prüfschritt steht erneut aus: `/neu` öffnen, `ⓘ` antippen und prüfen, dass ein kleines Fenster mit den sechs kurzen Zeilen direkt am Button erscheint (keine lange Legende mehr unterhalb des Kalenders), außerhalb antippen oder Escape drücken zum Schließen, danach den Monatsnamen separat prüfen; bei unsicherer Vorhersage den Hinweis in beiden Zuständen prüfen.
+- **Commit:** folgt.
+
+## Korrektur Version 3 – kurze erklärende Popover-Legende für Partner
+
+### Owner-Entscheidung
+
+Die Ownerin möchte dieselbe kompakte Hilfe auch im verbundenen Partner-Kalender. Dort sollen die vorhandenen Farben etwas verständlicher erklärt werden, weil der Partner oft weniger Vorwissen hat. Die Partneransicht bleibt vollständig rein lesend und zeigt keine neue Information.
+
+### Soll – Korrektur Version 3
+
+- Ergänze in `NewPartnerCalendar.tsx` einen kleinen zugänglichen `ⓘ`-Button neben dem Monatsnamen. Er ersetzt den langen Button unter dem Partner-Kalender.
+- Beim Antippen öffnet sich ein kompaktes nicht modales Popover direkt am Info-Button. Es erscheint nicht unterhalb des Kalenders, erzeugt keinen horizontalen Überlauf und braucht keine innere Scrollfläche.
+- Der Partner-Popover zeigt ausschließlich schon vorhandene, freigegebene Kalenderinformationen als kurze Farbzeilen. Verwende diese kurzen sichtbaren Texte, jeweils nur wenn die zugrunde liegende bestehende Information auch vorhanden ist:
+  1. `Periode bestätigt`
+  2. `Nächste Periode geschätzt`
+  3. `Eisprung geschätzt`
+  4. `Fruchtbare Tage geschätzt`
+  5. `PMS vor Periode`
+  6. `PMS eingetragen`
+- Die Vorhersagezeilen müssen bei fehlender Vorhersage weiterhin nicht erscheinen. `PMS eingetragen` erscheint nur für den bereits vorhandenen manuellen PMS-Abschnitt. Es werden keine neuen Symptome oder Daten an den Partner übertragen.
+- Die Zeilen `Nächste Periode geschätzt`, `Eisprung geschätzt` und `Fruchtbare Tage geschätzt` sind kurz, bleiben aber ausdrücklich als Schätzung gekennzeichnet. `PMS vor Periode` bleibt eine mögliche Phase und ist keine Diagnose.
+- Anfangszustand geschlossen. Schließen über denselben Info-Button, Escape und Klick/Tipp außerhalb. Trigger und Popover verwenden zugängliche Dialogattribute analog zur Owner-Korrektur Version 2.
+- Der bestehende Unsicherheitshinweis bleibt außerhalb des Popovers, bei unsicherer Vorhersage sichtbar und unverändert.
+- Nicht enthalten: Keine Änderung an aktiver Verbindungsprüfung, Freigaben, Daten, Berechnungen, PMS-Ableitung, Tagesfenster, Monatswechsel, Benachrichtigungen, API, Datenbank, Migration, Route oder Authentifizierung. Keine Eingabemöglichkeit für Partner.
+
+### Technischer Auftrag für Claude – Korrektur Version 3
+
+- `src/components/NewPartnerCalendar.tsx` ist der erwartete Startpunkt. Verwende den bereits vorhandenen `isCalendarLegendOpen`-State und die bereits an dieser Komponente vorhandenen Bedingungen `hasAnyPrediction`, `manualPmsSection` und `hasFertileWindowSomewhere`; keine neue Abfrage und keine zweite Phasenberechnung.
+- Verlege den Trigger in die Monatszeile als Geschwisterelement des Monatsnamens. Der Monatsname im Partner-Kalender bleibt weiterhin reine Anzeige; Monatspfeile bleiben unverändert funktional.
+- Ersetze den aktuellen Inline-Legendenbutton und dessen lange Texte durch ein positioniertes, zugängliches Popover mit den vereinbarten kurzen Zeilen. Verwende die bestehenden Farbwerte und bedingten Sichtbarkeiten, statt neue Statuswerte abzuleiten.
+- Trigger: `aria-expanded`, `aria-controls`, `aria-haspopup="dialog"` und dynamischer `aria-label`. Popover: `role="dialog"` und klare Beschriftung. Außenklick und Escape schließen ohne neue Abhängigkeit.
+- Prüfe strukturell, dass kein Bearbeitungs-, Speichern-, Löschen- oder sonstiges Eingabeelement hinzugefügt wird und die Owner-Komponente nicht durch die Partneränderung verändert wird.
+
+### Invarianten – Korrektur Version 3
+
+- Der Partner sieht ausschließlich Daten, die `NewPartnerCalendar` schon vor dieser Korrektur erhielt; insbesondere keine neuen Rohperioden, Profilwerte, IDs oder zusätzliche Symptome.
+- `new-partner-calendar.ts`, `new-partner-cycle-view.ts`, `manual-pms.ts`, `cycle-ring-geometry.ts`, Vorhersagefunktionen, Server-Gates und API-Routen bleiben unverändert.
+- Vorhersagen werden weder als bestätigte biologische Ereignisse noch als medizinischer Rat dargestellt.
+- Mobile und breite Partneransicht bleiben ohne Kollision, Überlauf oder überdeckte Tagesfelder; die Ansicht bleibt rein lesend.
+
+### Pflichtprüfungen – Korrektur Version 3
+
+- Gezielte Partner-Prüfung: kleiner Info-Button in Monatszeile, kein alter langer Button, geschlossen beim Start, Popover-Attribute, Außenklick und Escape.
+- Prüfe die sechs kurzen Zeilen und ihre bestehenden Bedingungen: Vorhersagezeilen nur bei Vorhersage, `PMS eingetragen` nur beim manuellen PMS, keine neue Partnerinformation.
+- Prüfe Unsicherheitshinweis, Monatswechsel, Tagesfenster, Partner-Gate und dass keine Eingabeelemente hinzukommen.
+- Führe Partner-, Kalender-, Ring-, manuelles-PMS- und Owner-Legendenregressionen aus sowie TypeScript und Produktions-Build.
+- Live-Prüfung auf 375 x 812 und 1280 x 900 mit aktiver Verbindung: Popover vollständig sichtbar, kein horizontaler Überlauf, Partner weiterhin rein lesend; teste mindestens einen Vorhersage- und einen manuellen-PMS-Fall.
+
+### Stoppbedingungen – Korrektur Version 3
+
+- Stoppe vor einer Erweiterung von Partnerfreigaben, Datenzugriff, Berechnung, PMS-Logik, API, Datenbank, Migration, Route oder Authentifizierung.
+- Stoppe, wenn die kurzen Texte ohne die Kennzeichnung `geschätzt` für Vorhersagen nicht sicher verständlich bleiben oder das Popover auf Mobilgeräten abgeschnitten wird.
+
+### Abschluss durch Claude – Korrektur Version 3
+
+- `Ist – Korrektur Version 3` vollständig ergänzen und Abweichungen sichtbar nennen.
+- Status auf `review` setzen.
+- Entwicklungsledger ergänzen.
+- `node scripts/work-package-state.mjs mark-updated WP-018` und `node scripts/work-package-state.mjs validate` ausführen.
+- Nur auftragsbezogene Dateien committen und nach `main` pushen; kein manuelles Deployment auslösen.

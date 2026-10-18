@@ -18,52 +18,89 @@ const componentPath = path.resolve(
 );
 const source = readFileSync(componentPath, "utf8");
 
-console.log("\n== WP-007 V2: der Einklappbereich ist anfangs geschlossen ==");
+console.log("\n== WP-007 V2 / WP-018 Korrektur V2: der Popover-Zustand ist anfangs geschlossen ==");
 {
   assert(source.includes("useState(false)") && source.includes("isCalendarLegendOpen"), "isCalendarLegendOpen startet mit false (geschlossen)");
 }
 
-console.log("\n== WP-007 V2 / WP-018: der Steuerbutton trägt aria-expanded/aria-controls und einen dynamischen aria-label ==");
+console.log("\n== WP-018 Korrektur V2: der Info-Button trägt aria-expanded/aria-haspopup/aria-controls und einen dynamischen aria-label ==");
 {
   assert(source.includes("aria-expanded={isCalendarLegendOpen}"), "der Button trägt aria-expanded gebunden an den Öffnungszustand");
-  assert(source.includes('aria-controls="calendar-legend-panel"'), "der Button referenziert das Panel über aria-controls");
-  assert(source.includes('id="calendar-legend-panel"'), "das Panel trägt die passende id für aria-controls");
-  // WP-018: der frühere sichtbare Lauftext-Button unter dem Kalender wurde
-  // durch einen kleinen ⓘ-Info-Button neben dem Monatsnamen ersetzt; dieselben
-  // beiden Formulierungen stehen jetzt im dynamischen aria-label statt im
-  // sichtbaren Button-Text.
+  assert(source.includes('aria-haspopup="dialog"'), "der Button trägt aria-haspopup=\"dialog\"");
+  assert(source.includes('aria-controls="calendar-legend-panel"'), "der Button referenziert das Popover über aria-controls");
+  assert(source.includes('id="calendar-legend-panel"'), "das Popover trägt die passende id für aria-controls");
   assert(source.includes('"Erklärungen zum Kalender ausblenden"'), "der dynamische aria-label lautet 'Erklärungen zum Kalender ausblenden', wenn geöffnet");
   assert(source.includes('"Erklärungen zum Kalender anzeigen"'), "der dynamische aria-label lautet 'Erklärungen zum Kalender anzeigen', wenn geschlossen");
 }
 
-console.log("\n== WP-007 V2: 'Vorhersage unsicher' steht außerhalb des Einklappbereichs ==");
+console.log("\n== WP-018 Korrektur V2: das Popover ist ein role=dialog mit eindeutiger Beschriftung, kein Inline-Panel im Dokumentfluss mehr ==");
 {
-  const uncertainIndex = source.indexOf("Vorhersage unsicher - Kann abweichen");
-  const panelOpenIndex = source.indexOf('id="calendar-legend-panel"');
-  assert(uncertainIndex !== -1 && panelOpenIndex !== -1 && uncertainIndex < panelOpenIndex, "der Unsicherheitshinweis steht im Quelltext vor dem Einklappbereich (unabhängig von dessen Zustand sichtbar)");
-  assert(source.includes("prediction?.isUncertain &&"), "der Unsicherheitshinweis bleibt an prediction.isUncertain gebunden, nicht an den Einklappzustand");
+  const popoverStart = source.indexOf("function CalendarLegendPopover(");
+  const popoverEnd = source.indexOf("\ninterface NewCycleExampleProps", popoverStart);
+  const popoverBody = popoverStart !== -1 && popoverEnd !== -1 ? source.slice(popoverStart, popoverEnd) : "";
+  assert(popoverBody.length > 0, "CalendarLegendPopover wurde im Quelltext gefunden");
+  assert(popoverBody.includes('role="dialog"'), "das Popover trägt role=\"dialog\"");
+  assert(popoverBody.includes('aria-label="Kalender-Erklärung"'), "das Popover trägt eine eindeutige zugängliche Beschriftung");
+  assert(popoverBody.includes('className="absolute'), "das Popover ist absolut positioniert (wächst nicht im normalen Dokumentfluss unterhalb des Kalenders)");
+  assert(!popoverBody.includes("overflow-y-auto") && !popoverBody.includes("overflow-y-scroll") && !popoverBody.includes("max-h-"), "das Popover hat keine innere Scrollfläche");
 }
 
-console.log("\n== WP-007 V2: alle bisherigen Legendentexte und P/M/E-Erklärungen bleiben im geöffneten Bereich vollständig erhalten ==");
+console.log("\n== WP-018 Korrektur V2: das Popover schließt bei Escape und bei Klick/Tipp außerhalb ==");
 {
-  const panelStart = source.indexOf('id="calendar-legend-panel"');
-  const panelEnd = source.indexOf("{!prediction && (", panelStart);
-  const panelBody = panelStart !== -1 && panelEnd !== -1 ? source.slice(panelStart, panelEnd) : "";
-  assert(panelBody.includes("Bestätigt / Laufend"), "Legendentext 'Bestätigt / Laufend' ist im Panel enthalten");
-  assert(panelBody.includes("Voraussichtliches Ende"), "Legendentext 'Voraussichtliches Ende' ist im Panel enthalten");
-  assert(panelBody.includes("Geschätzte nächste Periode"), "Legendentext 'Geschätzte nächste Periode' ist im Panel enthalten");
-  assert(panelBody.includes("Mögliches fruchtbares Zeitfenster"), "Legendentext 'Mögliches fruchtbares Zeitfenster' ist im Panel enthalten");
-  assert(panelBody.includes("PhaseLegendItem"), "die bestehende P/M/E-Legende (PhaseLegendItem) bleibt im Panel eingebunden");
-  assert(panelBody.includes('(["period", "pms", "ovulation"] as const)'), "alle drei P/M/E-Phasen werden weiterhin gerendert");
+  const popoverStart = source.indexOf("function CalendarLegendPopover(");
+  const popoverEnd = source.indexOf("\ninterface NewCycleExampleProps", popoverStart);
+  const popoverBody = popoverStart !== -1 && popoverEnd !== -1 ? source.slice(popoverStart, popoverEnd) : "";
+  assert(popoverBody.includes('event.key === "Escape"'), "das Popover schließt bei Escape (document-Listener)");
+  assert(popoverBody.includes("mousedown") && popoverBody.includes("popoverRef.current && !popoverRef.current.contains"), "das Popover schließt bei einem Klick außerhalb seiner eigenen Fläche (Ref-basierte Außenklick-Erkennung)");
+  assert(popoverBody.includes("useEffect"), "die Listener werden über useEffect registriert/entfernt, keine neue Abhängigkeit");
 }
 
-console.log("\n== WP-007 V2: die bestehende P/M/E-Einzel-Interaktion (Escape, aria-expanded je Phase) bleibt unverändert ==");
+console.log("\n== WP-018 Korrektur V2: genau die sechs vereinbarten kurzen Begriffe, inklusive 'Geschätzt' als Kennzeichnung ==");
 {
-  const legendItemStart = source.indexOf("function PhaseLegendItem(");
-  const legendItemEnd = source.indexOf("\n}\n", legendItemStart);
-  const legendItemBody = legendItemStart !== -1 && legendItemEnd !== -1 ? source.slice(legendItemStart, legendItemEnd) : "";
-  assert(legendItemBody.includes('event.key === "Escape"'), "PhaseLegendItem schließt weiterhin per Escape");
-  assert(legendItemBody.includes("aria-expanded={isActive}"), "PhaseLegendItem trägt weiterhin ein eigenes aria-expanded je Phase");
+  const rowsStart = source.indexOf("const calendarLegendRows");
+  const rowsArrayStart = source.indexOf(" = [", rowsStart);
+  const rowsEnd = source.indexOf("];", rowsStart);
+  const rowsBody = rowsStart !== -1 && rowsArrayStart !== -1 && rowsEnd !== -1 ? source.slice(rowsArrayStart, rowsEnd) : "";
+  assert(rowsBody.includes('"Periode"'), "'Periode' ist eine der sechs Zeilen");
+  assert(rowsBody.includes('"PMS"'), "'PMS' ist eine der sechs Zeilen");
+  assert(rowsBody.includes('"Geschätzt"') && rowsBody.includes("isEstimateHeading"), "'Geschätzt' ist als eigene Kennzeichnung vorhanden");
+  assert(rowsBody.includes('"Fruchtbare Tage"'), "'Fruchtbare Tage' ist eine der sechs Zeilen");
+  assert(rowsBody.includes('"Eisprung"'), "'Eisprung' ist eine der sechs Zeilen");
+  assert(rowsBody.includes('"Nächste Periode"'), "'Nächste Periode' ist eine der sechs Zeilen");
+  const rowCount = (rowsBody.match(/\{ label:/g) ?? []).length;
+  assert(rowCount === 6, `genau sechs Zeilen sind definiert (gefunden: ${rowCount})`);
+}
+
+console.log("\n== WP-018 Korrektur V2: die 'Geschätzt'-Kennzeichnung steht vor den drei Vorhersagezeilen (Fruchtbare Tage, Eisprung, Nächste Periode) ==");
+{
+  const estimateIndex = source.indexOf('{ label: "Geschätzt"');
+  const fruchtbarIndex = source.indexOf('{ label: "Fruchtbare Tage"');
+  const eisprungIndex = source.indexOf('{ label: "Eisprung"');
+  const naechstePeriodeIndex = source.indexOf('{ label: "Nächste Periode"');
+  assert(
+    estimateIndex !== -1 && estimateIndex < fruchtbarIndex && estimateIndex < eisprungIndex && estimateIndex < naechstePeriodeIndex,
+    "'Geschätzt' steht im Quelltext vor allen drei Vorhersagezeilen, damit sie sichtbar darunter erscheinen",
+  );
+}
+
+console.log("\n== WP-018 Korrektur V2: der alte lange Panel-Inhalt und die P/M/E-Detailinteraktion sind vollständig entfernt ==");
+{
+  assert(!source.includes("PhaseLegendItem"), "PhaseLegendItem existiert nicht mehr im Quelltext");
+  assert(!source.includes("phaseExplanations"), "phaseExplanations existiert nicht mehr im Quelltext");
+  assert(!source.includes("phaseLegendStyles"), "phaseLegendStyles existiert nicht mehr im Quelltext");
+  assert(!source.includes("activePhase"), "der activePhase-State existiert nicht mehr (kein ungenutzter State)");
+  assert(!source.includes("Bestätigt / Laufend"), "der alte lange Legendentext 'Bestätigt / Laufend' ist entfernt");
+  assert(!source.includes("Voraussichtliches Ende – kann abweichen"), "der alte lange Legendentext 'Voraussichtliches Ende' ist entfernt");
+  assert(!source.includes("PMS von dir eingetragen (M·Du) – deine eigene Angabe"), "der alte lange Legendentext zu M·Du ist aus der Owner-Home-Legende entfernt");
+}
+
+console.log("\n== WP-007 V2: 'Vorhersage unsicher' steht außerhalb des Popovers und bleibt unabhängig von dessen Zustand sichtbar ==");
+{
+  const uncertainIndex = source.lastIndexOf("Vorhersage unsicher - Kann abweichen");
+  const popoverCallIndex = source.indexOf("<CalendarLegendPopover");
+  assert(uncertainIndex !== -1 && popoverCallIndex !== -1 && popoverCallIndex < uncertainIndex, "der Unsicherheitshinweis steht im Quelltext nach der Popover-Einbindung, aber als eigener, unbedingt gerenderter Absatz");
+  assert(source.includes("prediction?.isUncertain &&"), "der Unsicherheitshinweis bleibt an prediction.isUncertain gebunden, nicht an isCalendarLegendOpen");
+  assert(!source.includes("isCalendarLegendOpen &&") || source.indexOf("isCalendarLegendOpen &&") === -1, "isCalendarLegendOpen steuert nirgends mehr den Unsicherheitshinweis (nur noch das Popover selbst über isOpen)");
 }
 
 console.log("\n== WP-007 V2: keine Marker-, Berechnungs- oder Datenlogik wurde verändert ==");
@@ -81,7 +118,7 @@ console.log("\n== WP-018: der alte lange Steuerbutton unter dem Kalender ist ent
   const updatePeriodIndex = source.indexOf("Meine Periode aktualisieren");
   assert(
     monthRowIndex !== -1 && infoButtonIndex !== -1 && updatePeriodIndex !== -1 && infoButtonIndex < updatePeriodIndex,
-    "der Info-Button-Aufruf steht im Quelltext jetzt vor (nicht mehr unterhalb) dem 'Meine Periode aktualisieren'-Button — er wurde in die Monatszeile verschoben",
+    "der Info-Button-Aufruf steht im Quelltext vor (nicht mehr unterhalb) dem 'Meine Periode aktualisieren'-Button — er sitzt in der Monatszeile",
   );
 }
 
@@ -96,6 +133,7 @@ console.log("\n== WP-018: ein kleiner ⓘ-Info-Button steht in der Monatszeile n
   assert(monthRow.includes("aria-expanded={isCalendarLegendOpen}"), "der Info-Button trägt dasselbe aria-expanded wie zuvor der lange Button");
   assert(monthRow.includes("Periodenhistorie öffnen"), "der Monatsname-Button mit seinem unveränderten aria-label bleibt in derselben Zeile");
   assert(monthRow.includes("Vorherigen Monat anzeigen") && monthRow.includes("Nächsten Monat anzeigen"), "beide Monatspfeile bleiben in derselben Zeile wie der Info-Button");
+  assert(monthRow.includes('<div className="relative">'), "der Info-Button steht in einem eigenen relative-Wrapper, an dem das Popover positioniert wird");
 }
 
 console.log("\n== WP-018: Info-Button und Monatsname lösen getrennte, nicht verschachtelte Aktionen aus ==");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
@@ -42,23 +42,82 @@ const phaseStyles = {
 
 const phaseLetters = { period: "P", pms: "M", ovulation: "E" };
 const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
-const phaseLegendStyles = {
-  period: "bg-[#4a0738] text-white",
-  pms: "bg-[#f3a9bd] text-[#831341]",
-  ovulation: "bg-[#d2b9ef] text-[#4c2098]",
-};
-const phaseExplanations = {
-  period: "Die Tage, an denen du deine Monatsblutung hast.",
-  pms: "Beschwerden, die vor der Periode auftreten können, zum Beispiel Müdigkeit oder Stimmungsschwankungen.",
-  ovulation: "Die Zeit, in der eine Eizelle freigesetzt wird.",
-};
 
-type Phase = keyof typeof phaseLabels;
+/**
+ * WP-018 Korrektur Version 2: kurze Farbzeilen für das Popover am Info-Button,
+ * ersetzt die frühere lange Legende und die P/M/E-Detailerklärungen. Nutzt
+ * ausschließlich bereits bestehende Farbwerte (aus phaseStyles und dem
+ * früheren Inline-Panel), keine neue Phasen-, Vorhersage- oder
+ * Markerberechnung — rein eine kürzere Textdarstellung derselben,
+ * anderswo unverändert berechneten Bedeutungen.
+ */
+const calendarLegendRows: { label: string; swatchClassName: string; isEstimateHeading?: boolean }[] = [
+  { label: "Periode", swatchClassName: "bg-[#6d153f]" },
+  { label: "PMS", swatchClassName: "bg-[#f8c2d0]" },
+  { label: "Geschätzt", swatchClassName: "", isEstimateHeading: true },
+  { label: "Fruchtbare Tage", swatchClassName: "bg-[#a988da]" },
+  { label: "Eisprung", swatchClassName: "bg-[#d2b9ef]" },
+  { label: "Nächste Periode", swatchClassName: "bg-[#c9b3ea]" },
+];
 
-interface PhaseLegendItemProps {
-  phase: Phase;
-  activePhase: Phase | null;
-  setActivePhase: (phase: Phase | null) => void;
+interface CalendarLegendPopoverProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+/**
+ * WP-018 Korrektur Version 2: compact, non-modal popover anchored to the ⓘ
+ * trigger (via the relative wrapper the caller renders it inside). Closes on
+ * Escape and on an outside click/tap. No inner scroll area, no long text —
+ * six short rows only, per the Soll.
+ */
+function CalendarLegendPopover({ isOpen, onClose }: CalendarLegendPopoverProps) {
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) onClose();
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={popoverRef}
+      id="calendar-legend-panel"
+      role="dialog"
+      aria-label="Kalender-Erklärung"
+      className="absolute right-0 top-full z-10 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#efd5dc] bg-white/95 p-3 text-left shadow-[0_8px_24px_rgba(91,31,62,0.16)]"
+    >
+      <ul className="space-y-1.5 text-xs text-[#382631]">
+        {calendarLegendRows.map((row) =>
+          row.isEstimateHeading ? (
+            <li key={row.label} className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#a52b5d]">
+              {row.label}
+            </li>
+          ) : (
+            <li key={row.label} className="flex items-center gap-2">
+              <span className={`size-2.5 shrink-0 rounded-full ${row.swatchClassName}`} aria-hidden="true" />
+              {row.label}
+            </li>
+          ),
+        )}
+      </ul>
+    </div>
+  );
 }
 
 interface NewCycleExampleProps {
@@ -91,37 +150,6 @@ function formatPeriodRange(entry: NewPeriodEntryOpen): string {
     return `${formatPeriodDate(entry.startDate)} bis voraussichtlich ${formatPeriodDate(entry.expectedEndDate)}`;
   }
   return `${formatPeriodDate(entry.startDate)}, läuft noch`;
-}
-
-function PhaseLegendItem({ phase, activePhase, setActivePhase }: PhaseLegendItemProps) {
-  const isActive = activePhase === phase;
-  const tooltipId = `phase-explanation-${phase}`;
-
-  return (
-    <button
-      type="button"
-      aria-label={`${phaseLetters[phase]} – ${phaseLabels[phase]}: Erklärung ${isActive ? "ausblenden" : "anzeigen"}`}
-      aria-expanded={isActive}
-      aria-controls={tooltipId}
-      aria-describedby={isActive ? tooltipId : undefined}
-      onClick={() => setActivePhase(isActive ? null : phase)}
-      onBlur={() => setActivePhase(null)}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          setActivePhase(null);
-          event.currentTarget.blur();
-        }
-      }}
-      onContextMenu={(event) => event.preventDefault()}
-      onDragStart={(event) => event.preventDefault()}
-      className="inline-flex select-none items-center gap-2 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] [-webkit-touch-callout:none]"
-    >
-      <strong className={`grid size-5 place-items-center rounded-full text-[9px] ${phaseLegendStyles[phase]}`}>
-        {phaseLetters[phase]}
-      </strong>
-      {phaseLabels[phase]}
-    </button>
-  );
 }
 
 interface PeriodFormModalProps {
@@ -887,7 +915,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
   const exampleMonth = { year: todayYear, month: todayMonthIndex - 1 };
   const [displayedMonth, setDisplayedMonth] = useState(exampleMonth);
-  const [activePhase, setActivePhase] = useState<Phase | null>(null);
   const [isCalendarLegendOpen, setIsCalendarLegendOpen] = useState(false);
   const [periods, setPeriods] = useState(initialPeriods);
   const [periodPlans] = useState(initialPeriodPlans);
@@ -1166,16 +1193,20 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 {monthName}
               </button>
             </h2>
-            <button
-              type="button"
-              aria-expanded={isCalendarLegendOpen}
-              aria-controls="calendar-legend-panel"
-              aria-label={isCalendarLegendOpen ? "Erklärungen zum Kalender ausblenden" : "Erklärungen zum Kalender anzeigen"}
-              onClick={() => setIsCalendarLegendOpen((current) => !current)}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
-            >
-              <span aria-hidden="true">ⓘ</span>
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                aria-expanded={isCalendarLegendOpen}
+                aria-haspopup="dialog"
+                aria-controls="calendar-legend-panel"
+                aria-label={isCalendarLegendOpen ? "Erklärungen zum Kalender ausblenden" : "Erklärungen zum Kalender anzeigen"}
+                onClick={() => setIsCalendarLegendOpen((current) => !current)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+              >
+                <span aria-hidden="true">ⓘ</span>
+              </button>
+              <CalendarLegendPopover isOpen={isCalendarLegendOpen} onClose={() => setIsCalendarLegendOpen(false)} />
+            </div>
           </div>
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
         </div>
@@ -1327,55 +1358,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           <p className="text-center text-xs font-semibold text-[#a52b5d]">
             Vorhersage unsicher - Kann abweichen
           </p>
-        )}
-
-        {isCalendarLegendOpen && (
-          <div id="calendar-legend-panel" className="space-y-4">
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-[#382631]" aria-label="Kalender-Kennzeichnung">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-[#6d153f]" aria-hidden="true" />
-                Bestätigt / Laufend
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-[#f3a9bd]" aria-hidden="true" />
-                Voraussichtliches Ende – kann abweichen
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-[#c9b3ea]" aria-hidden="true" />
-                Geschätzte nächste Periode – kann abweichen
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
-                Mögliches fruchtbares Zeitfenster – kann abweichen
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="grid size-3 place-items-center rounded-full bg-[#f8c2d0] text-[6px] font-bold text-[#9f164f]" aria-hidden="true">M</span>
-                PMS von dir eingetragen (M·Du) – deine eigene Angabe
-              </span>
-            </div>
-
-            <div className="space-y-3 text-sm text-[#382631]" aria-label="Legende">
-              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-                {(["period", "pms", "ovulation"] as const).map((phase) => (
-                  <PhaseLegendItem
-                    key={phase}
-                    phase={phase}
-                    activePhase={activePhase}
-                    setActivePhase={setActivePhase}
-                  />
-                ))}
-              </div>
-              {activePhase && (
-                <p
-                  id={`phase-explanation-${activePhase}`}
-                  role="tooltip"
-                  className="mx-auto max-w-sm rounded-2xl border border-[#efd5dc] bg-white/95 px-4 py-3 text-center leading-relaxed shadow-[0_8px_24px_rgba(91,31,62,0.12)]"
-                >
-                  {phaseExplanations[activePhase]}
-                </p>
-              )}
-            </div>
-          </div>
         )}
 
         {!prediction && (
