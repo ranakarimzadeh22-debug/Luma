@@ -1155,16 +1155,28 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <CalendarTodayLine today={todayKey} compact />
         <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>
-          <h2 className="text-center font-serif text-2xl font-semibold capitalize text-[#28101f] sm:text-3xl">
+          <div className="flex items-center justify-center gap-1">
+            <h2 className="text-center font-serif text-2xl font-semibold capitalize text-[#28101f] sm:text-3xl">
+              <button
+                type="button"
+                onClick={() => setIsPeriodHistoryOpen(true)}
+                aria-label={`Periodenhistorie öffnen, aktuell angezeigter Monat: ${monthName}`}
+                className="rounded-xl px-2 py-1 hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+              >
+                {monthName}
+              </button>
+            </h2>
             <button
               type="button"
-              onClick={() => setIsPeriodHistoryOpen(true)}
-              aria-label={`Periodenhistorie öffnen, aktuell angezeigter Monat: ${monthName}`}
-              className="rounded-xl px-2 py-1 hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+              aria-expanded={isCalendarLegendOpen}
+              aria-controls="calendar-legend-panel"
+              aria-label={isCalendarLegendOpen ? "Erklärungen zum Kalender ausblenden" : "Erklärungen zum Kalender anzeigen"}
+              onClick={() => setIsCalendarLegendOpen((current) => !current)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
             >
-              {monthName}
+              <span aria-hidden="true">ⓘ</span>
             </button>
-          </h2>
+          </div>
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
         </div>
 
@@ -1316,18 +1328,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             Vorhersage unsicher - Kann abweichen
           </p>
         )}
-
-        <div className="flex justify-center">
-          <button
-            type="button"
-            aria-expanded={isCalendarLegendOpen}
-            aria-controls="calendar-legend-panel"
-            onClick={() => setIsCalendarLegendOpen((current) => !current)}
-            className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
-          >
-            {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
-          </button>
-        </div>
 
         {isCalendarLegendOpen && (
           <div id="calendar-legend-panel" className="space-y-4">

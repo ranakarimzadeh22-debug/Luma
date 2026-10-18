@@ -43,27 +43,29 @@ console.log("\n== WP-010: Hilfsaktion 'Zykluslänge ergänzen' bleibt an ihre be
   );
 }
 
-console.log("\n== WP-010: Hilfsaktion 'Erklärungen zum Kalender' bleibt an ihre bestehende Logik gebunden ==");
+console.log("\n== WP-010 / WP-018: der Erklärungen-Umschalter bleibt an seine bestehende Logik gebunden, jetzt als kleiner Info-Button in der Monatszeile ==");
 {
+  // WP-018: der frühere lange Pill-Button unter dem Kalender wurde durch einen
+  // kleinen ⓘ-Info-Button neben dem Monatsnamen ersetzt — derselbe State,
+  // dasselbe Panel, derselbe Handler, aber dynamischer aria-label statt
+  // sichtbarem Button-Text. Siehe scripts/verify-calendar-legend-collapsible.ts
+  // für die ausführlichen WP-018-Prüfungen dieser Umstellung.
   assert(
     body.includes("aria-expanded={isCalendarLegendOpen}") &&
       body.includes('aria-controls="calendar-legend-panel"') &&
       body.includes("onClick={() => setIsCalendarLegendOpen((current) => !current)}") &&
-      body.includes('{isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}'),
-    "aria-Verhalten, Klick-Handler und beide Texte des Erklärungs-Toggles sind unverändert",
+      body.includes('aria-label={isCalendarLegendOpen ? "Erklärungen zum Kalender ausblenden" : "Erklärungen zum Kalender anzeigen"}'),
+    "aria-Verhalten, Klick-Handler und der dynamische aria-label des Erklärungs-Umschalters sind unverändert erhalten",
   );
 }
 
-console.log("\n== WP-010: beide Hilfsaktionen sind jetzt visuell konsistent (gleiche Rolle, gleiche Darstellung) ==");
+console.log("\n== WP-018: 'Zykluslänge ergänzen' bleibt ein eigenständiger Pill-Button; der Erklärungen-Umschalter ist seit WP-018 bewusst kein gleichartiger Pill-Button mehr ==");
 {
   const cycleLengthButtonMatch = body.match(/onClick=\{\(\) => setIsAddCycleLengthModalOpen\(true\)\}\s*\n\s*className="([^"]*)"/);
-  const legendButtonMatch = body.match(/onClick=\{\(\) => setIsCalendarLegendOpen\(\(current\) => !current\)\}\s*\n\s*className="([^"]*)"/);
-
-  assert(Boolean(cycleLengthButtonMatch), "die className von 'Zykluslänge ergänzen' wurde gefunden");
-  assert(Boolean(legendButtonMatch), "die className des Erklärungs-Toggles wurde gefunden");
+  assert(Boolean(cycleLengthButtonMatch), "die className von 'Zykluslänge ergänzen' wurde gefunden und bleibt unverändert");
   assert(
-    cycleLengthButtonMatch?.[1] === legendButtonMatch?.[1],
-    "beide Hilfsaktionen teilen jetzt dieselbe Darstellungsklasse (Rahmen, Hintergrund, Schrift, Abstand, Schatten)",
+    body.includes('className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-[#b85f7f]'),
+    "der Erklärungen-Umschalter ist jetzt ein kleiner runder Info-Button (h-8 w-8) statt des früheren Pill-Buttons — bewusste WP-018-Design-Änderung",
   );
 }
 
