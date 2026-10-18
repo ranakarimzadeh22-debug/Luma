@@ -158,31 +158,31 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
 
   return (
     <>
-    <div className="space-y-5" inert={selectedDay ? true : undefined}>
-      <CalendarTodayLine today={todayKey} />
-      <div className="grid grid-cols-[2rem_1fr_2rem] items-center">
+    <div className="space-y-3 sm:space-y-5" inert={selectedDay ? true : undefined}>
+      <CalendarTodayLine today={todayKey} compact />
+      <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
         <button
           type="button"
           aria-label="Vorherigen Monat anzeigen"
           onClick={() => changeMonth(-1)}
-          className="rounded-full text-center text-2xl font-light text-neutral-500 hover:bg-neutral-100"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-center text-2xl font-light text-neutral-500 hover:bg-neutral-100"
         >
           ‹
         </button>
-        <h2 className="text-center text-xl font-semibold capitalize text-neutral-950">{monthName}</h2>
+        <h2 className="text-center text-lg font-semibold capitalize text-neutral-950 sm:text-xl">{monthName}</h2>
         <button
           type="button"
           aria-label="Nächsten Monat anzeigen"
           onClick={() => changeMonth(1)}
-          className="rounded-full text-center text-2xl font-light text-neutral-500 hover:bg-neutral-100"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-center text-2xl font-light text-neutral-500 hover:bg-neutral-100"
         >
           ›
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5 text-center">
+      <div className="grid grid-cols-7 gap-1 text-center sm:gap-1.5">
         {weekdayLabels.map((label) => (
-          <div key={label} className="pb-1 text-xs font-medium text-neutral-500">
+          <div key={label} className="pb-0.5 text-[11px] font-medium text-neutral-500 sm:pb-1 sm:text-xs">
             {label}
           </div>
         ))}
@@ -201,7 +201,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   type="button"
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
-                  className={`relative grid h-full w-full place-items-center rounded-xl border text-sm ${primaryStatusStyle[status]} ${isToday ? "ring-2 ring-offset-1" : ""}`}
+                  className={`relative grid h-full w-full place-items-center rounded-xl border text-xs sm:text-sm ${primaryStatusStyle[status]} ${isToday ? "ring-2 ring-offset-1" : ""}`}
                 >
                   <span>{day}</span>
                   {status === "confirmed" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">B</span>}
@@ -237,7 +237,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
           aria-expanded={isCalendarLegendOpen}
           aria-controls="partner-calendar-legend-panel"
           onClick={() => setIsCalendarLegendOpen((current) => !current)}
-          className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500"
+          className="flex min-h-10 items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500"
         >
           {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
         </button>

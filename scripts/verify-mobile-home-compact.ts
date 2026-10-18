@@ -50,12 +50,11 @@ console.log("\n== WP-016: buildPersonalRingGeometry wird durch compact nicht ber
   );
 }
 
-console.log("\n== WP-016: die Partneransicht übergibt niemals compact, bleibt also byte-identisch zum vorherigen Stand ==");
+console.log("\n== WP-016: zur Zeit von WP-016 übergab die Partneransicht niemals compact (seit WP-017 bewusst überholt, siehe verify-mobile-partner-compact.ts) ==");
 {
-  assert(!partnerRingSource.includes("compact"), "NewPartnerCycleRing.tsx enthält keinerlei Referenz auf compact");
   assert(
     partnerRingSource.includes("<CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} />"),
-    "der Partner-Aufruf von CyclePersonalRing ist unverändert, ohne compact",
+    "der breite Partner-Aufruf von CyclePersonalRing (ab sm) bleibt unverändert, ohne compact",
   );
 }
 
@@ -136,8 +135,10 @@ console.log("\n== WP-016 Korrektur V2: CalendarTodayLine bekommt eine rein optio
     "ohne compact bleibt die Zeile exakt text-sm (unverändert); nur mit compact wird sie unterhalb sm kleiner",
   );
   assert(componentSource.includes("<CalendarTodayLine today={todayKey} compact />"), "der Owner-Aufruf setzt compact");
-  assert(!partnerCalendarSource.includes("compact"), "NewPartnerCalendar.tsx enthält keinerlei Referenz auf compact — die Partner-Datumzeile bleibt unverändert");
-  assert(partnerCalendarSource.includes("<CalendarTodayLine today={todayKey} />"), "der Partner-Aufruf von CalendarTodayLine bleibt unverändert, ohne compact");
+  // Zur Zeit von WP-016 übergab auch der Partner-Aufruf niemals compact; seit
+  // WP-017 ist das bewusst überholt (siehe verify-mobile-partner-compact.ts).
+  // partnerCalendarSource wird hier nicht mehr gegen "kein compact" geprüft.
+  void partnerCalendarSource;
 }
 
 console.log("\n== WP-016 Korrektur V2: die drei Home-Aktionsbuttons sind mobil kleiner, behalten aber mindestens 40px Höhe ==");

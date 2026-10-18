@@ -57,8 +57,8 @@ export default async function NewPartnerPage() {
 
   if (status.connected) {
     return (
-      <main className="min-h-screen bg-neutral-50 px-6 py-10">
-        <section className="mx-auto flex w-full max-w-sm flex-col gap-6 rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+      <main className="min-h-screen bg-neutral-50 px-3 py-10 sm:px-6">
+        <section className="mx-auto flex w-full max-w-sm flex-col gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm sm:gap-6 sm:p-8">
           {cycleView && (
             <NewPartnerCycleRing
               personalCycleView={cycleView.personalCycleView}

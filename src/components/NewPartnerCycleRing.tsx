@@ -45,19 +45,24 @@ export default function NewPartnerCycleRing({
   manualPmsOverride,
 }: NewPartnerCycleRingProps) {
   return (
-    <section aria-label="Zyklusübersicht deines Partners/deiner Partnerin" className="space-y-3">
-      <p className="text-center text-lg text-[#28101f]">Zyklus-Kreis</p>
-      <CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} />
+    <section aria-label="Zyklusübersicht deines Partners/deiner Partnerin" className="space-y-2 sm:space-y-3">
+      <p className="text-center text-base text-[#28101f] sm:text-lg">Zyklus-Kreis</p>
+      <div className="sm:hidden">
+        <CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} compact />
+      </div>
+      <div className="hidden sm:block">
+        <CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} />
+      </div>
       {personalCycleView.status === "no_data" && (
-        <p className="text-center text-sm text-neutral-600">Noch nicht genügend Daten für eine Orientierung.</p>
+        <p className="text-center text-xs text-neutral-600 sm:text-sm">Noch nicht genügend Daten für eine Orientierung.</p>
       )}
       {manualPmsSymptoms.length > 0 && (
-        <p className="text-center text-sm font-medium text-pink-800">
+        <p className="text-center text-xs font-medium text-pink-800 sm:text-sm">
           PMS von ihr eingetragen: {manualPmsSymptoms.map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
         </p>
       )}
       {personalCycleView.isRunning && runningPeriodExpectedEndDate && (
-        <p className="text-center text-sm text-neutral-600">
+        <p className="text-center text-xs text-neutral-600 sm:text-sm">
           Voraussichtliches Ende: {formatGermanDate(runningPeriodExpectedEndDate)} · Kann abweichen
         </p>
       )}
