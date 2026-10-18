@@ -7,7 +7,7 @@ status: completed
 screens: Startseite
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: fe7def0
 ---
 
 # Kurze Popover-Legende direkt am Info-Button statt langem Inline-Panel (WP-018 Korrektur Version 2)
@@ -41,4 +41,4 @@ Owner prüft `/neu` erneut wie im Prüfschritt beschrieben. Danach erneute Soll-
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-calendar-legend-collapsible.ts`, `docs/work-packages/WP-018-calendar-legende-kompakt.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, Escape/Außenklick, unsichere Vorhersage).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: fe7def0.
