@@ -7,7 +7,7 @@ status: completed
 screens: Startseite
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 6f7982c
 ---
 
 # Periodenaktion aus Home in Periodenübersicht verlegen (WP-019)
@@ -39,4 +39,4 @@ Owner prüft `/neu` wie im Prüfschritt beschrieben. Danach Soll-Ist-Prüfung du
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `scripts/verify-period-history-overview.ts` (neu), `scripts/verify-calendar-legend-collapsible.ts`, `scripts/verify-home-actions-consistent.ts`, `scripts/verify-home-screen-layout.ts`, `scripts/verify-mobile-home-compact.ts`, `docs/work-packages/WP-019-periodenaktion-in-uebersicht.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, kompletter Workflow inkl. Ändern und Monatssprung).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 6f7982c.
