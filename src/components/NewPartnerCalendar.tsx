@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePrediction } from "@/lib/new-cycle-prediction";
@@ -64,6 +64,99 @@ const primaryStatusLetter: Record<Exclude<PrimaryDayStatus, "confirmed" | "none"
   "pms-manual": "M·Sie",
   ovulation: "E",
 };
+
+interface CalendarLegendPopoverProps {
+  isOpen: boolean;
+  onClose: () => void;
+  hasAnyPrediction: boolean;
+  hasManualPmsSection: boolean;
+  hasFertileWindowSomewhere: boolean;
+}
+
+/**
+ * WP-018 Korrektur Version 3: compact, non-modal popover anchored to the ⓘ
+ * trigger in the partner calendar's month row, mirroring the owner's
+ * CalendarLegendPopover (WP-018 Korrektur Version 2). Reuses the component's
+ * already-existing hasAnyPrediction/manualPmsSection/hasFertileWindowSomewhere
+ * conditions — no new status derivation, no second phase calculation. Closes
+ * on Escape and on an outside click/tap, same as the owner popover. The
+ * partner never gains any input affordance here.
+ */
+function PartnerCalendarLegendPopover({
+  isOpen,
+  onClose,
+  hasAnyPrediction,
+  hasManualPmsSection,
+  hasFertileWindowSomewhere,
+}: CalendarLegendPopoverProps) {
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) onClose();
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      ref={popoverRef}
+      id="partner-calendar-legend-panel"
+      role="dialog"
+      aria-label="Kalender-Erklärung"
+      className="absolute right-0 top-full z-10 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-neutral-200 bg-white/95 p-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.16)]"
+    >
+      <ul className="space-y-1.5 text-xs text-neutral-700">
+        <li className="flex items-center gap-2">
+          <span className="size-2.5 shrink-0 rounded-full bg-neutral-900" aria-hidden="true" />
+          Periode bestätigt
+        </li>
+        {hasAnyPrediction && (
+          <>
+            <li className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</li>
+            <li className="flex items-center gap-2">
+              <span className="size-2.5 shrink-0 rounded-full bg-purple-200" aria-hidden="true" />
+              Nächste Periode geschätzt
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="size-2.5 shrink-0 rounded-full bg-violet-200" aria-hidden="true" />
+              Eisprung geschätzt
+            </li>
+            {hasFertileWindowSomewhere && (
+              <li className="flex items-center gap-2">
+                <span className="size-2.5 shrink-0 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
+                Fruchtbare Tage geschätzt
+              </li>
+            )}
+            <li className="flex items-center gap-2">
+              <span className="size-2.5 shrink-0 rounded-full bg-pink-200" aria-hidden="true" />
+              PMS vor Periode
+            </li>
+          </>
+        )}
+        {hasManualPmsSection && (
+          <li className="flex items-center gap-2">
+            <span className="size-2.5 shrink-0 rounded-full bg-pink-400" aria-hidden="true" />
+            PMS eingetragen
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
 
 interface DayDetailModalProps {
   date: string;
@@ -169,7 +262,29 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
         >
           ‹
         </button>
-        <h2 className="text-center text-lg font-semibold capitalize text-neutral-950 sm:text-xl">{monthName}</h2>
+        <div className="flex items-center justify-center gap-1">
+          <h2 className="text-center text-lg font-semibold capitalize text-neutral-950 sm:text-xl">{monthName}</h2>
+          <div className="relative">
+            <button
+              type="button"
+              aria-expanded={isCalendarLegendOpen}
+              aria-haspopup="dialog"
+              aria-controls="partner-calendar-legend-panel"
+              aria-label={isCalendarLegendOpen ? "Erklärungen zum Kalender ausblenden" : "Erklärungen zum Kalender anzeigen"}
+              onClick={() => setIsCalendarLegendOpen((current) => !current)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base text-neutral-500 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500"
+            >
+              <span aria-hidden="true">ⓘ</span>
+            </button>
+            <PartnerCalendarLegendPopover
+              isOpen={isCalendarLegendOpen}
+              onClose={() => setIsCalendarLegendOpen(false)}
+              hasAnyPrediction={hasAnyPrediction}
+              hasManualPmsSection={Boolean(manualPmsSection)}
+              hasFertileWindowSomewhere={hasFertileWindowSomewhere}
+            />
+          </div>
+        </div>
         <button
           type="button"
           aria-label="Nächsten Monat anzeigen"
@@ -229,59 +344,6 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
 
       {prediction?.isUncertain && (
         <p className="text-center text-xs font-semibold text-pink-700">Vorhersage unsicher - Kann abweichen</p>
-      )}
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          aria-expanded={isCalendarLegendOpen}
-          aria-controls="partner-calendar-legend-panel"
-          onClick={() => setIsCalendarLegendOpen((current) => !current)}
-          className="flex min-h-10 items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500"
-        >
-          {isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}
-        </button>
-      </div>
-
-      {isCalendarLegendOpen && (
-        <div
-          id="partner-calendar-legend-panel"
-          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-neutral-600"
-          aria-label="Legende"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3 rounded-full bg-neutral-900" aria-hidden="true" />
-            Bestätigt
-          </span>
-          {hasAnyPrediction && (
-            <>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-purple-200" aria-hidden="true" />
-                Geschätzte nächste Periode – kann abweichen
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-violet-200" aria-hidden="true" />
-                Möglicher Eisprung – kann abweichen
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="size-3 rounded-full bg-pink-200" aria-hidden="true" />
-                Mögliche PMS-Phase – kann abweichen
-              </span>
-            </>
-          )}
-          {manualPmsSection && (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-3 rounded-full bg-pink-400" aria-hidden="true" />
-              PMS von ihr eingetragen
-            </span>
-          )}
-          {hasFertileWindowSomewhere && (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-3 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
-              Mögliches fruchtbares Zeitfenster – kann abweichen
-            </span>
-          )}
-        </div>
       )}
     </div>
     {selectedDay && (

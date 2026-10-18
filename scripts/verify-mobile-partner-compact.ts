@@ -95,13 +95,15 @@ console.log("\n== WP-017: Partner-Monatspfeile erhalten eine garantierte Mindest
   );
 }
 
-console.log("\n== WP-017: der Erklärungen-Umschalter behält trotz kleinerer Schrift eine Mindesthöhe von 40px ==");
+console.log("\n== WP-017 (zur Zeit von WP-017 gültig, seit WP-018 Korrektur V3 bewusst überholt): der frühere lange Erklärungen-Pill-Button existiert nicht mehr, ersetzt durch den kompakten ⓘ-Info-Button ==");
 {
-  assert(
-    partnerCalendarSource.includes("flex min-h-10 items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold"),
-    "der Erklärungen-Button trägt min-h-10 bei unveränderter text-xs-Schrift",
-  );
-  assert(partnerCalendarSource.includes("Erklärungen ausblenden") && partnerCalendarSource.includes("Erklärungen zum Kalender anzeigen"), "beide Button-Texte bleiben unverändert vorhanden");
+  // WP-017 hatte den damals noch vorhandenen langen Partner-Pill-Button mit
+  // min-h-10 abgesichert. WP-018 Korrektur V3 ersetzt ihn durch denselben
+  // kompakten Popover-Trigger wie in der Owner-Ansicht (siehe
+  // scripts/verify-partner-calendar-legend-collapsible.ts für die
+  // ausführlichen Prüfungen dieser neuen Struktur).
+  assert(!partnerCalendarSource.includes('>{isCalendarLegendOpen ? "Erklärungen ausblenden" : "Erklärungen zum Kalender anzeigen"}<'), "kein sichtbarer Pill-Button-Text mit dem alten Umschalt-Muster mehr vorhanden");
+  assert(partnerCalendarSource.includes("ⓘ"), "der kompakte Info-Button (ⓘ) ist an seiner Stelle vorhanden");
 }
 
 console.log("\n== WP-017: der Unsicherheitshinweis und PMS-/Perioden-Hinweise bleiben vollständig lesbar und vorhanden ==");
