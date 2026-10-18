@@ -7,7 +7,7 @@ status: completed
 screens: Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 54eadce
 ---
 
 # Kurze erklärende Popover-Legende auch im Partner-Kalender (WP-018 Korrektur Version 3)
@@ -40,4 +40,4 @@ Owner prüft `/neu/partner` als aktiver Partner wie im Prüfschritt beschrieben.
 
 - Betroffene Dateien: `src/components/NewPartnerCalendar.tsx`, `scripts/verify-partner-calendar-legend-collapsible.ts`, `scripts/verify-mobile-partner-compact.ts`, `docs/work-packages/WP-018-calendar-legende-kompakt.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, mit/ohne manuellem PMS, mit unsicherer Vorhersage).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 54eadce.
