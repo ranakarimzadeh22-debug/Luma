@@ -126,13 +126,30 @@ export default function CyclePersonalRing({
             })}
             {(() => {
               const marker = ringPointAt(personalRingGeometry.todayAngle);
+              const dayOfMonth = Number(today.slice(8, 10));
               const markerName = personalCycleView.todayCycleDay
-                ? `Heute, Zyklustag ${personalCycleView.todayCycleDay}`
-                : "Heute";
+                ? `Heute, ${dayOfMonth}., Zyklustag ${personalCycleView.todayCycleDay}`
+                : `Heute, ${dayOfMonth}.`;
+              const markerRadius = compact ? 11 : 13;
+              const markerFontSize = compact ? 12 : 13;
               return (
-                <circle cx={marker.x} cy={marker.y} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">
-                  <title>{markerName}</title>
-                </circle>
+                <g>
+                  <circle cx={marker.x} cy={marker.y} r={markerRadius} fill="#e11d3f" stroke="white" strokeWidth="2">
+                    <title>{markerName}</title>
+                  </circle>
+                  <text
+                    x={marker.x}
+                    y={marker.y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="white"
+                    fontSize={markerFontSize}
+                    fontWeight="700"
+                    aria-hidden="true"
+                  >
+                    {dayOfMonth}
+                  </text>
+                </g>
               );
             })()}
           </>
