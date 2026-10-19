@@ -108,8 +108,13 @@ console.log("\n== WP-016: keine Textkürzung, kein Entfernen bestehender Hinweis
 
 console.log("\n== WP-016 Korrektur V2: Kalender-Haupt-Tageszahl ist mobil kleiner, ab sm unverändert text-base ==");
 {
+  // WP-022 Korrektur V2: dayClassName enthält seither zusätzlich die neutrale
+  // Kachelfarbe (bg-white/55 text-[#281c24]) statt der früheren
+  // status-abhängigen Vollflächenfarbe, daher kein exakt gleicher String mehr
+  // — die responsive Tageszahl-Größe selbst (text-sm unterhalb sm, text-base
+  // ab sm) ist davon unberührt und bleibt unverändert bestehen.
   assert(
-    componentSource.includes('const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-sm sm:text-base ${'),
+    componentSource.includes('const dayClassName = `relative grid h-full w-full place-items-center overflow-hidden rounded-2xl border bg-white/55 text-sm text-[#281c24] sm:text-base ${'),
     "dayClassName nutzt unterhalb sm text-sm, ab sm weiterhin die bisherige text-base",
   );
 }
@@ -160,8 +165,16 @@ console.log("\n== WP-016 Korrektur V2: keine Tagescontainer-, Grid-, Badge- oder
 {
   assert(componentSource.includes("aspect-square min-w-0"), "Tagesfeld-Container (aspect-square) bleibt unverändert");
   assert(componentSource.includes('absolute right-1 top-0.5 text-[9px] font-bold'), "Status-Badges (P/Läuft/Gsch./M·Du) bleiben in Position und Größe unverändert");
-  assert(componentSource.includes('size-2 -translate-x-1/2 rounded-full border border-white bg-red-600'), "der Heute-Marker-Punkt im Kalender bleibt unverändert");
-  assert(componentSource.includes('text-[8px] font-semibold leading-none text-[#4c279a]'), "das 'Heute'-Badge bleibt unverändert");
+  // WP-022 Korrektur V2 (verbindlich): der frühere isolierte Punkt oben in
+  // der Kachel plus separates "Heute"-Textbadge wurden bewusst durch einen
+  // kleinen roten Kreis direkt hinter der Tageszahl ersetzt — keine stille
+  // Abschwächung, sondern die vom neuen Auftrag ausdrücklich verlangte
+  // Korrektur ("nur hinter der Tageszahl einen kleinen roten Kreis ... seine
+  // gesamte Kachel wird nicht rot"). Die Zugänglichkeit bleibt über das
+  // aria-label (", heute") gewahrt.
+  assert(componentSource.includes('size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600'), "der Heute-Marker ist jetzt ein kleiner roter Kreis direkt hinter der Tageszahl (WP-022 Korrektur V2)");
+  assert(!componentSource.includes('text-[8px] font-semibold leading-none text-[#4c279a]'), "das separate 'Heute'-Textbadge wurde entfernt, da der Kreis hinter der Zahl jetzt allein die Markierung trägt (WP-022 Korrektur V2)");
+  assert(componentSource.includes('isToday ? ", heute" : ""'), "die Information 'heute' bleibt stattdessen über das aria-label zugänglich");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

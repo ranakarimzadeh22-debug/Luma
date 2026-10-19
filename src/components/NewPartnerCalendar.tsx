@@ -7,6 +7,7 @@ import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePred
 import { isWithinManualPmsSection, manualPmsSymptomsForDate, type ManualPmsSection } from "@/lib/manual-pms";
 import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
+import { calendarBandPosition } from "@/lib/calendar-band-position";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -49,13 +50,18 @@ const primaryStatusLabel: Record<PrimaryDayStatus, string> = {
   none: "Keine freigegebene Information",
 };
 
-const primaryStatusStyle: Record<PrimaryDayStatus, string> = {
-  confirmed: "border-neutral-900 bg-neutral-900 text-white",
-  period: "border-purple-300 bg-purple-100 text-purple-900",
-  pms: "border-pink-300 bg-pink-100 text-pink-900",
-  "pms-manual": "border-pink-400 bg-pink-200 text-pink-950",
-  ovulation: "border-violet-300 bg-violet-100 text-violet-900",
-  none: "border-neutral-200 bg-white text-neutral-700",
+/**
+ * WP-022 Korrektur Version 2: the day tile stays neutral; only a narrow band
+ * along its bottom edge carries the status color now (mirrors the owner
+ * calendar's dayBandStyles in NewCycleExample.tsx). Same PrimaryDayStatus
+ * values already derived by primaryStatusFor() below — no new status.
+ */
+const primaryStatusBandStyle: Record<Exclude<PrimaryDayStatus, "none">, string> = {
+  confirmed: "bg-neutral-900",
+  period: "bg-purple-300",
+  pms: "bg-pink-300",
+  "pms-manual": "bg-pink-400",
+  ovulation: "bg-violet-300",
 };
 
 const primaryStatusLetter: Record<Exclude<PrimaryDayStatus, "confirmed" | "none">, string> = {
@@ -295,6 +301,15 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
         </button>
       </div>
 
+      {(() => {
+        const dayStatuses = cells.map((day) => {
+          const date = day ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day) : null;
+          const status = date ? primaryStatusFor(date) : "none";
+          return { day, date, status };
+        });
+        const bandKeys = dayStatuses.map((entry) => (entry.status === "none" ? null : entry.status));
+
+        return (
       <div className="grid grid-cols-7 gap-1 text-center sm:gap-1.5">
         {weekdayLabels.map((label) => (
           <div key={label} className="pb-0.5 text-[11px] font-medium text-neutral-500 sm:pb-1 sm:text-xs">
@@ -302,13 +317,21 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
           </div>
         ))}
         {cells.map((day, index) => {
-          const date = day ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day) : null;
-          const status = date ? primaryStatusFor(date) : "none";
+          const { date, status } = dayStatuses[index];
           const isFertile = date ? isFertileFor(date, status) : false;
           const isToday = Boolean(day && isCurrentMonth && day === todayDay);
           const ariaLabel = date
-            ? `${formatFullGermanDate(date)}, ${primaryStatusLabel[status]}${isFertile && status !== "ovulation" ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
+            ? `${formatFullGermanDate(date)}${isToday ? ", heute" : ""}, ${primaryStatusLabel[status]}${isFertile && status !== "ovulation" ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
             : "";
+          const bandPosition = calendarBandPosition(bandKeys, index);
+          const bandRoundingClassName =
+            bandPosition === "single"
+              ? "rounded-full"
+              : bandPosition === "start"
+                ? "rounded-l-full"
+                : bandPosition === "end"
+                  ? "rounded-r-full"
+                  : "";
           return (
             <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
               {day && (
@@ -316,18 +339,26 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   type="button"
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
-                  className={`relative grid h-full w-full place-items-center rounded-xl border text-xs sm:text-sm ${primaryStatusStyle[status]} ${isToday ? "ring-2 ring-offset-1" : ""}`}
+                  className={`relative grid h-full w-full place-items-center overflow-hidden rounded-xl border border-neutral-200 bg-white text-xs text-neutral-700 sm:text-sm ${isToday ? "ring-2 ring-offset-1" : ""}`}
                 >
-                  <span>{day}</span>
+                  {status !== "none" && (
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-x-0 bottom-0 h-[35%] ${primaryStatusBandStyle[status]} ${bandRoundingClassName}`}
+                    />
+                  )}
+                  <span className="relative">
+                    {isToday && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
+                      />
+                    )}
+                    <span className="relative">{day}</span>
+                  </span>
                   {status === "confirmed" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">B</span>}
                   {status !== "confirmed" && status !== "none" && (
                     <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">{primaryStatusLetter[status]}</span>
-                  )}
-                  {isToday && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-1/2 top-1 size-2 -translate-x-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
-                    />
                   )}
                   {isFertile && (
                     <span
@@ -341,6 +372,8 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
           );
         })}
       </div>
+        );
+      })()}
 
       {prediction?.isUncertain && (
         <p className="text-center text-xs font-semibold text-pink-700">Vorhersage unsicher - Kann abweichen</p>

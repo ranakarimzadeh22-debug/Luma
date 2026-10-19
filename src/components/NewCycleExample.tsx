@@ -9,6 +9,7 @@ import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycl
 import { daysUntilNextPeriod } from "@/lib/next-period-countdown";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
+import { calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
@@ -34,14 +35,27 @@ function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
   return null;
 }
 
-const phaseStyles = {
-  period: "bg-[#4a0738] text-white",
-  pms: "bg-[#f8c2d0] text-[#9f164f]",
-  ovulation: "bg-[#e0d0f5] text-[#5420a5]",
-};
-
 const phaseLetters = { period: "P", pms: "M", ovulation: "E" };
 const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
+
+/**
+ * WP-022 Korrektur Version 2: the day tile itself stays neutral; only a
+ * narrow band along its bottom edge carries the status color now (instead of
+ * the previous full-tile fill). Keys mirror exactly the same priority order
+ * the tile used before (confirmed/running > expected > planned > phase) —
+ * no new status, just a narrower color definition for the same value.
+ */
+type DayBandKey = "confirmed" | "expected" | "planned" | "period" | "pms" | "pms-manual" | "ovulation";
+
+const dayBandStyles: Record<DayBandKey, string> = {
+  confirmed: "bg-[#6d153f]",
+  expected: "bg-[#f3a9bd]",
+  planned: "bg-[#fff3c9]",
+  period: "bg-[#4a0738]",
+  pms: "bg-[#f8c2d0]",
+  "pms-manual": "bg-[#f49bbb]",
+  ovulation: "bg-[#e0d0f5]",
+};
 
 /**
  * WP-018 Korrektur Version 2: kurze Farbzeilen für das Popover am Info-Button,
@@ -1227,9 +1241,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
-          {weekdayLabels.map((label) => <div key={label} className="pb-0.5 text-xs font-medium text-[#4b3a44] sm:pb-1 sm:text-sm">{label}</div>)}
-          {cells.map((day, index) => {
+        {(() => {
+          const dayCellData = cells.map((day) => {
             const date = day
               ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day)
               : null;
@@ -1242,8 +1255,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               : null;
             const phase = date ? applyManualPmsOverride(estimatedPhase, manualPmsSection, date, periods, todayKey) : estimatedPhase;
             const isManualPmsDay = Boolean(date && isWithinManualPmsSection(manualPmsSection, date, periods, todayKey));
-            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date, prediction), estimatedPhase));
-            const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const storedPeriod = date
               ? periods.find((entry) => entry.endDate !== null && entry.startDate <= date && entry.endDate >= date)
               : null;
@@ -1262,6 +1273,29 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const plannedPeriod = date
               ? periodPlans.find((entry) => entry.startDate <= date && entry.endDate >= date)
               : null;
+            const bandKey: DayBandKey | null =
+              storedPeriod || runningPeriod
+                ? "confirmed"
+                : expectedPeriod
+                  ? "expected"
+                  : plannedPeriod
+                    ? "planned"
+                    : phase
+                      ? isManualPmsDay && phase === "pms"
+                        ? "pms-manual"
+                        : phase
+                      : null;
+            return { day, date, phase, estimatedPhase, isManualPmsDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey };
+          });
+          const bandKeys = dayCellData.map((entry) => entry.bandKey);
+
+          return (
+        <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
+          {weekdayLabels.map((label) => <div key={label} className="pb-0.5 text-xs font-medium text-[#4b3a44] sm:pb-1 sm:text-sm">{label}</div>)}
+          {cells.map((day, index) => {
+            const { date, phase, estimatedPhase, isManualPmsDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey } = dayCellData[index];
+            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date as string, prediction), estimatedPhase));
+            const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const dayInfo = date
               ? getCalendarDayInfo({
                   date,
@@ -1274,27 +1308,40 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 })
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
-            const dayClassName = `relative grid h-full w-full place-items-center rounded-2xl border text-sm sm:text-base ${
-              storedPeriod || runningPeriod
-                ? "bg-[#6d153f] text-white"
-                : expectedPeriod
-                  ? "bg-[#f3a9bd] text-[#831341]"
-                  : plannedPeriod
-                    ? "bg-[#fff3c9] text-[#6d4c00]"
-                    : phase
-                      ? phaseStyles[phase]
-                      : "bg-white/55 text-[#281c24]"
-            } ${
+            const bandPosition = calendarBandPosition(bandKeys, index);
+            const dayClassName = `relative grid h-full w-full place-items-center overflow-hidden rounded-2xl border bg-white/55 text-sm text-[#281c24] sm:text-base ${
               !dayInfo?.isFuture
                 ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
-            } ${isToday ? "ring-2 ring-[#5d32ba] ring-offset-2 ring-offset-[#fff9f8]" : ""}`;
+            }`;
+            const bandRoundingClassName =
+              bandPosition === "single"
+                ? "rounded-full"
+                : bandPosition === "start"
+                  ? "rounded-l-full"
+                  : bandPosition === "end"
+                    ? "rounded-r-full"
+                    : "";
             const dayAriaLabel = date
-              ? `${formatPeriodDate(date)}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isManualPmsDay ? ", PMS von dir eingetragen" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
+              ? `${formatPeriodDate(date)}${isToday ? ", heute" : ""}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isManualPmsDay ? ", PMS von dir eingetragen" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
               : "";
             const dayChildren = (
               <>
-                <span>{day}</span>
+                {bandKey && (
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-x-0 bottom-0 h-[35%] ${dayBandStyles[bandKey]} ${bandRoundingClassName}`}
+                  />
+                )}
+                <span className="relative">
+                  {isToday && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
+                    />
+                  )}
+                  <span className="relative">{day}</span>
+                </span>
                 {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
                 {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}
                 {!storedPeriod && !runningPeriod && expectedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Ca.</span>}
@@ -1313,13 +1360,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                     {isManualPmsDay ? "M·Du" : phase === "period" ? "Gsch." : phaseLetters[phase]}
                   </span>
                 )}
-                {isToday && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-1/2 top-1 size-2 -translate-x-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
-                  />
-                )}
-                {isToday && <span className="absolute bottom-0.5 text-[8px] font-semibold leading-none text-[#4c279a]">Heute</span>}
                 {isFertileDay && (
                   <span
                     aria-label="Mögliches fruchtbares Zeitfenster, kann abweichen"
@@ -1359,6 +1399,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             );
           })}
         </div>
+          );
+        })()}
 
         {prediction?.isUncertain && (
           <p className="text-center text-xs font-semibold text-[#a52b5d]">

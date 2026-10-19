@@ -17,6 +17,50 @@ function assert(condition: boolean, label: string): void {
   if (!condition) failures += 1;
 }
 
+/**
+ * WP-022 Korrektur V2: extracts a top-level function's body by counting
+ * braces instead of searching for a literal "\n}\n" — the previous approach
+ * broke once NewCycleExample.tsx's calendar section grew a nested IIFE
+ * wrapper (unrelated to TodayCard itself), since no lone "}" line existed
+ * for the rest of the file and indexOf silently returned -1, slicing to the
+ * file's end instead of failing loudly.
+ */
+function extractFunctionBody(source: string, functionStartNeedle: string): string {
+  const fnStart = source.indexOf(functionStartNeedle);
+  if (fnStart === -1) return "";
+  // Find the "{" that opens the function BODY, not an earlier one inside a
+  // destructured parameter list (e.g. `function Foo({ a, b }: Props) {`) —
+  // walk forward tracking paren/brace depth from the parameter list's own
+  // opening "(" so we only treat a "{" as the body start once we're back at
+  // paren depth 0.
+  const parenStart = source.indexOf("(", fnStart);
+  if (parenStart === -1) return "";
+  let parenDepth = 0;
+  let bodyStart = -1;
+  for (let i = parenStart; i < source.length; i += 1) {
+    if (source[i] === "(") parenDepth += 1;
+    else if (source[i] === ")") {
+      parenDepth -= 1;
+      if (parenDepth === 0) {
+        const brace = source.indexOf("{", i);
+        if (brace === -1) return "";
+        bodyStart = brace;
+        break;
+      }
+    }
+  }
+  if (bodyStart === -1) return "";
+  let depth = 0;
+  for (let i = bodyStart; i < source.length; i += 1) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(fnStart, i + 1);
+    }
+  }
+  return "";
+}
+
 function period(id: string, startDate: string, endDate: string | null, expectedEndDate: string | null = null): NewPeriodEntryOpen {
   return { id, startDate, endDate, expectedEndDate };
 }
@@ -156,9 +200,8 @@ console.log("\n== WP-015: TodayCard zeigt die Resttage-Zeile nur bei einer posit
 {
   const componentPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewCycleExample.tsx");
   const componentSource = readFileSync(componentPath, "utf8");
-  const fnStart = componentSource.indexOf("function TodayCard(");
-  const fnEnd = componentSource.indexOf("\n}\n", fnStart);
-  const fnBody = componentSource.slice(fnStart, fnEnd);
+  const fnBody = extractFunctionBody(componentSource, "function TodayCard(");
+  assert(fnBody.length > 0, "TodayCard-Funktionskörper wurde im Quelltext gefunden");
   assert(fnBody.includes("daysUntilNextPeriod("), "TodayCard nutzt die reine daysUntilNextPeriod()-Hilfsfunktion");
   assert(fnBody.includes("daysRemaining !== null"), "die Resttage-Zeile wird nur bei einem Ergebnis ungleich null gerendert");
   assert(fnBody.includes('status === "no_data"'), "ohne ausreichende Daten (status no_data) wird daysRemaining auf null erzwungen, auch wenn predictCycle bereits eine Default-Vorhersage liefert");

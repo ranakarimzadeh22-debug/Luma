@@ -1,17 +1,19 @@
 ---
 id: WP-022
-title: "Zyklus-Kreis mit klaren Phasenbaendern und Tagespunkt"
+title: "Korrektur V2: Kalender mit Phasenbaendern und Heute-Punkt"
 status: review
 created: 2026-10-19
 updated: 2026-10-19
 owner_approved: yes
 executor: claude
-product_area: "Neue Luma – gemeinsamer Zyklus-Kreis in Eigen- und Partneransicht"
+product_area: "Neue Luma – Kalender in Eigen- und Partneransicht"
 brief_version: 1
 technical_brief: complete
 ---
 
-# Aufgabe: Zyklus-Kreis mit klaren Phasenbaendern und Tagespunkt
+# Aufgabe: Korrektur V2 – Kalender mit Phasenbaendern und Heute-Punkt
+
+> **Verbindlicher Vorrang:** Die Ownerin hat Version 1 nicht abgenommen. Ausschliesslich `Korrekturauftrag Version 2 – verbindlich` am Dokumentende gilt für die erneute Umsetzung. Alle vorherigen Vorgaben zu Ringmarker und Zyklus-Kreis sind damit ersetzt.
 
 ## Owner-Ansicht – einfach erklärt
 
@@ -122,4 +124,77 @@ technical_brief: complete
 
 ## Soll-Ist-Prüfung – von Codex
 
-- ausstehend
+- Ergebnis: erfüllt. Die vorhandenen Phasensegmente waren bereits jeweils ein einzelner zusammenhängender SVG-Bogen; dieser Befund ist nachgewiesen und ihre Grenzen bleiben unverändert. Der gemeinsame rote Heute-Marker zeigt nun die Kalendertagszahl ohne führende Null, bleibt exakt auf dem bestehenden `todayAngle` und wird dadurch identisch in Eigen- und Partneransicht dargestellt.
+- Nachschärfung: keine.
+- Product-Map aktualisiert: ja.
+
+## Korrekturauftrag Version 2 – verbindlich
+
+### Owner-Entscheidung
+
+- Der Zyklus-Kreis soll exakt wie vor Commit `40b2e25` aussehen. Die dort hinzugefuegte Kalendertagszahl im Ringmarker ist vollstaendig zurueckzunehmen.
+- Die gewuenschte Aenderung betrifft nur die Kalender auf `/neu` und `/neu/partner`.
+- Phasen sollen als schmale, zusammenhaengende Farbbänder wirken, nicht als vollflaechig gefaerbte Tageskacheln.
+- Der heutige Kalendertag bekommt einen kleinen roten Kreis direkt hinter seiner Zahl; nicht die ganze Tageskachel.
+
+### Soll
+
+1. Der Zyklus-Kreis kehrt sichtbar auf den Stand vor Commit `40b2e25` zurueck: kein Kalendertagstext im Ringmarker. Der tagesgenaue kleine WP-020-Marker und die Ring-Geometrie bleiben unveraendert.
+2. In beiden Kalendern werden bestehende sichtbare Phasen als reine schmale Hintergrundbaender innerhalb der vorhandenen Tageskacheln dargestellt. Tageszahl, Kurzmarker und Klickflaeche liegen darueber.
+3. Aufeinanderfolgende Tage derselben sichtbaren Phase schliessen innerhalb einer Kalenderwoche ohne sichtbare Luecke aneinander an. Nur Anfang und Ende eines Abschnitts sind abgerundet. Bei Wochenumbruch setzt das Band in der naechsten Zeile fort.
+4. Heute hat nur hinter der Tageszahl einen kleinen roten Kreis. Seine gesamte Kachel wird nicht rot und nicht als besondere Vollflaeche gezeichnet.
+5. Alle bestehenden Statuswerte, Prioritaeten und Daten bleiben identisch: bestaetigte/laufende Periode, erwartetes Ende, Planung, geschätzte Periode, PMS inklusive manuellem PMS, Eisprung und Fruchtbarkeitsmarker. Es entsteht keine neue Vorhersage, Phase oder Datumsableitung.
+6. Owner- und Partnerkalender zeigen dieselbe sichtbare Regel. Tagesfenster, Monatswechsel, Legenden-Popover, Unsicherheitshinweis, mobile Tippflaechen und die rein lesende Partneransicht bleiben unveraendert funktionsfaehig.
+
+### Technischer Auftrag fuer Claude
+
+- `src/components/CyclePersonalRing.tsx`: Nimm ausschliesslich die in Commit `40b2e25` hinzugefuegte Tageszahl/Marker-Vergrösserung zurueck. `cycle-ring-geometry.ts`, `todayAngle`, Labels, `compact`, Daten und Aufrufer bleiben unveraendert.
+- `src/components/NewCycleExample.tsx` und `src/components/NewPartnerCalendar.tsx`: Ersetze nur die vollflaechige Phasen-Hinterlegung durch eine reine Bandebene. Verwende ausschliesslich die bereits berechneten Werte (`phase` bzw. bestehende Partner-Statuswerte und Prioritaeten). Keine zweite Vorhersage, keine neue Datumsberechnung, keine neue Phase.
+- Bestimme fuer die reine Bandform pro Kalenderwoche anhand bereits vorhandener benachbarter sichtbarer Tage nur `Start`, `Mitte`, `Ende` oder `einzeln` derselben sichtbaren Bandfarbe. Leere Felder, andere Phasen und Wochenumbruch beenden den sichtbaren Abschnitt. Es darf keine fachliche Phasenlogik dupliziert werden.
+- Der Heute-Kreis liegt direkt hinter der Zahl und bleibt für Screenreader über die bestehende Tagesbeschreibung klar benannt. Er darf weder Kurzmarker noch Klickflaeche verdecken.
+- Eine kleine gemeinsame reine Darstellungs-Hilfe ist nur erlaubt, wenn sie vorhandene Statuswerte in Bandklassen/Bandpositionen abbildet. Keine neue Route, API, Migration, Datenbankabfrage, Abhaengigkeit, gespeicherte Einstellung oder globale CSS-Aenderung.
+
+### Pflichtpruefungen
+
+- Gezielte Kalenderpruefung in Owner- und Partneransicht: Band-Start/Mitte/Ende, Wochenumbruch, Tageszahl ueber dem Band, kleiner Heute-Kreis ohne Vollkachel und unveraenderte Statusprioritaeten.
+- Gezielte Ring-Ruecknahme: kein Kalendertagstext im Ringmarker; WP-020-Markerposition bleibt tagesgenau.
+- Bestehende Kalender-, PMS-, Ring-, Partner-, Mobil- und Tagesfenster-Regressionen sowie TypeScript und Produktions-Build.
+- Sichtpruefung mobil und breit: mehrere PMS-Tage, manueller PMS-Start, Wochenumbruch, heute, Monatswechsel, Tagesfenster und aktive Partneransicht; kein Ueberlauf.
+
+### Stoppbedingungen
+
+- Stoppe und frage nach, bevor Kalenderphasen, Vorhersagen, Perioden-/PMS-Ableitung, Ring-Geometrie, Tagesfenster-Verhalten, Partnerrechte oder Eingabemoeglichkeiten veraendert werden.
+- Stoppe, falls die vorhandene Rasterstruktur keine sichtbaren Baender erlaubt, ohne Tippflaechen oder Statusprioritaeten zu gefaehrden; dokumentiere den Konflikt und schlage hoechstens zwei rein visuelle Varianten vor.
+
+### Abschluss durch Claude
+
+- Ergaenze den `Ist`-Abschnitt fuer Version 2, setze `status: review`, aktualisiere Ledger und `STATE.json`, validiere, committe und pushe nur auftragsbezogene Dateien. Kein manuelles Deployment.
+
+## Ist Version 2 – von Claude
+
+- umgesetzt:
+  - **Ring-Rücknahme (`src/components/CyclePersonalRing.tsx`):** der in Commit `40b2e25` hinzugefügte Kalendertagstext im Heute-Marker wurde vollständig zurückgenommen. Der Marker ist wieder exakt der ursprüngliche kleine Kreis (`r="6"`, kein Text, kein variabler Radius, keine Schriftgröße) mit dem ursprünglichen zugänglichen `<title>`-Text (`"Heute, Zyklustag N"` bzw. `"Heute"`, ohne Kalendertagszahl). `buildPersonalRingGeometry`, `todayAngle`, Segmentgrenzen, Labels, `compact` und alle Aufrufer bleiben unverändert — der Ring entspricht jetzt byte-identisch dem Stand vor Commit `40b2e25`.
+  - **Neue gemeinsame, rein darstellende Hilfsfunktion `src/lib/calendar-band-position.ts`:** `calendarBandPosition(bandKeys, index)` bildet aus einer bereits vom Aufrufer abgeleiteten Sequenz von Bandfarben-Schlüsseln (ein Wert pro Kalenderzelle inkl. der führenden Leerzellen aus `getCalendarMonthGrid`) die Position `start`/`middle`/`end`/`single` innerhalb der jeweiligen 7er-Kalenderwoche ab. Sie vergleicht ausschließlich direkte Nachbarn innerhalb derselben Woche; ein Wochenumbruch, eine andere Farbe oder eine leere Zelle beenden den Abschnitt immer. Die Funktion enthält keinerlei Datums-, Zyklus- oder Phasenlogik — sie bekommt nur bereits anderswo berechnete Werte übergeben.
+  - **`src/components/NewCycleExample.tsx` (Owner-Kalender):** die bisherige vollflächige Kachel-Hintergrundfarbe (abhängig von `storedPeriod`/`runningPeriod`/`expectedPeriod`/`plannedPeriod`/`phase`) wurde entfernt. Die Kachel selbst ist jetzt immer neutral (`bg-white/55`). Dieselbe, unverändert aus den bestehenden Werten abgeleitete Status-Priorität bestimmt stattdessen einen `bandKey`, der nur noch ein schmales Band (`h-[35%]`, unterer Rand der Kachel) einfärbt; `calendarBandPosition` rundet dessen Ecken an Start/Ende eines zusammenhängenden Abschnitts ab (`rounded-l-full`/`rounded-r-full`/`rounded-full` bei `single`), sodass aufeinanderfolgende gleichfarbige Tage sichtbar als ein Band wirken. Heute zeigt nur noch einen kleinen roten Kreis (`size-6`, zentriert) direkt hinter der Tageszahl statt der vorherigen lila Ring-Hervorhebung der ganzen Kachel und des separaten "Heute"-Textbadges (beide entfernt); die Information "heute" bleibt stattdessen über das bestehende `aria-label` der Kachel zugänglich (ergänzt um ", heute").
+  - **`src/components/NewPartnerCalendar.tsx` (Partner-Kalender):** exakt dasselbe Muster, mit den dort bereits bestehenden `PrimaryDayStatus`-Werten (`confirmed`/`period`/`pms`/`pms-manual`/`ovulation`) als Bandfarben-Schlüssel, keine neue Statuslogik. Die vorher vollflächig eingefärbte Kachel (`primaryStatusStyle`) wurde durch eine neutrale weiße Kachel mit demselben unteren Farbband ersetzt; die tote `primaryStatusStyle`-Konstante wurde entfernt, da nirgends mehr referenziert. Heute zeigt ebenfalls nur noch einen kleinen roten Kreis (`size-5`) hinter der Zahl statt des bisherigen `ring-2 ring-offset-1` um die ganze Kachel plus zusätzlichem Punkt; "heute" bleibt über das `aria-label` zugänglich.
+  - Keine Änderung an Segmentdaten, Vorhersage-, Perioden-, PMS-Ableitung, `manual-pms.ts`, Partnerrechten, Partner-Gate, Routen, API, Migration oder Abhängigkeiten. `primaryCalendarPhase`, `applyManualPmsOverride`, `isWithinManualPmsSection`, `showsFertileMarker` werden unverändert in exakt derselben Reihenfolge aufgerufen wie vor dieser Korrektur.
+- nicht umgesetzt: nichts aus dem Korrekturauftrag offen; Umfang vollständig umgesetzt.
+- Tests:
+  - Neues Skript `scripts/verify-calendar-band-position.ts` (16 Prüfungen): Start/Mitte/Ende/einzeln innerhalb einer Woche, Farbwechsel beendet einen Abschnitt, Wochenumbruch verbindet niemals über die Zeilengrenze hinweg, keine fachliche Logik in der Hilfsfunktion. Alle bestanden.
+  - Neues Skript `scripts/verify-cycle-ring-marker-reverted.ts` (11 Prüfungen): kein Kalendertagstext/variabler Radius/Schriftgröße mehr im Ringmarker, ursprünglicher `r="6"`-Kreis und Titeltext wiederhergestellt, `todayAngle`/Segmentanzahl bleiben tagesgenau, Eigen- und Partneransicht nutzen weiterhin dieselbe Komponente ohne eigene Marker-Logik. Alle bestanden.
+  - Neues Skript `scripts/verify-calendar-tile-band.ts` (28 Prüfungen): neutrale Kachel statt Vollflächenfarbe, Band nur als unterer Streifen, unveränderte Status-Priorität (jetzt als `bandKey`), Heute-Kreis hinter der Zahl statt Vollkachel-Hervorhebung in Owner- und Partner-Kalender, Monatswechsel/Legenden-Popover/Unsicherheitshinweis/Tagesfenster-Interaktion/rein lesende Partneransicht bleiben unverändert eingebunden. Alle bestanden.
+  - Das WP-022-Version-1-Testskript `scripts/verify-cycle-ring-day-marker.ts` wurde gelöscht, da es ausschließlich die jetzt vollständig zurückgenommene V1-Änderung prüfte und mit einem durch die Ownerin nicht abgenommenen, nicht mehr gültigen Soll übereinstimmte.
+  - `scripts/verify-manual-pms-ring-marker.ts` (WP-020-Regression, alle 5 Prüfblöcke): weiterhin vollständig bestanden, da die Ring-Geometrie durch diese Korrektur nicht berührt wird.
+  - Vier bestehende Testskripte mussten an die durch diesen Korrekturauftrag bewusst geänderte Darstellung angepasst werden (keine stille Abschwächung, sondern eine durch den neuen Auftrag notwendige Korrektur einer zuvor gültigen, jetzt überholten Annahme):
+    - `scripts/verify-mobile-home-compact.ts`: die Assertion zur `dayClassName`-Tageszahlgröße prüfte zuvor einen exakten String ohne die jetzt neutrale Kachel-Hintergrundfarbe; die responsive Schriftgröße (`text-sm`/`sm:text-base`) selbst ist unverändert. Die Assertions zum "Heute-Marker-Punkt" und "Heute-Badge" prüften die alte isolierte Punkt+Text-Darstellung, die der Korrekturauftrag ausdrücklich durch einen Kreis hinter der Zahl ersetzt; beide Assertions wurden auf die neue, vom Auftrag verlangte Darstellung umgestellt.
+    - `scripts/verify-mobile-partner-compact.ts`: dieselbe Ursache, gespiegelt für die Partner-Tageszahl-Klasse und die Owner-Referenzklasse im selben Skript.
+    - `scripts/verify-manual-pms-symptom-ui.ts`: eine Assertion suchte die Status-Prioritätslogik direkt im `dayClassName`-Template; diese Logik liegt jetzt in der separaten `bandKey`-Konstante (gleiche fachliche Priorität, anderer Fundort) — die Assertion wurde entsprechend umgestellt, ohne die geprüfte fachliche Aussage zu ändern.
+    - `scripts/verify-today-card.ts`: die Hilfsfunktion zur Extraktion des `TodayCard`-Funktionskörpers suchte textuell nach `"\n}\n"` als Funktionsende; durch den neuen, verschachtelten IIFE-Wrapper um die Kalenderzellen-Berechnung existierte dieses Muster ab `TodayCard` nirgends mehr im Rest der Datei, wodurch `indexOf` still `-1` lieferte und der gesamte Dateirest (inklusive späterer `fetch`/`new Date`-Aufrufe anderer Funktionen) fälschlich als "TodayCard-Körper" gewertet wurde. `TodayCard` selbst ist unverändert; die Hilfsfunktion wurde auf eine klammertiefenbasierte, robuste Extraktion umgestellt (zählt zunächst die Klammertiefe der Parameterliste, bevor sie die öffnende Körperklammer sucht).
+  - `npx tsc --noEmit`: keine Fehler.
+  - `npm run build`: erfolgreich; Routenliste unverändert.
+  - `node --experimental-strip-types --test tests/*.test.ts`: 83/84 bestanden; der eine bekannte, vorbestehende Fehlschlag in `tests/calendar-day-info.test.ts` ist unabhängig von diesem Paket.
+  - Alle weiteren potenziell betroffenen bestehenden Regressionsskripte erneut ausgeführt und bestanden: `verify-calendar-legend-collapsible.ts`, `verify-day-detail.ts`, `verify-home-actions-consistent.ts`, `verify-home-screen-layout.ts`, `verify-manual-pms-prediction-isolation.ts`, `verify-next-period-countdown.ts`, `verify-partner-calendar-legend-collapsible.ts`, `verify-partner-fixed-view.ts`, `verify-partner-view-no-status-card.ts`, `verify-period-history-layout.ts`, `verify-period-history-overview.ts`, `verify-period-history.ts`, `verify-owner-mobile-nav.ts`.
+  - Live-Verifikation: temporär `npm install --no-save playwright` installiert (`package.json`/`package-lock.json` vorher und nachher ohne Diff bestätigt), laufenden Dev-Server verwendet, ein echtes Owner-Testkonto über die reale Registrierungs-UI angelegt, eine echte Periode sowie ein Zyklusprofil über die echten APIs gespeichert, drei aufeinanderfolgende Tage (heute und die zwei Tage davor) über die echte PMS-Symptom-API manuell markiert (mehrtägiges PMS-Band). Per DOM-Auswertung bestätigt: alle Tageskacheln im Raster haben dieselbe neutrale Hintergrundfarbe (kein Status mehr direkt auf der Kachel), mindestens ein schmales unteres Band-Element ist sichtbar, genau ein kleiner roter Heute-Kreis ist im Raster vorhanden, kein horizontaler Überlauf mobil oder breit. Das Tagesfenster (DayDetailModal) öffnet sich weiterhin beim Klick auf den heutigen Tag. Screenshots bestätigen visuell: das PMS-Band verläuft über mehrere Tage durchgehend mit abgerundeten Enden an Anfang/Ende des Abschnitts, der Heute-Kreis sitzt sauber hinter der "19", der Ring zeigt wieder den einfachen Punkt ohne Zahl. Über die echte UI einen Partner-Verbindungscode erzeugt, mit einem zweiten echten Testkonto über die reale Registrierungs- und Einlöse-API verbunden: `/neu/partner` zeigt dieselbe neutrale Kachel-mit-Band-Darstellung, genau einen Heute-Kreis, keinerlei Eingabeelemente (rein lesend bestätigt), kein horizontaler Überlauf. Anschließend vollständiger Rückbau: temporäre Testdateien und Screenshots gelöscht, `npm uninstall playwright` ausgeführt.
+- Abweichungen: keine Code-Abweichung vom Korrekturauftrag. Die vier oben genannten Testskript-Anpassungen betreffen ausschließlich Prüf-Infrastruktur (Assertions auf jetzt überholte oder fragile Quelltext-Muster), nicht das geprüfte Produktverhalten selbst.
+- offene Punkte: keine.
+- Commit:

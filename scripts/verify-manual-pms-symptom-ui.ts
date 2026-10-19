@@ -67,8 +67,15 @@ console.log("\n== WP-013: manueller PMS-Status hat Vorrang vor der Schätzung, �
     component.includes("applyManualPmsOverride(estimatedPhase, manualPmsSection, date, periods, todayKey)"),
     "der Kalender wendet die Übersteuerung auf die Schätzung an und übergibt die echten Perioden zur Absicherung",
   );
-  const phaseAssignment = component.match(/const dayClassName = `relative grid[\s\S]*?\$\{\s*storedPeriod \|\| runningPeriod[\s\S]*?: phase/);
-  assert(Boolean(phaseAssignment), "storedPeriod/runningPeriod bleiben in der Darstellungspriorität vor der (ggf. übersteuerten) Phase");
+  // WP-022 Korrektur V2: die Status-Prioritätslogik für die Kachel-Darstellung
+  // wurde von einem Inline-Ausdruck innerhalb von dayClassName in eine
+  // eigene, separat benannte Konstante (bandKey) verschoben, da die
+  // Statusfarbe seither nur noch als schmales Band statt als Vollflächenfarbe
+  // der Kachel erscheint. Die fachliche Priorität selbst (storedPeriod/
+  // runningPeriod vor der ggf. übersteuerten Phase) bleibt unverändert, nur
+  // der Fundort im Quelltext hat sich verschoben.
+  const bandKeyAssignment = component.match(/const bandKey: DayBandKey \| null =\s*storedPeriod \|\| runningPeriod[\s\S]*?: phase/);
+  assert(Boolean(bandKeyAssignment), "storedPeriod/runningPeriod bleiben in der Darstellungspriorität (jetzt: Bandfarbe) vor der (ggf. übersteuerten) Phase");
   assert(
     component.includes("isManualPmsToday = isWithinManualPmsSection(manualPmsSection, todayKey, periods, todayKey)"),
     "der Zyklus-Kreis nutzt denselben Abschnitt für den heutigen Tag und übergibt die echten Perioden zur Absicherung",
