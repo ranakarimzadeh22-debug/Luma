@@ -5,6 +5,7 @@ import NewLogoutButton from "@/components/NewLogoutButton";
 import NewFirstNameForm from "@/components/NewFirstNameForm";
 import NewCycleExample from "@/components/NewCycleExample";
 import NewPeriodHistoryOnboarding from "@/components/NewPeriodHistoryOnboarding";
+import NewOwnerMobileNav from "@/components/NewOwnerMobileNav";
 import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { predictCycle } from "@/lib/new-cycle-prediction";
@@ -62,9 +63,10 @@ export default async function NewAppPage() {
   const personalCycleView = computePersonalCycleView(periodEntries, profile, today);
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_15%_12%,rgba(250,220,225,0.58),transparent_34%),radial-gradient(circle_at_88%_44%,rgba(238,219,244,0.46),transparent_32%),#fff9f8] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-7">
+    <>
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_15%_12%,rgba(250,220,225,0.58),transparent_34%),radial-gradient(circle_at_88%_44%,rgba(238,219,244,0.46),transparent_32%),#fff9f8] px-5 pb-[max(5rem,calc(3.5rem+env(safe-area-inset-bottom)))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-7 sm:pb-[max(2rem,env(safe-area-inset-bottom))]">
       <section className="mx-auto flex w-full max-w-[27rem] flex-col gap-8">
-        <div className="flex justify-end">
+        <div className="hidden justify-end sm:flex">
           <Link href="/neu/einstellungen" className="text-sm text-neutral-500 hover:text-neutral-900">
             Einstellungen
           </Link>
@@ -79,5 +81,7 @@ export default async function NewAppPage() {
         />
       </section>
     </main>
+    <NewOwnerMobileNav />
+    </>
   );
 }

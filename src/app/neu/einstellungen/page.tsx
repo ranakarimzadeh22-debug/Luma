@@ -4,6 +4,7 @@ import { getNewAuthSession } from "@/lib/new-auth";
 import { getPartnerConnectionStatusForOwner } from "@/lib/new-partner";
 import NewPartnerCodeCard from "@/components/NewPartnerCodeCard";
 import NewLogoutButton from "@/components/NewLogoutButton";
+import NewOwnerMobileNav from "@/components/NewOwnerMobileNav";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,8 @@ export default async function NewSettingsPage() {
   const status = await getPartnerConnectionStatusForOwner(session.userId);
 
   return (
-    <main className="min-h-screen bg-neutral-50 px-6 py-10">
+    <>
+    <main className="min-h-screen bg-neutral-50 px-6 pb-24 pt-10 sm:pb-10">
       <section className="mx-auto flex w-full max-w-sm flex-col gap-8">
         <div className="space-y-2">
           <Link href="/neu" className="text-sm text-neutral-500 hover:text-neutral-900">← Zurück</Link>
@@ -32,5 +34,7 @@ export default async function NewSettingsPage() {
         </div>
       </section>
     </main>
+    <NewOwnerMobileNav />
+    </>
   );
 }
