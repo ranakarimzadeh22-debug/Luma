@@ -7,7 +7,7 @@ import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePred
 import { isWithinManualPmsSection, manualPmsSymptomsForDate, type ManualPmsSection } from "@/lib/manual-pms";
 import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
-import { calendarBandPosition } from "@/lib/calendar-band-position";
+import { calendarBandBorderClassName, calendarBandPosition } from "@/lib/calendar-band-position";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -51,26 +51,34 @@ const primaryStatusLabel: Record<PrimaryDayStatus, string> = {
 };
 
 /**
- * WP-022 Korrektur Version 2: the day tile stays neutral; only a narrow band
- * along its bottom edge carries the status color now (mirrors the owner
- * calendar's dayBandStyles in NewCycleExample.tsx). Same PrimaryDayStatus
- * values already derived by primaryStatusFor() below — no new status.
+ * WP-022 Korrektur V8: calm pastel bands, same look as the owner calendar
+ * (dayBandStyles in NewCycleExample.tsx). Confirmed period and manual PMS are
+ * soft filled pills; automatic estimates (estimated period, PMS, ovulation,
+ * fertile window) are hollow outlined pills. Same PrimaryDayStatus values as
+ * before; `fertile` is the existing fertile-window marker day without another
+ * band.
  */
-const primaryStatusBandStyle: Record<Exclude<PrimaryDayStatus, "none">, string> = {
-  confirmed: "bg-neutral-900",
-  period: "bg-purple-300",
-  pms: "bg-pink-300",
-  "pms-manual": "bg-pink-400",
-  ovulation: "bg-violet-300",
+type PartnerBandKey = Exclude<PrimaryDayStatus, "none"> | "fertile";
+
+const primaryStatusBandStyle: Record<PartnerBandKey, string> = {
+  confirmed: "bg-[#fac9d6]",
+  "pms-manual": "bg-[#fddbe6]",
+  period: "bg-[#fff7f9] border-[#eeaabf]",
+  pms: "bg-[#fff7f9] border-[#f4bfd0]",
+  ovulation: "bg-[#faf7ff] border-[#c4b0ee]",
+  fertile: "bg-[#faf7ff] border-[#dccff5]",
 };
 
-/** WP-022 Korrektur V6: readable text color per band (dark band needs white). */
-const primaryStatusBandTextStyle: Record<Exclude<PrimaryDayStatus, "none">, string> = {
-  confirmed: "text-white",
-  period: "text-purple-950",
-  pms: "text-pink-950",
-  "pms-manual": "text-pink-950",
-  ovulation: "text-violet-950",
+const filledBandKeys: ReadonlyArray<PartnerBandKey> = ["confirmed", "pms-manual"];
+
+/** WP-022 Korrektur V6/V8: readable text color per (light) band. */
+const primaryStatusBandTextStyle: Record<PartnerBandKey, string> = {
+  confirmed: "text-[#7a0f3c]",
+  "pms-manual": "text-[#7a0f3c]",
+  period: "text-[#9f164f]",
+  pms: "text-[#9f164f]",
+  ovulation: "text-[#5420a5]",
+  fertile: "text-[#5420a5]",
 };
 
 const primaryStatusLetter: Record<Exclude<PrimaryDayStatus, "confirmed" | "none">, string> = {
@@ -136,35 +144,35 @@ function PartnerCalendarLegendPopover({
     >
       <ul className="space-y-1.5 text-xs text-neutral-700">
         <li className="flex items-center gap-2">
-          <span className="size-2.5 shrink-0 rounded-full bg-neutral-900" aria-hidden="true" />
+          <span className="size-2.5 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden="true" />
           Periode bestätigt
         </li>
         {hasAnyPrediction && (
           <>
             <li className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</li>
             <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full bg-purple-200" aria-hidden="true" />
+              <span className="size-2.5 shrink-0 rounded-full border-2 border-[#eeaabf] bg-[#fff7f9]" aria-hidden="true" />
               Nächste Periode geschätzt
             </li>
             <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full bg-violet-200" aria-hidden="true" />
+              <span className="size-2.5 shrink-0 rounded-full border-2 border-[#c4b0ee] bg-[#faf7ff]" aria-hidden="true" />
               Eisprung geschätzt
             </li>
             {hasFertileWindowSomewhere && (
               <li className="flex items-center gap-2">
-                <span className="size-2.5 shrink-0 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]" aria-hidden="true" />
+                <span className="size-2.5 shrink-0 rounded-full border-2 border-[#dccff5] bg-[#faf7ff]" aria-hidden="true" />
                 Fruchtbare Tage geschätzt
               </li>
             )}
             <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full bg-pink-200" aria-hidden="true" />
+              <span className="size-2.5 shrink-0 rounded-full border-2 border-[#f4bfd0] bg-[#fff7f9]" aria-hidden="true" />
               PMS vor Periode
             </li>
           </>
         )}
         {hasManualPmsSection && (
           <li className="flex items-center gap-2">
-            <span className="size-2.5 shrink-0 rounded-full bg-pink-400" aria-hidden="true" />
+            <span className="size-2.5 shrink-0 rounded-full bg-[#fddbe6]" aria-hidden="true" />
             PMS eingetragen
           </li>
         )}
@@ -314,9 +322,11 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
         const dayStatuses = cells.map((day) => {
           const date = day ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day) : null;
           const status = date ? primaryStatusFor(date) : "none";
-          return { day, date, status };
+          const bandKey: PartnerBandKey | null =
+            status !== "none" ? status : date && isFertileFor(date, status) ? "fertile" : null;
+          return { day, date, status, bandKey };
         });
-        const bandKeys = dayStatuses.map((entry) => (entry.status === "none" ? null : entry.status));
+        const bandKeys = dayStatuses.map((entry) => entry.bandKey);
 
         return (
       <div className="grid grid-cols-7 gap-1 text-center sm:gap-1.5">
@@ -326,7 +336,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
           </div>
         ))}
         {cells.map((day, index) => {
-          const { date, status } = dayStatuses[index];
+          const { date, status, bandKey } = dayStatuses[index];
           const isFertile = date ? isFertileFor(date, status) : false;
           const isToday = Boolean(day && isCurrentMonth && day === todayDay);
           const ariaLabel = date
@@ -350,10 +360,10 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   : "rounded-none";
           return (
             <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
-              {status !== "none" && (
+              {bandKey && (
                 <span
                   aria-hidden="true"
-                  className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${primaryStatusBandStyle[status]} ${bandRoundingClassName}`}
+                  className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${primaryStatusBandStyle[bandKey]} ${filledBandKeys.includes(bandKey) ? "" : calendarBandBorderClassName(bandPosition)} ${bandRoundingClassName}`}
                 />
               )}
               {/* WP-022 Korrektur V5: a day carrying a visible band loses its
@@ -366,7 +376,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
                   className={`relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs sm:text-sm ${
-                    status === "none" ? "border-neutral-200 text-neutral-700" : `border-transparent ${primaryStatusBandTextStyle[status]}`
+                    bandKey ? `border-transparent ${primaryStatusBandTextStyle[bandKey]}` : "border-transparent text-neutral-700"
                   }`}
                 >
                   <span className="relative">

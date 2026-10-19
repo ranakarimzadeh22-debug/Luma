@@ -34,3 +34,25 @@ export function calendarBandPosition<T>(
   if (continuesToNext) return "start";
   return "single";
 }
+
+/**
+ * WP-022 Korrektur V8: border sides for an outlined (hollow) band. Only the
+ * top/bottom edge runs through the whole section; the left edge exists only
+ * on start/single days and the right edge only on end/single days, so a
+ * multi-day outlined band shows no vertical seam between days. Pure visual
+ * mapping of the position computed above — no status or date logic.
+ */
+export function calendarBandBorderClassName(position: CalendarBandPosition | null): string {
+  switch (position) {
+    case "single":
+      return "border-2";
+    case "start":
+      return "border-y-2 border-l-2";
+    case "end":
+      return "border-y-2 border-r-2";
+    case "middle":
+      return "border-y-2";
+    default:
+      return "";
+  }
+}

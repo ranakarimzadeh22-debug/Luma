@@ -9,7 +9,7 @@ import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycl
 import { daysUntilNextPeriod } from "@/lib/next-period-countdown";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
-import { calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
+import { calendarBandBorderClassName, calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
@@ -45,31 +45,42 @@ const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
  * the tile used before (confirmed/running > expected > planned > phase) —
  * no new status, just a narrower color definition for the same value.
  */
-type DayBandKey = "confirmed" | "expected" | "planned" | "period" | "pms" | "pms-manual" | "ovulation";
-
-const dayBandStyles: Record<DayBandKey, string> = {
-  confirmed: "bg-[#6d153f]",
-  expected: "bg-[#f3a9bd]",
-  planned: "bg-[#fff3c9]",
-  period: "bg-[#4a0738]",
-  pms: "bg-[#f8c2d0]",
-  "pms-manual": "bg-[#f49bbb]",
-  ovulation: "bg-[#e0d0f5]",
-};
+type DayBandKey = "confirmed" | "expected" | "planned" | "period" | "pms" | "pms-manual" | "ovulation" | "fertile";
 
 /**
- * WP-022 Korrektur V6: text color per band, restored from the pre-V2 tile
- * fills (white on the dark confirmed band, phase-tinted on the light ones).
- * Without it, numbers and P/M/E markers stayed dark on the dark bands.
+ * WP-022 Korrektur V8: calm pastel bands. Confirmed/running period and manual
+ * PMS are soft filled pills; automatic estimates (expected/estimated period,
+ * PMS, ovulation, fertile window) are hollow outlined pills; a saved plan is a
+ * dashed rose outline. Same keys and priority as before — only the look
+ * changed. `fertile` is the existing fertile-window marker day (no other
+ * band) shown as a band instead of only a dot.
+ */
+const dayBandStyles: Record<DayBandKey, string> = {
+  confirmed: "bg-[#fac9d6]",
+  "pms-manual": "bg-[#fddbe6]",
+  expected: "bg-[#fff7f9] border-[#eeaabf]",
+  period: "bg-[#fff7f9] border-[#eeaabf]",
+  pms: "bg-[#fff7f9] border-[#f4bfd0]",
+  planned: "border-dashed border-[#e7a3bb]",
+  ovulation: "bg-[#faf7ff] border-[#c4b0ee]",
+  fertile: "bg-[#faf7ff] border-[#dccff5]",
+};
+
+const filledBandKeys: ReadonlyArray<DayBandKey> = ["confirmed", "pms-manual"];
+
+/**
+ * WP-022 Korrektur V6/V8: readable text color per band; all bands are light
+ * pastel now, so day numbers and P/M/E markers use a deep rose or violet.
  */
 const dayBandTextStyles: Record<DayBandKey, string> = {
-  confirmed: "text-white",
-  expected: "text-[#831341]",
-  planned: "text-[#6d4c00]",
-  period: "text-white",
+  confirmed: "text-[#7a0f3c]",
+  expected: "text-[#9f164f]",
+  planned: "text-[#9f164f]",
+  period: "text-[#9f164f]",
   pms: "text-[#9f164f]",
   "pms-manual": "text-[#7a0f3c]",
   ovulation: "text-[#5420a5]",
+  fertile: "text-[#5420a5]",
 };
 
 /**
@@ -81,12 +92,12 @@ const dayBandTextStyles: Record<DayBandKey, string> = {
  * anderswo unverändert berechneten Bedeutungen.
  */
 const calendarLegendRows: { label: string; swatchClassName: string; isEstimateHeading?: boolean }[] = [
-  { label: "Periode", swatchClassName: "bg-[#6d153f]" },
-  { label: "PMS", swatchClassName: "bg-[#f8c2d0]" },
+  { label: "Periode", swatchClassName: "bg-[#fac9d6]" },
+  { label: "PMS", swatchClassName: "bg-[#fddbe6]" },
   { label: "Geschätzt", swatchClassName: "", isEstimateHeading: true },
-  { label: "Fruchtbare Tage", swatchClassName: "bg-[#a988da]" },
-  { label: "Eisprung", swatchClassName: "bg-[#d2b9ef]" },
-  { label: "Nächste Periode", swatchClassName: "bg-[#c9b3ea]" },
+  { label: "Fruchtbare Tage", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]" },
+  { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]" },
+  { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#fff7f9]" },
 ];
 
 interface CalendarLegendPopoverProps {
@@ -1288,6 +1299,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const plannedPeriod = date
               ? periodPlans.find((entry) => entry.startDate <= date && entry.endDate >= date)
               : null;
+            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date as string, prediction), estimatedPhase));
             const bandKey: DayBandKey | null =
               storedPeriod || runningPeriod
                 ? "confirmed"
@@ -1299,8 +1311,10 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                       ? isManualPmsDay && phase === "pms"
                         ? "pms-manual"
                         : phase
-                      : null;
-            return { day, date, phase, estimatedPhase, isManualPmsDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey };
+                      : isFertileDay
+                        ? "fertile"
+                        : null;
+            return { day, date, phase, estimatedPhase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey };
           });
           const bandKeys = dayCellData.map((entry) => entry.bandKey);
 
@@ -1308,8 +1322,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
           {weekdayLabels.map((label) => <div key={label} className="pb-0.5 text-xs font-medium text-[#4b3a44] sm:pb-1 sm:text-sm">{label}</div>)}
           {cells.map((day, index) => {
-            const { date, phase, estimatedPhase, isManualPmsDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey } = dayCellData[index];
-            const isFertileDay = Boolean(day && date && prediction && showsFertileMarker(phasesForDate(date as string, prediction), estimatedPhase));
+            const { date, phase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey } = dayCellData[index];
             const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const dayInfo = date
               ? getCalendarDayInfo({
@@ -1335,8 +1348,8 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               bandKey
                 ? `border-transparent ${dayBandTextStyles[bandKey]}`
                 : !dayInfo?.isFuture
-                  ? "border-white/90 text-[#281c24] shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
-                  : "border-dashed border-[#d8afbd] text-[#281c24] opacity-70 shadow-none"
+                  ? "border-transparent text-[#281c24]"
+                  : "border-transparent text-[#281c24] opacity-70"
             }`;
             // WP-022 Korrektur V4: the band now spans a wide, centered pill
             // behind the day number instead of a thin bottom strip, and
@@ -1400,7 +1413,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                 {bandKey && (
                   <span
                     aria-hidden="true"
-                    className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${dayBandStyles[bandKey]} ${bandRoundingClassName}`}
+                    className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${dayBandStyles[bandKey]} ${filledBandKeys.includes(bandKey) ? "" : calendarBandBorderClassName(bandPosition)} ${bandRoundingClassName}`}
                   />
                 )}
                 {day && isDayActionAvailable && (

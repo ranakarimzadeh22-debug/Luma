@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { calendarBandPosition } from "../src/lib/calendar-band-position";
+import { calendarBandBorderClassName, calendarBandPosition } from "../src/lib/calendar-band-position";
 
 let failures = 0;
 
@@ -60,7 +60,16 @@ console.log("\n== WP-022 Korrektur V2: keine fachliche Phasenlogik wird in der H
   const bandPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "lib", "calendar-band-position.ts");
   const bandSource = readFileSync(bandPath, "utf8");
   assert(!bandSource.includes("daysBetween") && !bandSource.includes("cycleLengthDays") && !bandSource.includes("todayKey"), "calendarBandPosition enthält keine eigene Datums-, Zyklus- oder Phasenableitung");
-  assert(bandSource.split("\n").filter((line) => line.trim().length > 0).length < 40, "die Hilfsfunktion bleibt klein und rein darstellend (keine versteckte fachliche Logik)");
+  assert(bandSource.split("\n").filter((line) => line.trim().length > 0).length < 70, "die Hilfsfunktion bleibt klein und rein darstellend (keine versteckte fachliche Logik)");
+}
+
+console.log("\n== WP-022 Korrektur V8: Umrandung hohler Bänder folgt der Bandposition ==");
+{
+  assertEqual(calendarBandBorderClassName("single"), "border-2", "einzelner Tag: vollständiger Umriss");
+  assertEqual(calendarBandBorderClassName("start"), "border-y-2 border-l-2", "Start: oben, unten, links");
+  assertEqual(calendarBandBorderClassName("middle"), "border-y-2", "Mitte: nur oben und unten (keine senkrechte Naht)");
+  assertEqual(calendarBandBorderClassName("end"), "border-y-2 border-r-2", "Ende: oben, unten, rechts");
+  assertEqual(calendarBandBorderClassName(null), "", "ohne Band keine Umrandung");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);
