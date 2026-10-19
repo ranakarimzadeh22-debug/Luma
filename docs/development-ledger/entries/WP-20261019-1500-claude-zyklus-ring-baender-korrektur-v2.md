@@ -7,7 +7,7 @@ status: completed
 screens: Startseite | App-weit und Technik
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 2459360
 ---
 
 # Korrektur V2: Kalender mit Phasenbändern statt Vollflächen-Tagen (WP-022)
@@ -42,4 +42,4 @@ Keiner – Arbeitspaket abgeschlossen.
 
 - Betroffene Dateien: `src/components/CyclePersonalRing.tsx`, `src/components/NewCycleExample.tsx`, `src/components/NewPartnerCalendar.tsx`, `src/lib/calendar-band-position.ts` (neu), `scripts/verify-calendar-band-position.ts` (neu), `scripts/verify-cycle-ring-marker-reverted.ts` (neu), `scripts/verify-calendar-tile-band.ts` (neu), `scripts/verify-cycle-ring-day-marker.ts` (gelöscht), `scripts/verify-mobile-home-compact.ts`, `scripts/verify-mobile-partner-compact.ts`, `scripts/verify-manual-pms-symptom-ui.ts`, `scripts/verify-today-card.ts`, `docs/work-packages/WP-022-zyklus-ring-baender-und-tagespunkt.md`, `docs/work-packages/STATE.json`.
 - Tests: siehe Arbeitspaket-Ist-Abschnitt Version 2 für die vollständige Liste und Ergebnisse.
-- Commit oder Referenz: pending
+- Commit oder Referenz: 2459360
