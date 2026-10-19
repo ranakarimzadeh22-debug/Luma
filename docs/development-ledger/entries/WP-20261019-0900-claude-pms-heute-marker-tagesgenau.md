@@ -7,7 +7,7 @@ status: completed
 screens: Zyklus | Partner
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 47ccb0c
 ---
 
 # Manuellen PMS-Heutemarker tagesgenau im Zyklus-Kreis zeigen (WP-020)
@@ -40,4 +40,4 @@ Owner prüft `/neu` und `/neu/partner` wie im Prüfschritt beschrieben. Danach S
 
 - Betroffene Dateien: `src/lib/cycle-ring-geometry.ts`, `scripts/verify-manual-pms-ring-marker.ts`, `docs/work-packages/WP-020-pms-heute-marker-tagesgenau.md`, `docs/work-packages/STATE.json`.
 - Tests: `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts`, alle genannten `scripts/verify-*`-Skripte, manuelle Live-Prüfung via Playwright (temporär, mobil/breit, Eigen- und Partneransicht, erster und späterer PMS-Tag).
-- Commit oder Referenz: folgt.
+- Commit oder Referenz: 47ccb0c.
