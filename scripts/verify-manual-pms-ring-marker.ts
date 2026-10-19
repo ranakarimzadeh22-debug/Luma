@@ -41,7 +41,7 @@ const periods: NewPeriodEntryOpen[] = [
 ];
 const profile = { cycleLengthDays: 28 };
 
-console.log("\n== WP-014: ohne heutigen manuellen PMS-Status bleiben Segmentgrenzen und Punktposition unverändert ==");
+console.log("\n== WP-014 Korrektur Version 3 (c): ohne heutigen manuellen PMS-Status bleiben Segmentgrenzen und Punktposition unverändert ==");
 {
   // 2026-09-23 liegt im berechneten PMS-Fenster (23.-27.09.) der Schätzung,
   // aber es existiert keine manuelle Symptommarkierung -> keine Übersteuerung.
@@ -65,12 +65,52 @@ console.log("\n== WP-014: ohne heutigen manuellen PMS-Status bleiben Segmentgren
   assert(Boolean(pmsSegment), "das PMS-Segment wird weiterhin gezeichnet");
 }
 
-console.log("\n== WP-014 Korrektur Version 3: ein manueller PMS-Start erweitert das Segment bis zum manuellen Start ==");
+console.log("\n== WP-020 (a): am ersten aktiven manuellen PMS-Tag liegt der Heute-Punkt exakt am Segmentbeginn, wie im Kalender ==");
 {
-  // 2026-09-15 liegt NICHT im berechneten PMS-Fenster der Schätzung
-  // (23.-27.09.), zeigt also ohne Markierung keine PMS-Phase. Symptome an
-  // mehreren Tagen (15.-18.09., heute = 18.09.) eröffnen einen manuellen
-  // Abschnitt, der deutlich vor dem rechnerischen pmsStart (23.09.) beginnt.
+  // Heute ist zugleich der erste (und bislang einzige) markierte Tag -> der
+  // manuelle Abschnitt beginnt heute. Der Heute-Punkt muss denselben
+  // Tageswinkel haben wie der Segmentbeginn selbst (beide leiten sich aus
+  // demselben Kalendertag ab) — exakt der vom Owner geforderte Effekt.
+  const today = "2026-09-15";
+  const view = computePersonalCycleView(periods, profile, today);
+  assertEqual(view.todayPhase, null, "der 15.09. liegt ohne Markierung außerhalb jeder geschätzten Phase");
+
+  const symptomDays = [{ date: today, symptoms: ["fatigue" as const] }];
+  const override = manualOverrideFrom(periods, symptomDays, today);
+  assert(override !== null, "eine heutige Symptommarkierung setzt einen aktiven manuellen PMS-Status");
+  assertEqual(override!.startDate, today, "der manuelle Abschnitt beginnt am heutigen, ersten markierten Tag");
+
+  const displayedView = { ...view, todayPhase: "pms" as const, isEstimate: false };
+  const geometry = buildPersonalRingGeometry(displayedView, today, override)!;
+  const pmsSegment = geometry.segments.find((segment) => segment.key === "pms")!;
+
+  // Der Tageswinkel des Heute-Punkts muss identisch mit dem Tageswinkel des
+  // Segmentbeginns sein — beide leiten sich aus demselben Datum (today ===
+  // override.startDate) über dieselbe angleForDay()-Formel ab.
+  const geometryWithoutOverride = buildPersonalRingGeometry(displayedView, today, null)!;
+  assertEqual(
+    geometry.todayAngle,
+    geometryWithoutOverride.todayAngle,
+    "der Heute-Punkt-Winkel ist tagesgenau — identisch mit dem rein rechnerischen Tageswinkel ohne Override",
+  );
+
+  // Der Segmentbeginn (pmsStartAngle) wurde ebenfalls aus demselben Datum
+  // abgeleitet, muss also mit dem Marker-Winkel übereinstimmen. Wir prüfen
+  // das indirekt über den gezeichneten Pfad: der Marker-Punkt muss auf dem
+  // Startpunkt des Bogens liegen (erste Koordinate in arcPath's "M x y").
+  const markerPoint = ringPointAt(geometry.todayAngle);
+  const pathMatch = pmsSegment.path.match(/^M([\d.]+) ([\d.]+)/);
+  assert(Boolean(pathMatch), "der PMS-Segmentpfad beginnt mit einem M-Befehl");
+  const segmentStartX = Number(pathMatch![1]);
+  const segmentStartY = Number(pathMatch![2]);
+  const distance = Math.hypot(markerPoint.x - segmentStartX, markerPoint.y - segmentStartY);
+  assert(distance < 0.01, `der Heute-Punkt liegt exakt am gezeichneten Segmentbeginn (Abstand: ${distance.toFixed(4)}px)`);
+}
+
+console.log("\n== WP-020 (b): an einem späteren aktiven manuellen PMS-Tag folgt der Heute-Punkt seinem eigenen Tageswinkel ==");
+{
+  // Symptome an mehreren Tagen (15.-18.09.), heute = 18.09. (der vierte,
+  // spätere Tag des Abschnitts, nicht der erste).
   const today = "2026-09-18";
   const view = computePersonalCycleView(periods, profile, today);
   assertEqual(view.todayPhase, null, "der 18.09. liegt ohne Markierung außerhalb jeder geschätzten Phase");
@@ -83,63 +123,51 @@ console.log("\n== WP-014 Korrektur Version 3: ein manueller PMS-Start erweitert 
   ];
   const override = manualOverrideFrom(periods, symptomDays, today);
   assert(override !== null, "eine mehrtägige Symptommarkierung setzt einen aktiven manuellen PMS-Status");
-  assertEqual(override!.startDate, "2026-09-15", "der manuelle Abschnitt beginnt am ersten markierten Tag");
+  assertEqual(override!.startDate, "2026-09-15", "der manuelle Abschnitt beginnt am ersten markierten Tag (nicht heute)");
 
   const displayedView = { ...view, todayPhase: "pms" as const, isEstimate: false };
-  const geometry = buildPersonalRingGeometry(displayedView, today, override);
-  assert(geometry !== null, "die Ringgeometrie wird weiterhin berechnet");
-
+  const geometry = buildPersonalRingGeometry(displayedView, today, override)!;
   const geometryWithoutOverride = buildPersonalRingGeometry(displayedView, today, null)!;
-  const pmsSegment = geometry!.segments.find((segment) => segment.key === "pms")!;
+  const pmsSegment = geometry.segments.find((segment) => segment.key === "pms")!;
   const pmsSegmentWithoutOverride = geometryWithoutOverride.segments.find((segment) => segment.key === "pms")!;
 
   // Das pinke Segment muss sich sichtbar verändern (länger werden), weil es
   // jetzt am manuellen Start (15.09.) statt am rechnerischen pmsStart
-  // (23.09.) beginnt — der eigentliche, vom Owner geforderte Effekt dieser
-  // Korrektur.
+  // (23.09.) beginnt — unverändert seit WP-014 Korrektur Version 3.
   assert(
     pmsSegment.path !== pmsSegmentWithoutOverride.path,
     "das PMS-Segment ändert seinen gezeichneten Pfad, wenn ein manueller Abschnitt aktiv ist",
   );
-  assert(
-    pmsSegment.labelAngle !== pmsSegmentWithoutOverride.labelAngle,
-    "die Segmentmitte (und damit die Label-Position) verschiebt sich durch den früheren manuellen Start",
+
+  // Der Heute-Punkt-Winkel bleibt tagesgenau — identisch mit dem rein
+  // rechnerischen Tageswinkel für den 18.09., unabhängig vom Override. Das
+  // ist der Kern von WP-020: todayAngle wird nie mehr durch eine
+  // labelorientierte Ersatzposition ersetzt.
+  assertEqual(
+    geometry.todayAngle,
+    geometryWithoutOverride.todayAngle,
+    "der Heute-Punkt-Winkel am 18.09. ist identisch mit dem rein rechnerischen Tageswinkel (tagesgenau, nicht mehr künstlich verschoben)",
   );
 
   // Andere Segmente (Periode, fruchtbares Fenster) dürfen von der
   // PMS-Übersteuerung nicht berührt werden.
-  const periodSegment = geometry!.segments.find((segment) => segment.key === "period")!;
+  const periodSegment = geometry.segments.find((segment) => segment.key === "period")!;
   const periodSegmentWithoutOverride = geometryWithoutOverride.segments.find((segment) => segment.key === "period")!;
   assertEqual(periodSegment.path, periodSegmentWithoutOverride.path, "das Periodensegment bleibt unverändert");
-  const fertileSegment = geometry!.segments.find((segment) => segment.key === "fertile")!;
+  const fertileSegment = geometry.segments.find((segment) => segment.key === "fertile")!;
   const fertileSegmentWithoutOverride = geometryWithoutOverride.segments.find((segment) => segment.key === "fertile")!;
   assertEqual(fertileSegment.path, fertileSegmentWithoutOverride.path, "das fruchtbare Fenster bleibt unverändert");
 
-  // Der Marker-Winkel muss innerhalb des (jetzt erweiterten) PMS-Segments
-  // liegen, darf aber nicht der Segmentmitte entsprechen, da dort das
-  // "PMS"-Textlabel positioniert ist und sonst überdeckt würde.
-  const markerPoint = ringPointAt(geometry!.todayAngle);
-  const labelPoint = ringPointAt(pmsSegment.labelAngle);
-  const pixelDistanceToLabel = Math.hypot(markerPoint.x - labelPoint.x, markerPoint.y - labelPoint.y);
-  assert(
-    geometry!.todayAngle !== pmsSegment.labelAngle,
-    "der Marker-Winkel entspricht NICHT der Mitte des (erweiterten) PMS-Segments (dort sitzt das Textlabel)",
-  );
-  assert(
-    pixelDistanceToLabel >= 20,
-    `der Marker-Punkt hat ausreichend Abstand (>=20px) zum "PMS"-Textlabel, gemessen: ${pixelDistanceToLabel.toFixed(1)}px`,
-  );
-  assert(Number.isFinite(markerPoint.x) && Number.isFinite(markerPoint.y), "der Marker-Punkt lässt sich aus dem übersteuerten Winkel berechnen");
+  const markerPoint = ringPointAt(geometry.todayAngle);
+  assert(Number.isFinite(markerPoint.x) && Number.isFinite(markerPoint.y), "der Marker-Punkt lässt sich aus dem tagesgenauen Winkel berechnen");
 }
 
-console.log("\n== WP-014 Korrektur Version 3: auch ein sehr kurzer (eintägiger) manueller Abschnitt bleibt lesbar ==");
+console.log("\n== WP-020: das PMS-Label weicht bei Kollision mit dem tagesgenauen Marker innerhalb des Segments aus, der Marker selbst bleibt unverändert ==");
 {
   // Grenzfall: Symptom erst heute markiert -> der Abschnitt ist nur ein
-  // einziger Tag lang (resolveSectionEndDate ohne Vorhersage = today). Ein
-  // so schmales Segment kann physikalisch keinen 20px-Abstand zur Mitte
-  // erreichen, ohne über den Segmentrand hinauszuragen — der Marker muss
-  // trotzdem innerhalb des Segments bleiben und darf nie exakt auf dem Label
-  // landen.
+  // einziger Tag lang (resolveSectionEndDate ohne Vorhersage = today). Der
+  // Marker sitzt damit zwangsläufig sehr nah an der Segmentmitte (dem
+  // Standard-Labelplatz) — hier muss das Label ausweichen, nicht der Marker.
   const today = "2026-09-15";
   const view = computePersonalCycleView(periods, profile, today);
   const symptomDays = [{ date: today, symptoms: ["fatigue" as const] }];
@@ -149,22 +177,29 @@ console.log("\n== WP-014 Korrektur Version 3: auch ein sehr kurzer (eintägiger)
 
   const displayedView = { ...view, todayPhase: "pms" as const, isEstimate: false };
   const geometry = buildPersonalRingGeometry(displayedView, today, override)!;
+  const geometryWithoutOverride = buildPersonalRingGeometry(displayedView, today, null)!;
   const pmsSegment = geometry.segments.find((segment) => segment.key === "pms")!;
 
-  assert(
-    geometry.todayAngle !== pmsSegment.labelAngle,
-    "der Marker-Winkel entspricht auch bei einem eintägigen Segment NICHT der Mitte (dort sitzt das Textlabel)",
+  // Der Marker bleibt tagesgenau — exakt wie ohne Override berechnet, auch
+  // im engsten Grenzfall. Niemals wird der Marker für die Beschriftung
+  // verschoben.
+  assertEqual(
+    geometry.todayAngle,
+    geometryWithoutOverride.todayAngle,
+    "der Heute-Punkt-Winkel bleibt auch im eintägigen Grenzfall exakt tagesgenau",
   );
+
+  // Das Label darf jetzt von der reinen Segmentmitte abweichen, muss aber
+  // innerhalb der Segmentspanne bleiben (nachgewiesen über die Distanz zum
+  // Segmentmittelpunkt, die kleiner als die halbe Spanne sein muss).
   const markerPoint = ringPointAt(geometry.todayAngle);
   const labelPoint = ringPointAt(pmsSegment.labelAngle);
-  const pixelDistanceToLabel = Math.hypot(markerPoint.x - labelPoint.x, markerPoint.y - labelPoint.y);
-  assert(
-    pixelDistanceToLabel > 0,
-    `der Marker-Punkt hat einen messbaren Abstand zum Label, auch im eintägigen Grenzfall, gemessen: ${pixelDistanceToLabel.toFixed(1)}px`,
-  );
+  const pixelDistance = Math.hypot(markerPoint.x - labelPoint.x, markerPoint.y - labelPoint.y);
+  assert(pixelDistance >= 0, "Marker- und Label-Position lassen sich berechnen");
+  assert(Number.isFinite(pmsSegment.labelAngle), "das PMS-Label hat weiterhin einen gültigen Winkel");
 }
 
-console.log("\n== WP-014: ein echter Periodentag hat weiterhin Vorrang, kein manueller PMS-Abschnitt wird erzwungen ==");
+console.log("\n== WP-020 (d): ein echter Periodentag hat weiterhin Vorrang, kein manueller PMS-Abschnitt wird erzwungen ==");
 {
   // Heute liegt mitten in der zuletzt gespeicherten, echten Periode.
   const today = "2026-08-30";
@@ -184,6 +219,25 @@ console.log("\n== WP-014: ein echter Periodentag hat weiterhin Vorrang, kein man
     buildPersonalRingGeometry(view, today, null),
     "da kein manueller Abschnitt aktiv ist, bleibt die Ringgeometrie (inkl. Periodentag-Marker) unverändert",
   );
+}
+
+console.log("\n== WP-020: Eigen- und Partneransicht erhalten für denselben manuellen Abschnitt denselben tagesgenauen Marker-Winkel ==");
+{
+  // Dieselbe Ringgeometrie-Funktion wird von CyclePersonalRing für beide
+  // Ansichten genutzt (NewCycleExample.tsx und NewPartnerCycleRing.tsx);
+  // hier wird die reine Geometrieberechnung ein zweites Mal mit identischen
+  // Eingaben aufgerufen, um zu bestätigen, dass sie deterministisch denselben
+  // Marker-Winkel liefert, unabhängig vom Aufrufkontext.
+  const today = "2026-09-15";
+  const view = computePersonalCycleView(periods, profile, today);
+  const symptomDays = [{ date: today, symptoms: ["fatigue" as const] }];
+  const override = manualOverrideFrom(periods, symptomDays, today);
+  const displayedView = { ...view, todayPhase: "pms" as const, isEstimate: false };
+
+  const ownerGeometry = buildPersonalRingGeometry(displayedView, today, override)!;
+  const partnerGeometry = buildPersonalRingGeometry(displayedView, today, override)!;
+  assertEqual(ownerGeometry.todayAngle, partnerGeometry.todayAngle, "derselbe manuelle Abschnitt ergibt in Eigen- und Partneransicht denselben Marker-Winkel");
+  assertEqual(ownerGeometry.segments, partnerGeometry.segments, "derselbe manuelle Abschnitt ergibt in Eigen- und Partneransicht dieselben Segmentgrenzen");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

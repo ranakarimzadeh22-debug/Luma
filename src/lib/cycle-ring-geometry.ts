@@ -85,26 +85,29 @@ export function buildRingGeometry(prediction: CyclePrediction, today: string): R
 const PMS_LEAD_DAYS = 5;
 
 /**
- * WP-014 (Korrektur, erweitert in Korrektur Version 3): Position für den
- * übersteuerten Heute-Punkt innerhalb des PMS-Segments. Das "PMS"-Textlabel
- * sitzt auf der Segmentmitte (labelAngle); der Punkt wird stattdessen
- * möglichst nah an den Segmentrand gesetzt, mit einem kleinen
- * Sicherheitsabstand zum Rand selbst, damit er noch sichtbar innerhalb des
- * Segments bleibt. Seit Korrektur Version 3 kann das Segment (bei einem erst
- * seit kurzem aktiven manuellen Abschnitt) deutlich kürzer sein als das
- * bisherige 5-Tage-Schätzfenster, bis hin zu einem einzelnen Tag — ein fester
- * Mindestabstand zur Mitte würde bei so kurzen Segmenten über den Rand
- * hinausragen. Der Zielabstand zur Mitte ist daher der kleinere Wert aus
- * "idealer Abstand für ausreichenden Pixelabstand zum Label" und "maximal im
- * Segment verfügbarer Abstand abzüglich Randsicherheit".
+ * WP-020: the red today marker must always sit at the real calendar day's
+ * angle, even inside an active manual PMS segment — it is never moved for
+ * label-collision avoidance anymore (that was WP-014's approach, now
+ * reverted per Owner feedback). Instead, when the day-accurate marker would
+ * sit too close to the segment's own midpoint (where the "PMS" label sits by
+ * default), this function moves the *label* toward whichever segment end is
+ * farther from the marker, staying strictly within [startAngle, endAngle].
+ * Segment boundaries and the marker's date-derived angle are never touched.
  */
-function manualPmsMarkerAngle(startAngle: number, endAngle: number): number {
+function pmsLabelAngleAvoidingMarker(startAngle: number, endAngle: number, markerAngle: number): number {
   const span = ((endAngle - startAngle + 360) % 360) || 360;
-  const idealOffsetFromMid = 12;
-  const edgeMargin = Math.min(span * 0.1, 3);
-  const maxOffsetFromMid = Math.max(span / 2 - edgeMargin, 0);
-  const offsetFromMid = Math.min(idealOffsetFromMid, maxOffsetFromMid);
-  return startAngle + span / 2 - offsetFromMid;
+  const mid = startAngle + span / 2;
+  const angularDistance = Math.abs((((markerAngle - mid + 540) % 360) - 180));
+  const minSafeDistance = Math.min(12, span / 2);
+  if (angularDistance >= minSafeDistance) return mid;
+
+  // Marker sits too close to the segment's midpoint: move the label toward
+  // whichever end of the segment is farther from the marker, but keep a
+  // small margin from that end so the label itself never overflows the arc.
+  const edgeMargin = Math.min(span * 0.15, 6);
+  const distanceToStart = Math.abs((((markerAngle - startAngle + 540) % 360) - 180));
+  const distanceToEnd = Math.abs((((markerAngle - endAngle + 540) % 360) - 180));
+  return distanceToStart >= distanceToEnd ? startAngle + edgeMargin : endAngle - edgeMargin;
 }
 
 /**
@@ -173,14 +176,16 @@ export function buildPersonalRingGeometry(
   const midAngle = (start: number, end: number) => start + (((end - start + 360) % 360) / 2);
 
   const todayDayOffset = normalizedDayOffset(today);
-  const todayAngle = manualPmsOverride
-    ? manualPmsMarkerAngle(pmsStartAngle, pmsEndAngle)
-    : angleForDay(todayDayOffset, cycleLengthDays);
+  const todayAngle = angleForDay(todayDayOffset, cycleLengthDays);
+
+  const pmsLabelAngle = manualPmsOverride
+    ? pmsLabelAngleAvoidingMarker(pmsStartAngle, pmsEndAngle, todayAngle)
+    : midAngle(pmsStartAngle, pmsEndAngle);
 
   const segments: RingSegment[] = [
     { key: "period", path: arcPath(periodStartAngle, periodEndAngle), labelAngle: midAngle(periodStartAngle, periodEndAngle) },
     { key: "fertile", path: arcPath(fertileStartAngle, fertileEndAngle), labelAngle: midAngle(fertileStartAngle, fertileEndAngle) },
-    { key: "pms", path: arcPath(pmsStartAngle, pmsEndAngle), labelAngle: midAngle(pmsStartAngle, pmsEndAngle) },
+    { key: "pms", path: arcPath(pmsStartAngle, pmsEndAngle), labelAngle: pmsLabelAngle },
   ];
 
   return { segments, todayAngle };
