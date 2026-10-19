@@ -347,12 +347,18 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${primaryStatusBandStyle[status]} ${bandRoundingClassName}`}
                 />
               )}
+              {/* WP-022 Korrektur V5: a day carrying a visible band loses its
+                  own tile border (same reasoning as NewCycleExample.tsx's
+                  owner calendar) so a multi-day band shows no seam between
+                  tiles; neutral days (status "none") keep their border. */}
               {day && (
                 <button
                   type="button"
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
-                  className="relative z-10 grid h-full w-full place-items-center rounded-xl border border-neutral-200 bg-transparent text-xs text-neutral-700 sm:text-sm"
+                  className={`relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs text-neutral-700 sm:text-sm ${
+                    status === "none" ? "border-neutral-200" : "border-transparent"
+                  }`}
                 >
                   <span className="relative">
                     {isToday && (

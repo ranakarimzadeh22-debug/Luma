@@ -18,7 +18,7 @@ const partnerSource = readFileSync(partnerPath, "utf8");
 console.log("\n== WP-022 Korrektur V4: der Owner-Kalender zeigt ein breites, zentriertes Pillen-Band statt eines schmalen unteren Streifens oder einer vollflächig gefärbten Kachel ==");
 {
   assert(ownerSource.includes('import { calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";'), "NewCycleExample.tsx verwendet die gemeinsame, rein darstellende Bandpositions-Hilfe");
-  assert(ownerSource.includes('relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent'), "die Tageskachel selbst ist transparent (kein eigener Hintergrund), damit das Band dahinter sichtbar durchscheint");
+  assert(ownerSource.includes('relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base'), "die Tageskachel selbst ist transparent (kein eigener Hintergrund), damit das Band dahinter sichtbar durchscheint");
   assert(!ownerSource.includes("overflow-hidden"), "die Kachel beschneidet das Band nicht mehr (overflow-hidden entfernt), damit es über den Kachelrand hinaus in den Gap reichen kann");
   assert(ownerSource.includes('top-1/2 h-[62%] -translate-y-1/2') && ownerSource.includes('${bandEdgeInsetClassName} ${dayBandStyles[bandKey]}'), "das Band ist vertikal zentriert, deutlich breiter (62% der Kachelhöhe) und reicht über die Kachelkante hinaus in den Rasterzwischenraum");
   assert(!ownerSource.includes('storedPeriod || runningPeriod\n                ? "bg-[#6d153f] text-white"'), "die alte vollflächige Hintergrundfärbung nach Status-Priorität in der Kachel selbst wurde entfernt");
@@ -49,17 +49,19 @@ console.log("\n== WP-022 Korrektur V4: der Partner-Kalender erhält dieselbe bre
   assert(partnerSource.includes('import { calendarBandPosition } from "@/lib/calendar-band-position";'), "NewPartnerCalendar.tsx verwendet dieselbe gemeinsame Bandpositions-Hilfe");
   assert(!partnerSource.includes("overflow-hidden"), "die Partner-Kachel beschneidet das Band nicht mehr, damit es über den Kachelrand hinaus reichen kann");
   assert(partnerSource.includes('top-1/2 h-[62%] -translate-y-1/2') && partnerSource.includes('${bandEdgeInsetClassName} ${primaryStatusBandStyle[status]}'), "das Partner-Band ist ebenfalls vertikal zentriert, breiter (62%) und reicht in den Rasterzwischenraum");
-  assert(partnerSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border border-neutral-200 bg-transparent'), "die Partner-Tageskachel ist transparent, keine Vollflächenfarbe mehr je nach Status");
+  assert(partnerSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs text-neutral-700 sm:text-sm'), "die Partner-Tageskachel ist transparent, keine Vollflächenfarbe mehr je nach Status");
   assert(!partnerSource.includes('primaryStatusStyle[status]'), "die alte vollflächige Status-Hintergrundfarbe der Kachel wurde entfernt");
 }
 
 console.log("\n== WP-022 Korrektur V3/V4: heute zeigt im Partner-Kalender ausschließlich einen kleinen roten Kreis hinter der Zahl, kein äußerer Rahmen mehr ==");
 {
   assert(partnerSource.includes('size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600'), "der Heute-Kreis im Partner-Kalender sitzt zentriert hinter der Tageszahl");
-  // Nur der tatsächliche Tailwind-Klassenstring zählt hier (nicht der
+  // Nur der tatsächliche Tailwind-Klassenausdruck zählt hier (nicht der
   // erklärende Quelltextkommentar, der denselben Begriff zur Dokumentation
-  // der Änderung nennt) — daher gezielt nach dem className-Attribut suchen.
-  const buttonClassNameMatch = partnerSource.match(/className="relative z-10 grid[^"]*"/);
+  // der Änderung nennt) — daher gezielt nach dem className-Ausdruck suchen.
+  // Seit Korrektur V5 ein Template-Literal (bedingter Rand), daher auf
+  // className={` statt className=" geprüft.
+  const buttonClassNameMatch = partnerSource.match(/className=\{`relative z-10 grid[\s\S]*?`\}/);
   assert(Boolean(buttonClassNameMatch) && !buttonClassNameMatch![0].includes("ring-2"), "der äußere Heute-Rahmen (ring-2 ring-offset-1) um die gesamte Partner-Kachel wurde aus der tatsächlichen className entfernt (Korrektur V3, bestätigt in V4)");
   assert(partnerSource.includes('isToday ? ", heute" : ""'), "die Information 'heute' bleibt im Partner-Kalender über das aria-label zugänglich");
 }
@@ -92,6 +94,35 @@ console.log("\n== WP-022 Korrektur V4: die Tageszahl und die Klickfläche bleibe
 {
   assert(ownerSource.includes('<span className="relative z-10">'), "Owner: die Tageszahl liegt in einem eigenen, höher geschichteten Element über dem Band");
   assert(partnerSource.includes("z-10"), "Partner: die Kachel (inkl. Zahl, Klickfläche) liegt über dem Band (z-10)");
+}
+
+console.log("\n== WP-022 Korrektur V5: Tage mit einem sichtbaren Phasenband erhalten keinen eigenen Kachelrand mehr (keine Trennlinie innerhalb eines mehrtägigen Bandes) ==");
+{
+  const ownerDayClassNameMatch = ownerSource.match(/const dayClassName = `relative z-10 grid[\s\S]*?`;/);
+  const ownerDayClassNameBlock = ownerDayClassNameMatch ? ownerDayClassNameMatch[0] : "";
+  assert(ownerDayClassNameBlock.length > 0, "Owner: der dayClassName-Ausdruck wurde im Quelltext gefunden");
+  assert(/bandKey\s*\?\s*"border-transparent"/.test(ownerDayClassNameBlock), "Owner: ein Tag mit bandKey (sichtbares Band) erhält 'border-transparent' statt des bisherigen sichtbaren Rands");
+  assert(ownerDayClassNameBlock.includes('"border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"'), "Owner: ein neutraler, nicht-zukünftiger Tag (kein Band) behält weiterhin seinen bestehenden sichtbaren Rand und Schatten");
+  assert(ownerDayClassNameBlock.includes('"border-dashed border-[#d8afbd] opacity-70 shadow-none"'), "Owner: ein neutraler zukünftiger Tag behält weiterhin seinen bestehenden gestrichelten Rand");
+
+  const partnerButtonClassNameMatch = partnerSource.match(/className=\{`relative z-10 grid[\s\S]*?`\}/);
+  const partnerButtonClassNameBlock = partnerButtonClassNameMatch ? partnerButtonClassNameMatch[0] : "";
+  assert(partnerButtonClassNameBlock.length > 0, "Partner: der className-Ausdruck der Tageskachel wurde im Quelltext gefunden");
+  assert(/status === "none"\s*\?\s*"border-neutral-200"\s*:\s*"border-transparent"/.test(partnerButtonClassNameBlock), "Partner: ein Tag mit Status (sichtbares Band) erhält 'border-transparent', ein neutraler Tag ('none') behält 'border-neutral-200'");
+}
+
+console.log("\n== WP-022 Korrektur V5: die breite Pillenform, Rundungen, Tageszahlen, Heute-Kreis und Zyklus-Kreis bleiben unverändert ==");
+{
+  assert(ownerSource.includes('top-1/2 h-[62%] -translate-y-1/2'), "Owner: das Band bleibt unverändert 62% hoch und vertikal zentriert");
+  assert(partnerSource.includes('top-1/2 h-[62%] -translate-y-1/2'), "Partner: das Band bleibt unverändert 62% hoch und vertikal zentriert");
+  assert(ownerSource.includes('"rounded-l-full rounded-r-none"') && ownerSource.includes('"rounded-r-full rounded-l-none"'), "Owner: die Start-/End-Rundungen bleiben unverändert");
+  assert(partnerSource.includes('"rounded-l-full rounded-r-none"') && partnerSource.includes('"rounded-r-full rounded-l-none"'), "Partner: die Start-/End-Rundungen bleiben unverändert");
+  assert(ownerSource.includes('size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600'), "Owner: der Heute-Kreis bleibt unverändert");
+  assert(partnerSource.includes('size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600'), "Partner: der Heute-Kreis bleibt unverändert");
+
+  const ringPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "CyclePersonalRing.tsx");
+  const ringSource = readFileSync(ringPath, "utf8");
+  assert(!ringSource.includes("dayOfMonth") && ringSource.includes('r="6"'), "der Zyklus-Kreis bleibt unverändert (kein Kalendertagstext, ursprünglicher kleiner Marker)");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

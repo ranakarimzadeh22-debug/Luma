@@ -1309,10 +1309,19 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
             const bandPosition = calendarBandPosition(bandKeys, index);
+            // WP-022 Korrektur V5: a day carrying a visible band no longer
+            // gets its own tile border — on a multi-day band, that border
+            // created a visible seam between otherwise seamlessly joined
+            // band segments (Korrektur V4 already closed the gap between
+            // the bands themselves, but the tile border sat above it,
+            // independent of the band). Neutral days (no bandKey) keep
+            // their existing calm border exactly as before.
             const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${
-              !dayInfo?.isFuture
-                ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
-                : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
+              bandKey
+                ? "border-transparent"
+                : !dayInfo?.isFuture
+                  ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
+                  : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             }`;
             // WP-022 Korrektur V4: the band now spans a wide, centered pill
             // behind the day number instead of a thin bottom strip, and

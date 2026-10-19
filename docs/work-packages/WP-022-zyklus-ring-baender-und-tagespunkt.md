@@ -1,6 +1,6 @@
 ---
 id: WP-022
-title: "Korrektur V4: Breite Kalender-Phasenbaender hinter Tageszahlen"
+title: "Korrektur V5: Nahtlose breite Kalender-Phasenbaender"
 status: review
 created: 2026-10-19
 updated: 2026-10-19
@@ -11,9 +11,9 @@ brief_version: 1
 technical_brief: complete
 ---
 
-# Aufgabe: Korrektur V4 – Breite Kalender-Phasenbaender hinter Tageszahlen
+# Aufgabe: Korrektur V5 – Nahtlose breite Kalender-Phasenbaender
 
-> **Verbindlicher Vorrang:** Ausschliesslich `Korrekturauftrag Version 4 – verbindlich` am Dokumentende gilt fuer die erneute Umsetzung. Alle vorherigen Vorgaben dieses Pakets, einschliesslich der schmalen Unterkante aus Version 2 und der noch nicht umgesetzten Version 3, sind damit ersetzt.
+> **Verbindlicher Vorrang:** Ausschliesslich `Korrekturauftrag Version 5 – verbindlich` am Dokumentende gilt fuer die erneute Umsetzung. Alle vorherigen Vorgaben dieses Pakets, einschliesslich der schmalen Unterkante aus Version 2 und der noch nicht umgesetzten Version 3, sind damit ersetzt.
 
 ## Owner-Ansicht – einfach erklärt
 
@@ -297,3 +297,57 @@ technical_brief: complete
 - Abweichungen: keine Code-Abweichung vom Korrekturauftrag. Die Testskript-Anpassungen betreffen ausschließlich Prüf-Infrastruktur, nicht das geprüfte Produktverhalten selbst; zwei weitere, bereits vor dieser Korrektur defekte Testskripte wurden identifiziert, als vorbestehend bestätigt und bewusst nicht verändert (außerhalb des Korrekturauftrags-Scopes).
 - offene Punkte: keine.
 - Commit: 9a559f4
+
+## Korrekturauftrag Version 5 – verbindlich
+
+### Befund aus der Soll-Ist-Pruefung
+
+- Version 4 legt die breiten Bandflaechen geometrisch nahtlos aneinander.
+- Die Tageskacheln selbst behalten jedoch in beiden Kalendern einen sichtbaren Rand (`border-white/90` bzw. `border-neutral-200`) oberhalb der Baender. Dieser Rand kann innerhalb eines mehrtaegigen Bandes eine sichtbare senkrechte Trennlinie erzeugen.
+- Die Owner-Referenz zeigt innerhalb eines durchgehenden Phasenbandes keine solchen Tageskachel-Trennlinien.
+
+### Technischer Auftrag fuer Claude
+
+- Entferne oder unterdruecke ausschliesslich an Tagen mit einem sichtbaren Phasenband den Kachelrand, der das Band optisch trennt. Neutrale Tage duerfen ihre bestehende ruhige Kacheloptik behalten.
+- Die breite, zentrierte Pillenform, alle Rundungen an Abschnittsenden, die Tageszahlen, Kurzmarker, Klickflaechen und der kleine rote Heute-Kreis bleiben unveraendert.
+- Owner- und Partnerkalender muessen dieselbe sichtbare Nahtlosigkeitsregel erhalten. Keine Aenderung am Zyklus-Kreis, an Datenlogik, Prioritaeten oder Partnerrechten.
+
+### Erfolgskriterien
+
+1. Innerhalb eines mehrtaegigen gleichfarbigen Abschnitts ist zwischen zwei Tageszahlen keine sichtbare senkrechte Kachelkante oder helle Trennlinie mehr vorhanden.
+2. An Start und Ende bleiben nur die gewollten runden Pillenenden sichtbar.
+3. Neutrale Tage, Heute-Kreis, Bedienung und Leserechte bleiben unveraendert.
+
+### Pflichtpruefungen
+
+- Die gezielte Kalenderband-Pruefung prueft fuer Owner und Partner explizit, dass Bandtage keinen trennenden Kachelrand mehr ueber dem Band erhalten.
+- `npx tsc --noEmit` sowie eine Sichtpruefung eines mehrtaegigen Abschnitts mobil und breit muessen bestehen.
+
+### Grenzen
+
+- Keine neue Route, API, Migration, Abhaengigkeit, globale CSS-Aenderung, Ring-Aenderung oder Daten-/Vorhersage-Logik.
+- Kein visueller Umbau ausser der Entfernung der stoerenden Trennlinien innerhalb bestehender Phasenbaender.
+
+### Abschluss durch Claude
+
+- Ergaenze den `Ist`-Abschnitt fuer Version 5, setze `status: review`, aktualisiere Ledger und `STATE.json`, validiere, committe und pushe nur auftragsbezogene Dateien. Kein manuelles Deployment.
+
+## Ist Version 5 – von Claude
+
+- umgesetzt:
+  - **`src/components/CyclePersonalRing.tsx`:** unverändert gelassen, wie gefordert.
+  - **`src/components/NewCycleExample.tsx` (Owner-Kalender):** `dayClassName` setzt den Kachelrand jetzt bedingt auf `bandKey`: ein Tag mit einem sichtbaren Phasenband (`bandKey` ungleich `null`) erhält `border-transparent` statt des bisherigen `border-white/90` (nicht-zukünftig) bzw. `border-dashed border-[#d8afbd]` (zukünftig). Neutrale Tage ohne Band behalten exakt ihre bisherige, unveränderte Randoptik und den Schatten. Da die Bänder seit Korrektur V4 bereits geometrisch nahtlos über den Rasterzwischenraum verbunden sind, verschwindet dadurch die zuvor sichtbare helle Trennlinie, die der eigene Kachelrand jedes Tages über dem Band erzeugt hat.
+  - **`src/components/NewPartnerCalendar.tsx` (Partner-Kalender):** exakt dasselbe Muster. Die Tageskachel-`className` wurde von einem statischen String in ein Template-Literal umgewandelt: ein Tag mit `status !== "none"` (sichtbares Band) erhält `border-transparent`, ein neutraler Tag (`status === "none"`) behält `border-neutral-200`.
+  - Keine Änderung an der breiten Pillenform (`h-[62%]`, zentriert), den Start-/End-Rundungen, dem Band-Überlapp in den Rasterzwischenraum, den Tageszahlen, Kurzmarkern, Klickflächen, dem kleinen roten Heute-Kreis, dem Zyklus-Kreis, Segmentdaten, Vorhersage-, Perioden-, PMS-Ableitung, `manual-pms.ts`, Partnerrechten, Partner-Gate, Routen, API, Migration, Abhängigkeiten oder globalen CSS-Regeln.
+- nicht umgesetzt: nichts aus dem Korrekturauftrag offen; Umfang vollständig umgesetzt.
+- Tests:
+  - `scripts/verify-calendar-tile-band.ts` um zwei neue Prüfblöcke erweitert (insgesamt 37 Prüfungen, alle bestanden): ein gezielter Block bestätigt, dass ein Tag mit `bandKey`/`status !== "none"` `border-transparent` erhält, während ein neutraler Tag (kein Band, bzw. zukünftiger Tag) weiterhin seinen bestehenden sichtbaren oder gestrichelten Rand behält; ein zweiter Block bestätigt unverändert, dass Pillenform, Rundungen, Heute-Kreis und Zyklus-Kreis durch diese Korrektur nicht berührt wurden.
+  - Zwei exakte `dayClassName`-String-Assertions in `scripts/verify-mobile-home-compact.ts` und `scripts/verify-calendar-tile-band.ts` sowie der Partner-`className`-Ausdruck in `scripts/verify-mobile-partner-compact.ts` und `scripts/verify-calendar-tile-band.ts` mussten an die jetzt bedingte (statt statische) Randklasse angepasst werden (keine stille Abschwächung, sondern eine durch den neuen Auftrag notwendige Korrektur einer zuvor gültigen, jetzt überholten Annahme über den genauen Wortlaut des Ausdrucks); die jeweils geprüfte fachliche Aussage (responsive Schriftgröße, Status-Priorität) ist unverändert und wird weiterhin bestätigt.
+  - `npx tsc --noEmit`: keine Fehler.
+  - `npm run build`: erfolgreich; Routenliste unverändert.
+  - `node --experimental-strip-types --test tests/*.test.ts`: 83/84 bestanden; der eine bekannte, vorbestehende Fehlschlag in `tests/calendar-day-info.test.ts` ist unabhängig von diesem Paket.
+  - Vollständiger Lauf aller `scripts/verify-*.ts`: bis auf die bereits in Korrektur V4 identifizierten, per `git stash` auf unverändertem `main` bestätigten vorbestehenden Fehlschläge (`verify-historical-entry.ts`, `verify-personal-cycle-view.ts`) bestehen alle.
+  - Live-Verifikation: temporär `npm install --no-save playwright` installiert (`package.json`/`package-lock.json` vorher und nachher ohne Diff bestätigt), laufenden Dev-Server verwendet, ein echtes Owner-Testkonto über die reale Registrierungs-UI angelegt, eine echte Periode sowie ein Zyklusprofil über die echten APIs gespeichert, drei aufeinanderfolgende Tage über die echte PMS-Symptom-API manuell markiert. Per DOM-Auswertung (berechneter `border-top-color` jeder Tageskachel) bestätigt: keiner der Tage mit einem sichtbaren Band zeigt noch einen sichtbaren (nicht-transparenten) Rand (0 betroffene Band-Tage), während weiterhin 12 neutrale Tage ihren bestehenden Rand behalten — sowohl im Owner- als auch im Partner-Kalender. Kein horizontaler Überlauf mobil oder breit. Das Tagesfenster öffnet sich weiterhin beim Klick auf den heutigen Tag. Screenshots bestätigen visuell: innerhalb der PMS-Bänder (17.–18. und 19.–25.) und des Perioden-Bands (1.–3.) ist keine sichtbare senkrechte Kachelkante mehr erkennbar, nur die gewollten runden Enden an Anfang und Ende jedes Abschnitts bleiben sichtbar; neutrale Tage zeigen weiterhin ihre ruhige Standardoptik; der Heute-Kreis und der Zyklus-Kreis sind unverändert. Über die echte UI einen Partner-Verbindungscode erzeugt (gezielt über den `p.tracking-widest`-Selektor ausgelesen, nicht per Freitext-Suche, um Verwechslungen mit anderen Wörtern auf der Seite auszuschließen), mit einem zweiten echten Testkonto verbunden: `/neu/partner` zeigt dieselbe nahtlose Darstellung, weiterhin rein lesend, kein horizontaler Überlauf. Anschließend vollständiger Rückbau: temporäre Testdateien und Screenshots gelöscht, `npm uninstall playwright` ausgeführt.
+- Abweichungen: keine Code-Abweichung vom Korrekturauftrag. Die Testskript-Anpassungen betreffen ausschließlich Prüf-Infrastruktur (exakter Wortlaut der jetzt bedingten Randklasse), nicht das geprüfte Produktverhalten selbst.
+- offene Punkte: keine.
+- Commit:

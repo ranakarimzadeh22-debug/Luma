@@ -71,14 +71,16 @@ console.log("\n== WP-017: Partner-Monatsüberschrift, Wochentage und Haupt-Tages
     partnerCalendarSource.includes('className="pb-0.5 text-[11px] font-medium text-neutral-500 sm:pb-1 sm:text-xs"'),
     "die Wochentag-Labels sind mobil kleiner (11px statt 12px), ab sm weiterhin text-xs wie vor WP-017",
   );
-  // WP-022 Korrektur V4: die Kachel ist jetzt transparent (bg-transparent,
-  // z-10, ohne overflow-hidden) statt der V2-Zwischenstufe (bg-white), da das
+  // WP-022 Korrektur V4: die Kachel ist transparent (bg-transparent, z-10,
+  // ohne overflow-hidden) statt der V2-Zwischenstufe (bg-white), da das
   // Phasenband seither als breites, zentriertes Pillen-Band außerhalb der
-  // Kachel liegt und über deren Rand hinausragen muss — die responsive
-  // Tageszahl-Größe selbst (text-xs unterhalb sm, text-sm ab sm) bleibt davon
-  // unberührt und unverändert bestehen.
+  // Kachel liegt und über deren Rand hinausragen muss. WP-022 Korrektur V5:
+  // der Rand selbst ist seither bedingt (Template-Literal statt statischem
+  // String), damit Tage mit sichtbarem Band keinen eigenen Rand mehr zeigen
+  // — die responsive Tageszahl-Größe selbst (text-xs unterhalb sm, text-sm
+  // ab sm) bleibt davon unberührt und unverändert bestehen.
   assert(
-    partnerCalendarSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border border-neutral-200 bg-transparent text-xs text-neutral-700 sm:text-sm'),
+    partnerCalendarSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs text-neutral-700 sm:text-sm'),
     "die Haupt-Tageszahl ist mobil text-xs, ab sm weiterhin die bisherige text-sm",
   );
   assert(
