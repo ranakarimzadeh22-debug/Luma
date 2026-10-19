@@ -118,7 +118,7 @@ technical_brief: complete
   - Der ursprüngliche `py-10`-Innenabstand auf `/neu/einstellungen` wurde in `pt-10` plus einen responsiven unteren Abstand (`pb-24` mobil, `sm:pb-10` breit) aufgeteilt, damit der vorherige visuelle Abstand oben unverändert bleibt und nur unten mobil Platz für die neue Leiste entsteht. Das ist eine direkte Folge aus Abnahmekriterium 4 („ausreichend unteren Inhaltsabstand") und keine stille Zusatzänderung.
   - Der bestehende „Einstellungen"-Link auf `/neu` wurde mobil ausgeblendet statt entfernt, exakt wie in Abnahmekriterium 5 ausdrücklich erlaubt.
 - offene Punkte: keine.
-- Commit:
+- Commit: 91042b2
 
 ## Soll-Ist-Prüfung – von Codex
 

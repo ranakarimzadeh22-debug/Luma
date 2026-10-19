@@ -7,7 +7,7 @@ status: completed
 screens: Startseite | App-weit und Technik
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 91042b2
 ---
 
 # Mobile untere Navigation für das Owner-Konto (WP-021)
@@ -41,4 +41,4 @@ Keiner – Arbeitspaket abgeschlossen.
 
 - Betroffene Dateien: `src/components/NewOwnerMobileNav.tsx` (neu), `src/app/neu/page.tsx`, `src/app/neu/einstellungen/page.tsx`, `scripts/verify-owner-mobile-nav.ts` (neu), `docs/work-packages/WP-021-owner-mobile-bottom-navigation.md`, `docs/work-packages/STATE.json`.
 - Tests: `scripts/verify-owner-mobile-nav.ts` (25/25), `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts` (83/84, ein bekannter vorbestehender Fehlschlag), bestehende Regressionsskripte für Home/Einstellungen/Partner/Mobile, temporäre Playwright-Live-Prüfung (vollständig zurückgebaut).
-- Commit oder Referenz: pending
+- Commit oder Referenz: 91042b2
