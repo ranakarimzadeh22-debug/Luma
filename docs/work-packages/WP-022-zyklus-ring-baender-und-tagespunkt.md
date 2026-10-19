@@ -118,7 +118,7 @@ technical_brief: complete
 - Abweichungen:
   - Keine Code-Abweichung vom Soll. Einzige Anmerkung: Abnahmekriterium 1 („zusammenhängendes Band") war bereits vor diesem Paket durch die bestehende Single-Path-Arc-Zeichnung erfüllt; es handelt sich um einen dokumentierten Befund, keine Implementierungsänderung, wie im Soll ausdrücklich als zulässig vorgesehen („Falls die aktuelle SVG-Form bereits durchgehend ist, dokumentiere den Befund …").
 - offene Punkte: keine.
-- Commit:
+- Commit: 40b2e25
 
 ## Soll-Ist-Prüfung – von Codex
 

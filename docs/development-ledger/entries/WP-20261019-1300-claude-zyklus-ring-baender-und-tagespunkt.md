@@ -7,7 +7,7 @@ status: completed
 screens: Startseite | App-weit und Technik
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 40b2e25
 ---
 
 # Zyklus-Kreis mit klaren Phasenbändern und Tagespunkt (WP-022)
@@ -40,4 +40,4 @@ Keiner – Arbeitspaket abgeschlossen.
 
 - Betroffene Dateien: `src/components/CyclePersonalRing.tsx`, `scripts/verify-cycle-ring-day-marker.ts` (neu), `docs/work-packages/WP-022-zyklus-ring-baender-und-tagespunkt.md`, `docs/work-packages/STATE.json`.
 - Tests: `scripts/verify-cycle-ring-day-marker.ts` (23/23), `scripts/verify-manual-pms-ring-marker.ts` (WP-020-Regression, vollständig bestanden), `npx tsc --noEmit`, `npm run build`, `node --experimental-strip-types --test tests/*.test.ts` (83/84, ein bekannter vorbestehender Fehlschlag), weitere bestehende Regressionsskripte für Ring/Kalender/Partner/Mobile, temporäre Playwright-Live-Prüfung mit zwei echten Testkonten (vollständig zurückgebaut).
-- Commit oder Referenz: pending
+- Commit oder Referenz: 40b2e25
