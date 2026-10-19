@@ -7,7 +7,7 @@ status: completed
 screens: Startseite | App-weit und Technik
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 63231c1
 ---
 
 # Korrektur V5: Kachel-Trennlinien innerhalb der Phasenbänder entfernt (WP-022)
@@ -41,4 +41,4 @@ Keiner – Arbeitspaket abgeschlossen.
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `src/components/NewPartnerCalendar.tsx`, `scripts/verify-calendar-tile-band.ts`, `scripts/verify-mobile-partner-compact.ts`, `docs/work-packages/WP-022-zyklus-ring-baender-und-tagespunkt.md`, `docs/work-packages/STATE.json`.
 - Tests: siehe Arbeitspaket-Ist-Abschnitt Version 5 für die vollständige Liste und Ergebnisse.
-- Commit oder Referenz: pending
+- Commit oder Referenz: 63231c1
