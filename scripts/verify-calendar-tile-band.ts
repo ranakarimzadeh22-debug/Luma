@@ -15,12 +15,14 @@ const ownerSource = readFileSync(ownerPath, "utf8");
 const partnerPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewPartnerCalendar.tsx");
 const partnerSource = readFileSync(partnerPath, "utf8");
 
-console.log("\n== WP-022 Korrektur V2: der Owner-Kalender nutzt ein schmales Band statt einer vollflächig gefärbten Kachel ==");
+console.log("\n== WP-022 Korrektur V4: der Owner-Kalender zeigt ein breites, zentriertes Pillen-Band statt eines schmalen unteren Streifens oder einer vollflächig gefärbten Kachel ==");
 {
   assert(ownerSource.includes('import { calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";'), "NewCycleExample.tsx verwendet die gemeinsame, rein darstellende Bandpositions-Hilfe");
-  assert(ownerSource.includes('relative grid h-full w-full place-items-center overflow-hidden rounded-2xl border bg-white/55'), "die Tageskachel selbst bleibt neutral (bg-white/55), keine Vollflächenfarbe mehr je nach Status");
-  assert(ownerSource.includes('h-[35%] ${dayBandStyles[bandKey]}'), "die Statusfarbe liegt nur noch in einem schmalen unteren Band (35% der Kachelhöhe)");
+  assert(ownerSource.includes('relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent'), "die Tageskachel selbst ist transparent (kein eigener Hintergrund), damit das Band dahinter sichtbar durchscheint");
+  assert(!ownerSource.includes("overflow-hidden"), "die Kachel beschneidet das Band nicht mehr (overflow-hidden entfernt), damit es über den Kachelrand hinaus in den Gap reichen kann");
+  assert(ownerSource.includes('top-1/2 h-[62%] -translate-y-1/2') && ownerSource.includes('${bandEdgeInsetClassName} ${dayBandStyles[bandKey]}'), "das Band ist vertikal zentriert, deutlich breiter (62% der Kachelhöhe) und reicht über die Kachelkante hinaus in den Rasterzwischenraum");
   assert(!ownerSource.includes('storedPeriod || runningPeriod\n                ? "bg-[#6d153f] text-white"'), "die alte vollflächige Hintergrundfärbung nach Status-Priorität in der Kachel selbst wurde entfernt");
+  assert(ownerSource.includes("pointer-events-none"), "das Band blockiert keine Klicks auf die darüberliegende Kachel");
 }
 
 console.log("\n== WP-022 Korrektur V2: dieselbe Status-Priorität (bestätigt/laufend > erwartet > geplant > Phase) bestimmt weiterhin die Bandfarbe, keine neue Logik ==");
@@ -42,17 +44,23 @@ console.log("\n== WP-022 Korrektur V2: heute zeigt nur einen kleinen roten Kreis
   assert(ownerSource.includes('isToday ? ", heute" : ""'), "die Information 'heute' bleibt weiterhin zugänglich über das aria-label der Tageskachel");
 }
 
-console.log("\n== WP-022 Korrektur V2: der Partner-Kalender erhält dieselbe sichtbare Bandregel wie der Owner-Kalender ==");
+console.log("\n== WP-022 Korrektur V4: der Partner-Kalender erhält dieselbe breite Pillen-Bandregel wie der Owner-Kalender ==");
 {
   assert(partnerSource.includes('import { calendarBandPosition } from "@/lib/calendar-band-position";'), "NewPartnerCalendar.tsx verwendet dieselbe gemeinsame Bandpositions-Hilfe");
-  assert(partnerSource.includes('h-[35%] ${primaryStatusBandStyle[status]}'), "die Partner-Tageskachel zeigt die Statusfarbe ebenfalls nur als schmales unteres Band");
-  assert(partnerSource.includes('rounded-xl border border-neutral-200 bg-white text-xs text-neutral-700'), "die Partner-Tageskachel selbst bleibt neutral (weiß), keine Vollflächenfarbe mehr je nach Status");
+  assert(!partnerSource.includes("overflow-hidden"), "die Partner-Kachel beschneidet das Band nicht mehr, damit es über den Kachelrand hinaus reichen kann");
+  assert(partnerSource.includes('top-1/2 h-[62%] -translate-y-1/2') && partnerSource.includes('${bandEdgeInsetClassName} ${primaryStatusBandStyle[status]}'), "das Partner-Band ist ebenfalls vertikal zentriert, breiter (62%) und reicht in den Rasterzwischenraum");
+  assert(partnerSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border border-neutral-200 bg-transparent'), "die Partner-Tageskachel ist transparent, keine Vollflächenfarbe mehr je nach Status");
   assert(!partnerSource.includes('primaryStatusStyle[status]'), "die alte vollflächige Status-Hintergrundfarbe der Kachel wurde entfernt");
 }
 
-console.log("\n== WP-022 Korrektur V2: heute zeigt im Partner-Kalender ebenfalls nur einen kleinen roten Kreis hinter der Zahl ==");
+console.log("\n== WP-022 Korrektur V3/V4: heute zeigt im Partner-Kalender ausschließlich einen kleinen roten Kreis hinter der Zahl, kein äußerer Rahmen mehr ==");
 {
   assert(partnerSource.includes('size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600'), "der Heute-Kreis im Partner-Kalender sitzt zentriert hinter der Tageszahl");
+  // Nur der tatsächliche Tailwind-Klassenstring zählt hier (nicht der
+  // erklärende Quelltextkommentar, der denselben Begriff zur Dokumentation
+  // der Änderung nennt) — daher gezielt nach dem className-Attribut suchen.
+  const buttonClassNameMatch = partnerSource.match(/className="relative z-10 grid[^"]*"/);
+  assert(Boolean(buttonClassNameMatch) && !buttonClassNameMatch![0].includes("ring-2"), "der äußere Heute-Rahmen (ring-2 ring-offset-1) um die gesamte Partner-Kachel wurde aus der tatsächlichen className entfernt (Korrektur V3, bestätigt in V4)");
   assert(partnerSource.includes('isToday ? ", heute" : ""'), "die Information 'heute' bleibt im Partner-Kalender über das aria-label zugänglich");
 }
 
@@ -67,6 +75,23 @@ console.log("\n== WP-022 Korrektur V2: Monatswechsel, Legenden-Popover, Unsicher
   assert(partnerSource.includes("PartnerCalendarLegendPopover"), "das Partner-Legenden-Popover bleibt unverändert eingebunden");
   assert(partnerSource.includes("Vorhersage unsicher - Kann abweichen"), "der Partner-Unsicherheitshinweis bleibt unverändert");
   assert(partnerSource.includes("setSelectedDay") && !partnerSource.includes("fetch("), "die Partneransicht bleibt vollständig rein lesend (öffnet nur ein Detail-Modal, kein Schreibzugriff)");
+}
+
+console.log("\n== WP-022 Korrektur V4: aufeinanderfolgende gleiche Phasentage verbinden sich ohne Lücke; nur Start und Ende eines Abschnitts sind abgerundet ==");
+{
+  assert(ownerSource.includes('"rounded-l-full rounded-r-none"'), "Owner: ein Start-Tag ist nur links gerundet, rechts eckig (verbindet sich nahtlos mit dem Folgetag)");
+  assert(ownerSource.includes('"rounded-r-full rounded-l-none"'), "Owner: ein End-Tag ist nur rechts gerundet, links eckig (verbindet sich nahtlos mit dem Vortag)");
+  assert(ownerSource.includes(': "rounded-none";'), "Owner: ein Mitte-Tag ('middle') ist komplett eckig, verschmilzt also sichtbar mit beiden Nachbarn");
+
+  assert(partnerSource.includes('"rounded-l-full rounded-r-none"'), "Partner: ein Start-Tag ist nur links gerundet, rechts eckig");
+  assert(partnerSource.includes('"rounded-r-full rounded-l-none"'), "Partner: ein End-Tag ist nur rechts gerundet, links eckig");
+  assert(partnerSource.includes(': "rounded-none";'), "Partner: ein Mitte-Tag ist komplett eckig");
+}
+
+console.log("\n== WP-022 Korrektur V4: die Tageszahl und die Klickfläche bleiben über dem breiten Band klar bedienbar ==");
+{
+  assert(ownerSource.includes('<span className="relative z-10">'), "Owner: die Tageszahl liegt in einem eigenen, höher geschichteten Element über dem Band");
+  assert(partnerSource.includes("z-10"), "Partner: die Kachel (inkl. Zahl, Klickfläche) liegt über dem Band (z-10)");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

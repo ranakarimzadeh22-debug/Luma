@@ -71,13 +71,14 @@ console.log("\n== WP-017: Partner-Monatsüberschrift, Wochentage und Haupt-Tages
     partnerCalendarSource.includes('className="pb-0.5 text-[11px] font-medium text-neutral-500 sm:pb-1 sm:text-xs"'),
     "die Wochentag-Labels sind mobil kleiner (11px statt 12px), ab sm weiterhin text-xs wie vor WP-017",
   );
-  // WP-022 Korrektur V2: die Kachel trägt seither zusätzlich eine neutrale
-  // Hintergrundfarbe (bg-white, statt der früheren status-abhängigen
-  // Vollflächenfarbe), daher kein exakt gleicher String mehr — die
-  // responsive Tageszahl-Größe selbst (text-xs unterhalb sm, text-sm ab sm)
-  // bleibt davon unberührt und unverändert bestehen.
+  // WP-022 Korrektur V4: die Kachel ist jetzt transparent (bg-transparent,
+  // z-10, ohne overflow-hidden) statt der V2-Zwischenstufe (bg-white), da das
+  // Phasenband seither als breites, zentriertes Pillen-Band außerhalb der
+  // Kachel liegt und über deren Rand hinausragen muss — die responsive
+  // Tageszahl-Größe selbst (text-xs unterhalb sm, text-sm ab sm) bleibt davon
+  // unberührt und unverändert bestehen.
   assert(
-    partnerCalendarSource.includes('relative grid h-full w-full place-items-center overflow-hidden rounded-xl border border-neutral-200 bg-white text-xs text-neutral-700 sm:text-sm'),
+    partnerCalendarSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border border-neutral-200 bg-transparent text-xs text-neutral-700 sm:text-sm'),
     "die Haupt-Tageszahl ist mobil text-xs, ab sm weiterhin die bisherige text-sm",
   );
   assert(
@@ -131,12 +132,12 @@ console.log("\n== WP-017: die Partneransicht bleibt vollständig rein lesend, ke
 
 console.log("\n== WP-017: die eigene Home-Ansicht /neu bleibt von der Partner-Verdichtung unberührt ==");
 {
-  // WP-022 Korrektur V2: siehe verify-mobile-home-compact.ts — die Kachel
-  // trägt seither zusätzlich die neutrale Hintergrundfarbe, die responsive
-  // Tageszahl-Größe (text-sm/text-base) bleibt unverändert.
+  // WP-022 Korrektur V4: siehe verify-mobile-home-compact.ts — die Kachel ist
+  // jetzt transparent statt der V2-Zwischenstufe mit neutralem Hintergrund,
+  // die responsive Tageszahl-Größe (text-sm/text-base) bleibt unverändert.
   assert(
-    ownerComponentSource.includes('const dayClassName = `relative grid h-full w-full place-items-center overflow-hidden rounded-2xl border bg-white/55 text-sm text-[#281c24] sm:text-base ${'),
-    "die eigene Home-Tageszahl-Klasse bleibt exakt beim WP-016-Korrektur-V2-Stand (nur um die WP-022-V2-Hintergrundfarbe ergänzt)",
+    ownerComponentSource.includes('const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${'),
+    "die eigene Home-Tageszahl-Klasse bleibt exakt beim WP-016-Korrektur-V2-Stand (nur um die WP-022-V4-Darstellung ergänzt)",
   );
   assert(!ownerComponentSource.includes("NewPartnerCalendar") && !ownerComponentSource.includes("NewPartnerCycleRing"), "NewCycleExample.tsx referenziert keine Partnerkomponenten");
 }

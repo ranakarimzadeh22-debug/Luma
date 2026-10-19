@@ -324,29 +324,36 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
             ? `${formatFullGermanDate(date)}${isToday ? ", heute" : ""}, ${primaryStatusLabel[status]}${isFertile && status !== "ovulation" ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
             : "";
           const bandPosition = calendarBandPosition(bandKeys, index);
+          // WP-022 Korrektur V4: wide centered pill band reaching past the
+          // tile edge into the grid gap (gap-1/sm:gap-1.5 here), mirroring
+          // NewCycleExample.tsx's owner calendar — see the detailed comment
+          // there. Also drops the outer ring-2 ring-offset-1 "today" frame
+          // (Korrektur V3's requirement, folded into V4): today is now only
+          // the small red circle behind the number, same as the owner view.
+          const bandEdgeInsetClassName = "-left-[0.125rem] -right-[0.125rem] sm:-left-[0.1875rem] sm:-right-[0.1875rem]";
           const bandRoundingClassName =
             bandPosition === "single"
               ? "rounded-full"
               : bandPosition === "start"
-                ? "rounded-l-full"
+                ? "rounded-l-full rounded-r-none"
                 : bandPosition === "end"
-                  ? "rounded-r-full"
-                  : "";
+                  ? "rounded-r-full rounded-l-none"
+                  : "rounded-none";
           return (
             <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
+              {status !== "none" && (
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${primaryStatusBandStyle[status]} ${bandRoundingClassName}`}
+                />
+              )}
               {day && (
                 <button
                   type="button"
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
-                  className={`relative grid h-full w-full place-items-center overflow-hidden rounded-xl border border-neutral-200 bg-white text-xs text-neutral-700 sm:text-sm ${isToday ? "ring-2 ring-offset-1" : ""}`}
+                  className="relative z-10 grid h-full w-full place-items-center rounded-xl border border-neutral-200 bg-transparent text-xs text-neutral-700 sm:text-sm"
                 >
-                  {status !== "none" && (
-                    <span
-                      aria-hidden="true"
-                      className={`absolute inset-x-0 bottom-0 h-[35%] ${primaryStatusBandStyle[status]} ${bandRoundingClassName}`}
-                    />
-                  )}
                   <span className="relative">
                     {isToday && (
                       <span

@@ -1309,31 +1309,33 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               : null;
             const confirmedPeriodEntry = storedPeriod ?? runningPeriod ?? null;
             const bandPosition = calendarBandPosition(bandKeys, index);
-            const dayClassName = `relative grid h-full w-full place-items-center overflow-hidden rounded-2xl border bg-white/55 text-sm text-[#281c24] sm:text-base ${
+            const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${
               !dayInfo?.isFuture
                 ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
                 : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
             }`;
+            // WP-022 Korrektur V4: the band now spans a wide, centered pill
+            // behind the day number instead of a thin bottom strip, and
+            // reaches past the tile's own edge into the grid gap on
+            // start/middle/end days so consecutive same-phase days read as
+            // one continuous band. Negative inset matches half the grid gap
+            // (gap-1.5/sm:gap-2 here) so it meets the neighboring band with
+            // no visible seam, without touching the grid layout itself.
+            const bandEdgeInsetClassName = "-left-[0.1875rem] -right-[0.1875rem] sm:-left-1 sm:-right-1";
             const bandRoundingClassName =
               bandPosition === "single"
                 ? "rounded-full"
                 : bandPosition === "start"
-                  ? "rounded-l-full"
+                  ? "rounded-l-full rounded-r-none"
                   : bandPosition === "end"
-                    ? "rounded-r-full"
-                    : "";
+                    ? "rounded-r-full rounded-l-none"
+                    : "rounded-none";
             const dayAriaLabel = date
               ? `${formatPeriodDate(date)}${isToday ? ", heute" : ""}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isManualPmsDay ? ", PMS von dir eingetragen" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
               : "";
             const dayChildren = (
               <>
-                {bandKey && (
-                  <span
-                    aria-hidden="true"
-                    className={`absolute inset-x-0 bottom-0 h-[35%] ${dayBandStyles[bandKey]} ${bandRoundingClassName}`}
-                  />
-                )}
-                <span className="relative">
+                <span className="relative z-10">
                   {isToday && (
                     <span
                       aria-hidden="true"
@@ -1371,6 +1373,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const isDayActionAvailable = Boolean(date && !dayInfo?.isFuture);
             return (
               <div key={`${day ?? "empty"}-${index}`} className="relative aspect-square min-w-0">
+                {bandKey && (
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute top-1/2 h-[62%] -translate-y-1/2 ${bandEdgeInsetClassName} ${dayBandStyles[bandKey]} ${bandRoundingClassName}`}
+                  />
+                )}
                 {day && isDayActionAvailable && (
                   <button
                     type="button"

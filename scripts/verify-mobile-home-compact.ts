@@ -108,13 +108,14 @@ console.log("\n== WP-016: keine Textkürzung, kein Entfernen bestehender Hinweis
 
 console.log("\n== WP-016 Korrektur V2: Kalender-Haupt-Tageszahl ist mobil kleiner, ab sm unverändert text-base ==");
 {
-  // WP-022 Korrektur V2: dayClassName enthält seither zusätzlich die neutrale
-  // Kachelfarbe (bg-white/55 text-[#281c24]) statt der früheren
-  // status-abhängigen Vollflächenfarbe, daher kein exakt gleicher String mehr
-  // — die responsive Tageszahl-Größe selbst (text-sm unterhalb sm, text-base
-  // ab sm) ist davon unberührt und bleibt unverändert bestehen.
+  // WP-022 Korrektur V4: dayClassName ist jetzt transparent (bg-transparent,
+  // z-10, ohne overflow-hidden) statt der V2-Zwischenstufe (bg-white/55,
+  // overflow-hidden), da das Phasenband seither als breites, zentriertes
+  // Pillen-Band außerhalb der Kachel liegt und über deren Rand hinausragen
+  // muss — die responsive Tageszahl-Größe selbst (text-sm unterhalb sm,
+  // text-base ab sm) ist davon unberührt und bleibt unverändert bestehen.
   assert(
-    componentSource.includes('const dayClassName = `relative grid h-full w-full place-items-center overflow-hidden rounded-2xl border bg-white/55 text-sm text-[#281c24] sm:text-base ${'),
+    componentSource.includes('const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${'),
     "dayClassName nutzt unterhalb sm text-sm, ab sm weiterhin die bisherige text-base",
   );
 }
