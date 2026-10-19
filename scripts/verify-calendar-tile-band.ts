@@ -129,7 +129,8 @@ console.log("\n== WP-022 Korrektur V6: Tageszahl und Kurzmarker bleiben auf den 
 {
   assert(/const dayBandTextStyles: Record<DayBandKey, string> = \{[\s\S]*?confirmed: "text-white"[\s\S]*?period: "text-white"/.test(ownerSource), "Owner: dunkle Bänder (bestätigt, geschätzte Periode) erhalten weisse Schrift");
   assert(/const primaryStatusBandTextStyle[\s\S]*?confirmed: "text-white"/.test(partnerSource), "Partner: das dunkle bestätigte Band erhält weisse Schrift");
-  assert(!ownerSource.includes("bg-transparent text-sm text-[#281c24]"), "Owner: keine feste dunkle Schriftfarbe mehr auf Bandtagen");
+  assert(ownerSource.includes('isToday ? "relative text-white" : "relative"') && partnerSource.includes('isToday ? "relative text-white" : "relative"'), "Owner und Partner: die Heute-Zahl im roten Kreis ist weiss und lesbar");
+  assert(!ownerSource.includes("bg-transparent text-sm text-[#281c24]"),"Owner: keine feste dunkle Schriftfarbe mehr auf Bandtagen");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

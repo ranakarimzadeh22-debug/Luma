@@ -68,7 +68,7 @@ const dayBandTextStyles: Record<DayBandKey, string> = {
   planned: "text-[#6d4c00]",
   period: "text-white",
   pms: "text-[#9f164f]",
-  "pms-manual": "text-[#9f164f]",
+  "pms-manual": "text-[#7a0f3c]",
   ovulation: "text-[#5420a5]",
 };
 
@@ -1366,7 +1366,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                       className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-red-600 shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
                     />
                   )}
-                  <span className="relative">{day}</span>
+                  <span className={isToday ? "relative text-white" : "relative"}>{day}</span>
                 </span>
                 {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
                 {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}

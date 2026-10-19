@@ -22,15 +22,15 @@ Der Owner hat per Screenshot gezeigt, dass die Bänder nicht wie in der Referenz
 
 ## Prüfung und Stand
 
-`npx tsc --noEmit` ohne Fehler. `verify-calendar-tile-band` (40 Prüfungen), `verify-mobile-home-compact`, `verify-mobile-partner-compact`, Legenden-Prüfungen und `verify-calendar-band-position` bestehen. Sichtprüfung im Browser nicht ausgeführt.
+`npx tsc --noEmit` ohne Fehler. `verify-calendar-tile-band` (41 Prüfungen), `verify-mobile-home-compact`, `verify-mobile-partner-compact`, Legenden-Prüfungen und `verify-calendar-band-position` bestehen. Browser-Sichtprüfung auf `/neu` und `/neu/partner` (mobil 390 px und breit 1280 px, lokale Testkonten mit Periode, PMS-Tagen und Partnerverbindung): Zahlen und Kürzel auf allen Bändern lesbar, Bänder nahtlos, kein horizontaler Überlauf, Partneransicht rein lesend. Nachgeschärft: manuelles PMS (`M·Du`) etwas dunkler (Kontrast 3,8 auf 5,2) und die Heute-Zahl im roten Kreis weiss. `npm run build` nicht ausgeführt.
 
 ## Offene Punkte
 
-- Die Referenz zeigt für die Periode ein helles Rosa; die App nutzt weiterhin die bestehenden, dunklen Periodenfarben. Das wäre eine Farbentscheidung des Owners.
+- Keine. Der Owner hat entschieden, dass die Periodenbänder vorerst in Bordeaux bleiben.
 
 ## Nächster Schritt
 
-Owner prüft den Kalender auf `/neu` und `/neu/partner`.
+Keiner – Arbeitspaket abgeschlossen.
 
 ## Technische Nachweise
 
