@@ -115,7 +115,7 @@ console.log("\n== WP-016 Korrektur V2: Kalender-Haupt-Tageszahl ist mobil kleine
   // muss — die responsive Tageszahl-Größe selbst (text-sm unterhalb sm,
   // text-base ab sm) ist davon unberührt und bleibt unverändert bestehen.
   assert(
-    componentSource.includes('const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${'),
+    componentSource.includes('const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm sm:text-base ${'),
     "dayClassName nutzt unterhalb sm text-sm, ab sm weiterhin die bisherige text-base",
   );
 }

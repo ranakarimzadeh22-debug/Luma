@@ -58,6 +58,21 @@ const dayBandStyles: Record<DayBandKey, string> = {
 };
 
 /**
+ * WP-022 Korrektur V6: text color per band, restored from the pre-V2 tile
+ * fills (white on the dark confirmed band, phase-tinted on the light ones).
+ * Without it, numbers and P/M/E markers stayed dark on the dark bands.
+ */
+const dayBandTextStyles: Record<DayBandKey, string> = {
+  confirmed: "text-white",
+  expected: "text-[#831341]",
+  planned: "text-[#6d4c00]",
+  period: "text-white",
+  pms: "text-[#9f164f]",
+  "pms-manual": "text-[#9f164f]",
+  ovulation: "text-[#5420a5]",
+};
+
+/**
  * WP-018 Korrektur Version 2: kurze Farbzeilen für das Popover am Info-Button,
  * ersetzt die frühere lange Legende und die P/M/E-Detailerklärungen. Nutzt
  * ausschließlich bereits bestehende Farbwerte (aus phaseStyles und dem
@@ -1316,12 +1331,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             // the bands themselves, but the tile border sat above it,
             // independent of the band). Neutral days (no bandKey) keep
             // their existing calm border exactly as before.
-            const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${
+            const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm sm:text-base ${
               bandKey
-                ? "border-transparent"
+                ? `border-transparent ${dayBandTextStyles[bandKey]}`
                 : !dayInfo?.isFuture
-                  ? "border-white/90 shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
-                  : "border-dashed border-[#d8afbd] opacity-70 shadow-none"
+                  ? "border-white/90 text-[#281c24] shadow-[0_3px_8px_rgba(91,31,62,0.18)]"
+                  : "border-dashed border-[#d8afbd] text-[#281c24] opacity-70 shadow-none"
             }`;
             // WP-022 Korrektur V4: the band now spans a wide, centered pill
             // behind the day number instead of a thin bottom strip, and

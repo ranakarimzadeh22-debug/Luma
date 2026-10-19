@@ -64,6 +64,15 @@ const primaryStatusBandStyle: Record<Exclude<PrimaryDayStatus, "none">, string> 
   ovulation: "bg-violet-300",
 };
 
+/** WP-022 Korrektur V6: readable text color per band (dark band needs white). */
+const primaryStatusBandTextStyle: Record<Exclude<PrimaryDayStatus, "none">, string> = {
+  confirmed: "text-white",
+  period: "text-purple-950",
+  pms: "text-pink-950",
+  "pms-manual": "text-pink-950",
+  ovulation: "text-violet-950",
+};
+
 const primaryStatusLetter: Record<Exclude<PrimaryDayStatus, "confirmed" | "none">, string> = {
   period: "Gsch.",
   pms: "M",
@@ -356,8 +365,8 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   type="button"
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
-                  className={`relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs text-neutral-700 sm:text-sm ${
-                    status === "none" ? "border-neutral-200" : "border-transparent"
+                  className={`relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs sm:text-sm ${
+                    status === "none" ? "border-neutral-200 text-neutral-700" : `border-transparent ${primaryStatusBandTextStyle[status]}`
                   }`}
                 >
                   <span className="relative">

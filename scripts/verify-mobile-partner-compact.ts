@@ -80,7 +80,7 @@ console.log("\n== WP-017: Partner-Monatsüberschrift, Wochentage und Haupt-Tages
   // — die responsive Tageszahl-Größe selbst (text-xs unterhalb sm, text-sm
   // ab sm) bleibt davon unberührt und unverändert bestehen.
   assert(
-    partnerCalendarSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs text-neutral-700 sm:text-sm'),
+    partnerCalendarSource.includes('relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs sm:text-sm'),
     "die Haupt-Tageszahl ist mobil text-xs, ab sm weiterhin die bisherige text-sm",
   );
   assert(
@@ -138,7 +138,7 @@ console.log("\n== WP-017: die eigene Home-Ansicht /neu bleibt von der Partner-Ve
   // jetzt transparent statt der V2-Zwischenstufe mit neutralem Hintergrund,
   // die responsive Tageszahl-Größe (text-sm/text-base) bleibt unverändert.
   assert(
-    ownerComponentSource.includes('const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm text-[#281c24] sm:text-base ${'),
+    ownerComponentSource.includes('const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm sm:text-base ${'),
     "die eigene Home-Tageszahl-Klasse bleibt exakt beim WP-016-Korrektur-V2-Stand (nur um die WP-022-V4-Darstellung ergänzt)",
   );
   assert(!ownerComponentSource.includes("NewPartnerCalendar") && !ownerComponentSource.includes("NewPartnerCycleRing"), "NewCycleExample.tsx referenziert keine Partnerkomponenten");
