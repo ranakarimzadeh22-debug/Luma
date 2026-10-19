@@ -7,7 +7,7 @@ status: completed
 screens: Startseite | App-weit und Technik
 why_status: confirmed
 why_source: Owner-Auftrag
-commits: pending
+commits: 9a559f4
 ---
 
 # Korrektur V4: Breite Kalender-Phasenbänder hinter den Tageszahlen (WP-022)
@@ -41,4 +41,4 @@ Keiner – Arbeitspaket abgeschlossen.
 
 - Betroffene Dateien: `src/components/NewCycleExample.tsx`, `src/components/NewPartnerCalendar.tsx`, `scripts/verify-calendar-tile-band.ts`, `scripts/verify-mobile-home-compact.ts`, `scripts/verify-mobile-partner-compact.ts`, `scripts/verify-action-success-toast.ts`, `docs/work-packages/WP-022-zyklus-ring-baender-und-tagespunkt.md`, `docs/work-packages/STATE.json`.
 - Tests: siehe Arbeitspaket-Ist-Abschnitt Version 4 für die vollständige Liste und Ergebnisse.
-- Commit oder Referenz: pending
+- Commit oder Referenz: 9a559f4
