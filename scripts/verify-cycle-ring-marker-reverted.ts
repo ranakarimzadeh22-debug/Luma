@@ -27,7 +27,7 @@ console.log("\n== WP-022 Korrektur V2: der Kalendertagstext im Ringmarker wurde 
   assert(!ringSource.includes("markerRadius"), "der vergrößerte, variable Marker-Radius wurde entfernt");
   assert(!ringSource.includes("markerFontSize"), "die Marker-Schriftgröße für eine Zahl wurde entfernt");
   assert(!ringSource.includes("aria-hidden=\"true\">\n                    {dayOfMonth}"), "keine sichtbare Tageszahl mehr im Marker");
-  assert(ringSource.includes('<circle cx={marker.x} cy={marker.y} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">'), "der Heute-Marker ist wieder der ursprüngliche kleine Kreis mit festem Radius 6 (Stand vor WP-022)");
+  assert(ringSource.includes('<circle cx={svgCoord(marker.x)} cy={svgCoord(marker.y)} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">'), "der Heute-Marker ist wieder der ursprüngliche kleine Kreis mit festem Radius 6 (Stand vor WP-022)");
   assert(ringSource.includes('`Heute, Zyklustag ${personalCycleView.todayCycleDay}`') && !ringSource.includes("Heute, ${dayOfMonth}"), "der zugängliche Titel ist wieder der ursprüngliche Text ohne Kalendertagszahl");
 }
 

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt, type ManualPmsRingOverride } from "@/lib/cycle-ring-geometry";
 
@@ -33,6 +34,16 @@ interface CyclePersonalRingProps {
 }
 
 /**
+ * WP-022 Korrektur V7: server and browser compute sin/cos for the ring points
+ * with a last-digit difference, which makes Next warn about a hydration
+ * mismatch. Rounding only the rendered SVG coordinates (not the geometry)
+ * keeps the serialization identical on both sides.
+ */
+function svgCoord(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
+/**
  * WP-007: the "Vorhersage unsicher" notice only applies to today's
  * ovulation/fertile-window estimate, per the Soll text — a PMS or neutral
  * day keeps its normal cycle-length text even when isUncertain is true.
@@ -57,29 +68,40 @@ export default function CyclePersonalRing({
   const hasPersonalCircle = personalCycleView.status !== "no_data";
   const ringStrokeWidth = compact ? "30" : "38";
   const labelFontSize = compact ? "12" : "14";
+  // WP-022 Korrektur V7: the mobile (sm:hidden) and wide (hidden sm:block)
+  // ring instances are both in the DOM, so every id must be unique per
+  // instance; useId() is SSR-stable. Non-word characters are stripped so the
+  // value is safe inside url(#...) and aria-labelledby.
+  const idPrefix = `cycle-ring-${useId().replace(/\W/g, "")}`;
+  const titleId = `${idPrefix}-title`;
+  const descriptionId = `${idPrefix}-description`;
+  const shadowId = `${idPrefix}-shadow`;
+  const periodGradientId = `${idPrefix}-period-gradient`;
+  const pmsGradientId = `${idPrefix}-pms-gradient`;
+  const ovulationGradientId = `${idPrefix}-ovulation-gradient`;
 
   return (
     <div className={`relative mx-auto aspect-square w-full ${compact ? "max-w-[17rem]" : "max-w-[22rem]"}`}>
-      <svg viewBox="0 0 320 320" role="img" aria-labelledby="cycle-ring-title cycle-ring-description" className="h-full w-full scale-[1.08] overflow-visible sm:scale-100">
-        <title id="cycle-ring-title">
+      <svg viewBox="0 0 320 320" role="img" aria-labelledby={`${titleId} ${descriptionId}`} className="h-full w-full scale-[1.08] overflow-visible sm:scale-100">
+        <title id={titleId}>
           {hasPersonalCircle ? "Zyklusübersicht – heutiger Stand" : "Zyklusübersicht – noch keine Daten"}
         </title>
-        <desc id="cycle-ring-description">
+        <desc id={descriptionId}>
           {hasPersonalCircle
             ? "Segmente für Periode, mögliches fruchtbares Zeitfenster mit Eisprungtag und mögliche PMS-Phase sowie ein Heute-Marker."
             : "Neutraler Kreis ohne persönliche Phase, solange keine ausreichenden Daten vorliegen."}
         </desc>
         <defs>
-          <filter id="ring-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id={shadowId} x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#7f315d" floodOpacity="0.12" />
           </filter>
-          <linearGradient id="period-gradient" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={periodGradientId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#9c1550" /><stop offset="1" stopColor="#6d0f3a" />
           </linearGradient>
-          <linearGradient id="pms-gradient" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={pmsGradientId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#f8a8c1" /><stop offset="1" stopColor="#ef82a5" />
           </linearGradient>
-          <linearGradient id="ovulation-gradient" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={ovulationGradientId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#c9b3ea" /><stop offset="1" stopColor="#a988da" />
           </linearGradient>
         </defs>
@@ -88,17 +110,17 @@ export default function CyclePersonalRing({
 
         {personalRingGeometry ? (
           <>
-            <g fill="none" strokeWidth={ringStrokeWidth} strokeLinecap="round" filter="url(#ring-shadow)">
+            <g fill="none" strokeWidth={ringStrokeWidth} strokeLinecap="round" filter={`url(#${shadowId})`}>
               {personalRingGeometry.segments.map((segment) => (
                 <path
                   key={segment.key}
                   d={segment.path}
                   stroke={
                     segment.key === "period"
-                      ? "url(#period-gradient)"
+                      ? `url(#${periodGradientId})`
                       : segment.key === "fertile"
-                        ? "url(#ovulation-gradient)"
-                        : "url(#pms-gradient)"
+                        ? `url(#${ovulationGradientId})`
+                        : `url(#${pmsGradientId})`
                   }
                 />
               ))}
@@ -110,8 +132,8 @@ export default function CyclePersonalRing({
               return (
                 <text
                   key={segment.key}
-                  x={point.x}
-                  y={point.y}
+                  x={svgCoord(point.x)}
+                  y={svgCoord(point.y)}
                   textAnchor="middle"
                   fill="white"
                   fontSize={labelFontSize}
@@ -130,7 +152,7 @@ export default function CyclePersonalRing({
                 ? `Heute, Zyklustag ${personalCycleView.todayCycleDay}`
                 : "Heute";
               return (
-                <circle cx={marker.x} cy={marker.y} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">
+                <circle cx={svgCoord(marker.x)} cy={svgCoord(marker.y)} r="6" fill="#e11d3f" stroke="white" strokeWidth="2">
                   <title>{markerName}</title>
                 </circle>
               );
