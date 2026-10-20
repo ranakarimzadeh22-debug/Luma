@@ -1,7 +1,7 @@
 ---
 id: WP-023
 title: "Owner-Home im warmen Entwurf A gestalten"
-status: review
+status: completed
 created: 2026-10-19
 updated: 2026-10-20
 owner_approved: yes
@@ -105,11 +105,16 @@ technical_brief: complete
 - nicht umgesetzt: Keine Änderung an Daten, Textlogik, Vorhersage, PMS/Periodenlogik, Kalenderband-Stil, Ringgeometrie, Partneransicht, Gates, Navigation, Routen, API, Datenbank, Migrationen, Abhängigkeiten oder globalem CSS.
 - Tests: Neues Struktur-/Layoutskript `scripts/verify-owner-home-warm-redesign.ts` bestanden. Bestehende Regressionen für Home-Layout, mobile Kompaktheit, TodayCard, Ring/SVG, manuellen PMS-Marker, Kalenderbänder, Legenden-Popover, Tagesfenster, Periodenübersicht und Owner-Mobilnavigation bestanden. `npx tsc --noEmit` und `npm run build` bestanden. Lokale Browserprüfung mit temporärem Owner-Testkonto bei 360, 390 und 1280 Pixeln: kein horizontaler Überlauf, obere Gruppierung korrekt, Navigation erreichbar; Monatswechsel, Popover und Tagesfenster funktional. Partnerdateien per Git-Diff bytegleich bestätigt.
 - Abweichungen: Die Browsersteuerung der Codex-App war wegen eines lokalen Sandbox-Startfehlers nicht nutzbar; die gleichwertige Sicht- und Interaktionsprüfung wurde deshalb mit lokalem Headless Chrome über dessen Debug-Schnittstelle durchgeführt. Ein gezielter ESLint-Lauf lieferte nach über 60 Sekunden keine Ausgabe und wurde kontrolliert beendet; TypeScript und Produktions-Build waren erfolgreich.
-- offene Punkte: Owner-Sichtprüfung gemäß dem oben beschriebenen Prüfschritt steht aus. Kein manuelles Deployment durchgeführt.
-- Commit: Abschlusscommit dieses Arbeitspakets (Hash nach Commit/Push in der Rückmeldung).
+- offene Punkte: Keine. Kein manuelles Deployment durchgeführt.
+- Commit: `d98a657` (`feat: Owner-Home warm neu gestalten`).
+
+## Owner-Abnahme
+
+- Abgenommen am 2026-10-20 mit der ausdrücklichen Aussage: „WP-023 abschließen“.
+- Ergebnis: Die Umsetzung ist fachlich abgenommen; WP-023 ist abgeschlossen.
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: ausstehend.
-- Nachschärfung: ausstehend.
+- Ergebnis: Soll und Ist stimmen überein; die Owner-Abnahme liegt vor.
+- Nachschärfung: Keine.
 - Product-Map aktualisiert: nein.
