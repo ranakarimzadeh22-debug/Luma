@@ -1191,40 +1191,47 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   return (
     <>
     <div
-      className="space-y-6 sm:space-y-10"
+      className="space-y-5 sm:space-y-8"
       inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
-      <TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />
-
-      <section
-        aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}
-        className="space-y-2 sm:space-y-3"
+      <div
+        data-owner-home-overview
+        className="grid grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] items-center gap-2 rounded-[2rem] border border-[#f0d9df] bg-white/65 p-2.5 shadow-[0_18px_50px_rgba(120,54,79,0.09)] backdrop-blur-[2px] sm:gap-6 sm:p-6"
       >
-        <p className="text-center text-base text-[#28101f] sm:text-lg">Dein Zyklus</p>
+        <div className="col-start-2 row-start-1 min-w-0">
+          <TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />
+        </div>
 
-        <div className="sm:hidden">
-          <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} compact />
-        </div>
-        <div className="hidden sm:block">
-          <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />
-        </div>
-        {isManualPmsToday && (
-          <p className="text-center text-xs font-medium text-[#6d153f]">
-            Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey, periods, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
-          </p>
-        )}
-        {personalCycleView.status === "no_data" && periods.length > 0 && (
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={() => setIsAddCycleLengthModalOpen(true)}
-              className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
-            >
-              Zykluslänge ergänzen
-            </button>
+        <section
+          aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}
+          className="col-start-1 row-start-1 min-w-0 space-y-2 sm:space-y-3"
+        >
+          <p className="text-center text-sm text-[#28101f] sm:text-lg">Dein Zyklus</p>
+
+          <div className="sm:hidden">
+            <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} compact />
           </div>
-        )}
-      </section>
+          <div className="hidden sm:block">
+            <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />
+          </div>
+          {isManualPmsToday && (
+            <p className="text-center text-xs font-medium text-[#6d153f]">
+              Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey, periods, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
+            </p>
+          )}
+          {personalCycleView.status === "no_data" && periods.length > 0 && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsAddCycleLengthModalOpen(true)}
+                className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
+              >
+                Zykluslänge ergänzen
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
 
       {periods.length === 0 && (
         <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-5 py-4 text-center shadow-sm">
@@ -1234,7 +1241,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         </div>
       )}
 
-      <section aria-label="Kalender zur Orientierung" className="space-y-3 sm:space-y-5">
+      <section aria-label="Kalender zur Orientierung" className="space-y-3 rounded-[2rem] border border-[#f0d9df] bg-white/60 p-3 shadow-[0_16px_44px_rgba(120,54,79,0.07)] backdrop-blur-[2px] sm:space-y-5 sm:p-6">
         <CalendarTodayLine today={todayKey} compact />
         <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
           <button type="button" aria-label="Vorherigen Monat anzeigen" onClick={() => changeMonth(-1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">‹</button>

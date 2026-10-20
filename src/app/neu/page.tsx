@@ -64,8 +64,8 @@ export default async function NewAppPage() {
 
   return (
     <>
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_15%_12%,rgba(250,220,225,0.58),transparent_34%),radial-gradient(circle_at_88%_44%,rgba(238,219,244,0.46),transparent_32%),#fff9f8] px-5 pb-[max(5rem,calc(3.5rem+env(safe-area-inset-bottom)))] pt-[max(2rem,env(safe-area-inset-top))] sm:px-7 sm:pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <section className="mx-auto flex w-full max-w-[27rem] flex-col gap-8">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_8%_4%,rgba(255,224,229,0.78),transparent_32%),radial-gradient(circle_at_94%_30%,rgba(242,222,239,0.62),transparent_30%),linear-gradient(180deg,#fffaf6_0%,#fff4f2_48%,#fff9f7_100%)] px-4 pb-[max(5rem,calc(3.5rem+env(safe-area-inset-bottom)))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-7 sm:pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[max(2rem,env(safe-area-inset-top))]">
+      <section className="mx-auto flex w-full max-w-5xl flex-col gap-6 sm:gap-8">
         <div className="hidden justify-end sm:flex">
           <Link href="/neu/einstellungen" className="text-sm text-neutral-500 hover:text-neutral-900">
             Einstellungen

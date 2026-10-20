@@ -56,24 +56,14 @@ console.log("\n== WP-009: Hauptkomponenten, Props und Handler sind unverändert 
   assert(body.includes("onClick={() => setIsPeriodHistoryOpen(true)}"), "die Monatsanzeige öffnet weiterhin die Periodenhistorie");
 }
 
-console.log("\n== WP-009 Version 2 / WP-016: Zyklus- und Kalender-section bleiben rahmenlos; Abstände dürfen seit WP-016 unterhalb sm enger sein ==");
+console.log("\n== WP-023: Zyklus und TodayCard teilen sich eine warme Übersicht; der Kalender folgt in einer ruhigen Fläche ==");
 {
   const cycleSectionMatch = body.match(/<section\s+aria-label=\{hasPersonalCircle[\s\S]*?className="([^"]*)"/);
   const calendarSectionMatch = body.match(/<section\s+aria-label="Kalender zur Orientierung"\s+className="([^"]*)"/);
 
-  assert(cycleSectionMatch?.[1] === "space-y-2 sm:space-y-3", "die Zyklus-section nutzt seit WP-016 einen engeren mobilen Abstand (space-y-2), ab sm weiterhin space-y-3, ohne Kartenklassen");
-  assert(calendarSectionMatch?.[1] === "space-y-3 sm:space-y-5", "die Kalender-section nutzt seit WP-016 einen engeren mobilen Abstand (space-y-3), ab sm weiterhin space-y-5, ohne Kartenklassen");
-
-  for (const forbidden of ["rounded-2xl", "border-[#efd5dc]", "bg-white/90", "shadow-sm"]) {
-    assert(
-      !(cycleSectionMatch?.[1].includes(forbidden) ?? false),
-      `die Zyklus-section enthält keine Kartenklasse '${forbidden}' mehr`,
-    );
-    assert(
-      !(calendarSectionMatch?.[1].includes(forbidden) ?? false),
-      `die Kalender-section enthält keine Kartenklasse '${forbidden}' mehr`,
-    );
-  }
+  assert(Boolean(cycleSectionMatch?.[1].includes("col-start-1 row-start-1")), "die Zyklus-section liegt sichtbar links in der gemeinsamen Übersicht");
+  assert(Boolean(calendarSectionMatch?.[1].includes("rounded-[2rem]") && calendarSectionMatch?.[1].includes("bg-white/60")), "der Kalender bleibt darunter und erhält die ruhige Owner-Fläche aus WP-023");
+  assert(body.includes("data-owner-home-overview"), "die gemeinsame Owner-Übersichtsgruppe ist vorhanden");
 
   assert(
     source.includes('<div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-3 py-2.5 text-center shadow-sm sm:px-5 sm:py-4">'),
