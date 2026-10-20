@@ -28,6 +28,8 @@ Der Owner-Auftrag WP-024 bestätigt, dass die erste Zyklusaussage schneller vers
 - TypeScript und Produktions-Build bestanden.
 - Browser-Sichtprüfung mit verbundenem Owner-/Partner-Testkonto bei 360, 390 und 1280 Pixeln bestanden: mobil gestapelt, breit zweispaltig, keine horizontale Überbreite; Testkonten anschließend gelöscht.
 - Owner-Korrektur vor Abnahme: Der rechte Statusbereich wurde von einer eigenständigen Kartenfläche zu einer schlichten Textspalte geändert. Ring links/Text rechts auf breiten Ansichten und die mobile Stapelung wurden erneut gezielt geprüft.
+- Präzisierung: Der Ring nutzt jetzt auch breit bewusst die kompakte Darstellung in einer festen 17-rem-Spalte; rechts stehen die konkreten Statussätze vertikal mittig. Mobil bleibt derselbe kompakte Ring über denselben Texten.
+- Verbindliche mobile Korrektur: Die mobile Stapelung wurde wieder entfernt. Auch bei 360/390 Pixeln stehen kompakter Ring links und flexibel umbrechende Textspalte rechts; der lange Countdown bricht innerhalb des Rings als eine Aussage auf zwei Zeilen um.
 
 ## Offene Punkte
 

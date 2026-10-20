@@ -20,16 +20,15 @@ function formatDate(value: string): string {
 export default function CycleOverviewPanel({ personalCycleView, prediction, today, runningPeriodExpectedEndDate, manualPmsOverride = null, partner = false }: Props) {
   const presentation = deriveCycleOverviewPresentation(personalCycleView, prediction, today, runningPeriodExpectedEndDate);
   return (
-    <section aria-label={partner ? "Zyklusübersicht deines Partners/deiner Partnerin" : "Deine Zyklusübersicht"} className="grid min-w-0 gap-3 sm:grid-cols-2 sm:items-center sm:gap-6">
+    <section aria-label={partner ? "Zyklusübersicht deines Partners/deiner Partnerin" : "Deine Zyklusübersicht"} className="grid min-w-0 grid-cols-[minmax(9.5rem,0.95fr)_minmax(0,1.05fr)] items-center gap-1.5 sm:grid-cols-[17rem_minmax(0,1fr)] sm:justify-center sm:gap-6">
       <div className="min-w-0">
-        <div className="sm:hidden"><CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} centerText={presentation.centerText} compact /></div>
-        <div className="hidden sm:block"><CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} centerText={presentation.centerText} /></div>
+        <CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} centerText={presentation.centerText} compact />
       </div>
-      <div data-cycle-status-texts className="min-w-0 space-y-2 px-2 py-1 text-sm leading-6 text-[#382631] sm:px-4">
-        {presentation.phaseText && <p><span className="font-semibold">Aktuelle Phase:</span> {presentation.phaseText}</p>}
+      <div data-cycle-status-texts className="min-w-0 space-y-1.5 px-1 py-1 text-xs leading-5 text-[#382631] sm:space-y-2 sm:px-4 sm:text-sm sm:leading-6">
+        {presentation.phaseText && <p className="font-semibold">{presentation.phaseText}</p>}
         {presentation.nextPeriodDate && <p><span className="font-semibold">Nächste Periode:</span> ca. {formatDate(presentation.nextPeriodDate)} · Kann abweichen</p>}
         {presentation.expectedEndDate && <p><span className="font-semibold">Voraussichtliches Ende:</span> ca. {formatDate(presentation.expectedEndDate)} · Kann abweichen</p>}
-        {presentation.reliableCycleLengthDays && <p><span className="font-semibold">Individuelle Zykluslänge:</span> {presentation.reliableCycleLengthDays} Tage</p>}
+        {presentation.reliableCycleLengthDays && <p><span className="font-semibold">Zyklus:</span> {presentation.reliableCycleLengthDays} Tage</p>}
         {!presentation.phaseText && !presentation.nextPeriodDate && <p>Noch nicht genügend Daten für eine persönliche Zyklusansicht.</p>}
       </div>
     </section>

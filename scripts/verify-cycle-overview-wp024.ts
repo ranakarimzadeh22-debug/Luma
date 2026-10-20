@@ -25,7 +25,13 @@ const panel = readFileSync(path.join(root, "src/components/CycleOverviewPanel.ts
 assert(partnerView.includes("status = 'active' AND cycle_ring_shared = TRUE"), "Partnerdaten werden vor dem Laden durch Verbindung und Freigabe geschützt");
 assert(route.includes("requestHasAllowedOrigin") && route.includes('typeof shared !== "boolean"'), "Setter prüft Ursprung und Boolean");
 assert(panel.includes("ca.") && panel.includes("Kann abweichen"), "alle Prognosedaten sind sichtbar unsicher gekennzeichnet");
-assert(panel.includes("sm:grid-cols-2"), "mobil gestapelt, breit Ring und Textbereich nebeneinander");
+assert(panel.includes("sm:grid-cols-[17rem_minmax(0,1fr)]"), "breit nutzt der Ring eine feste kompakte Spalte statt der halben Breite");
+assert(panel.includes("grid-cols-[minmax(9.5rem,0.95fr)_minmax(0,1.05fr)]"), "auch mobil bleiben kompakter Ring links und flexible Textspalte rechts horizontal angeordnet");
+assert((panel.match(/<CyclePersonalRing/g) ?? []).length === 1 && panel.includes("centerText={presentation.centerText} compact"), "mobil und breit verwenden denselben kompakten Ring");
 assert(panel.includes("data-cycle-status-texts") && !panel.includes('data-cycle-status-texts className="space-y-2 rounded'), "rechte Spalte ist ein schlichter Textbereich ohne zusätzliche Kartenfläche");
+assert(panel.includes("<span className=\"font-semibold\">Zyklus:</span>"), "Textspalte zeigt die vorhandene Zykluslänge kompakt als 'Zyklus: N Tage'");
+assert(readFileSync(path.join(root, "src/lib/cycle-overview-presentation.ts"), "utf8").includes("Du bist gerade in der PMS-Phase."), "konkreter bestehender Phasenstatus wird als klare Aussage gezeigt");
+const ringSource = readFileSync(path.join(root, "src/components/CyclePersonalRing.tsx"), "utf8");
+assert(ringSource.includes('<tspan x="160">') && ringSource.includes("nächsten Periode</tspan>"), "lange Countdown-Aussage bricht innerhalb des kompakten Rings lesbar um");
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);
 process.exit(failures === 0 ? 0 : 1);

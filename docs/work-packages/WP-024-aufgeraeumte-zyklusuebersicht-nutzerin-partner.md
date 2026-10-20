@@ -154,6 +154,19 @@ technical_brief: complete
 - Mobil bleiben Ring und Textbereich untereinander und ohne horizontalen Überlauf.
 - Die reduzierte Mittel-Aussage, Inhalte, gemeinsame Owner-/Partner-Darstellung und das serverseitige Partner-Gate bleiben unverändert.
 
+### Präzisierung der Korrektur – 2026-10-20
+
+- Breit ist der Ring ausdrücklich kompakt und belegt keine halbe beziehungsweise dominante Breite. Er steht in einer festen kleinen linken Spalte; die einfache Status-Textspalte steht direkt rechts daneben und ist vertikal mittig ausgerichtet.
+- Die Textspalte verwendet die bereits vorhandenen konkreten Statusinformationen in klarer Form, darunter die aktuelle Phase, die nächste Periode beziehungsweise das voraussichtliche Ende und `Zyklus: N Tage`, sofern verlässlich vorhanden.
+- Mobil steht derselbe kompakte Ring oben und exakt dieselbe Textspalte direkt darunter. Keine zusätzliche Karte, kein Rahmen und kein Schatten.
+
+### Verbindliche mobile Korrektur – 2026-10-20
+
+- Die zuvor dokumentierte mobile Stapelung ist aufgehoben. Desktop und Mobil verwenden dieselbe horizontale Grundordnung: kompakter Ring links, Status-Textspalte rechts.
+- Bei 360/390 Pixeln nutzt der Ring eine begrenzte linke Spalte; die rechte Spalte darf Texte sinnvoll umbrechen und verwendet eine angepasste, weiterhin lesbare Schriftgröße. Die Seite darf nicht horizontal überlaufen.
+- Die lange Countdown-Aussage darf innerhalb des Rings auf zwei Zeilen umbrechen, bleibt aber genau eine Hauptaussage.
+- Diese Vorgabe gilt identisch für Owner und freigegebenen read-only Partner. Gate, Daten und Berechnung bleiben unverändert.
+
 ## Soll-Ist-Prüfung – von Codex
 
 - Ergebnis: ausstehend.

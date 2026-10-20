@@ -11,10 +11,10 @@ export interface CycleOverviewPresentation {
 }
 
 const phaseLabels: Record<Exclude<PersonalCycleView["todayPhase"], null>, string> = {
-  period: "Periode",
-  pms: "Mögliche PMS-Phase",
-  ovulation: "Mögliche Eisprungphase",
-  fertile: "Mögliches fruchtbares Zeitfenster",
+  period: "Du bist gerade in deiner Periode.",
+  pms: "Du bist gerade in der PMS-Phase.",
+  ovulation: "Du bist gerade in der möglichen Eisprungphase.",
+  fertile: "Du bist gerade im möglichen fruchtbaren Zeitfenster.",
 };
 
 export function deriveCycleOverviewPresentation(
@@ -24,7 +24,7 @@ export function deriveCycleOverviewPresentation(
   runningPeriodExpectedEndDate: string | null,
 ): CycleOverviewPresentation {
   if (view.status === "no_data") {
-    return { centerText: null, phaseText: view.isRunning ? "Periode" : null, nextPeriodDate: null, expectedEndDate: null, reliableCycleLengthDays: null };
+    return { centerText: null, phaseText: view.isRunning ? phaseLabels.period : null, nextPeriodDate: null, expectedEndDate: null, reliableCycleLengthDays: null };
   }
 
   const daysRemaining = daysUntilNextPeriod(today, prediction?.nextPeriodStart ?? null);
@@ -35,7 +35,7 @@ export function deriveCycleOverviewPresentation(
         : daysRemaining !== null
           ? `${daysRemaining} ${daysRemaining === 1 ? "Tag" : "Tage"} bis zur nächsten Periode`
           : null,
-    phaseText: view.isRunning ? "Periode" : view.todayPhase ? phaseLabels[view.todayPhase] : null,
+    phaseText: view.isRunning ? phaseLabels.period : view.todayPhase ? phaseLabels[view.todayPhase] : null,
     nextPeriodDate: prediction?.nextPeriodStart ?? null,
     expectedEndDate: view.isRunning ? runningPeriodExpectedEndDate : null,
     reliableCycleLengthDays: view.status === "personal" ? view.cycleLengthDays : null,

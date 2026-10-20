@@ -58,7 +58,7 @@ export default function CyclePersonalRing({
   const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, manualPmsOverride);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
   const ringStrokeWidth = compact ? "30" : "38";
-  const labelFontSize = compact ? "12" : "14";
+  const labelFontSize = compact ? "16" : "14";
   // WP-022 Korrektur V7: the mobile (sm:hidden) and wide (hidden sm:block)
   // ring instances are both in the DOM, so every id must be unique per
   // instance; useId() is SSR-stable. Non-word characters are stripped so the
@@ -154,7 +154,14 @@ export default function CyclePersonalRing({
         )}
 
         <g textAnchor="middle">
-          {centerText && <text x="160" y="166" fill="#351127" fontFamily="Georgia, serif" fontSize={centerText.length > 24 ? "15" : "22"} fontWeight="600">{centerText}</text>}
+          {centerText && centerText.includes(" bis zur nächsten Periode") ? (
+            <text x="160" y="154" fill="#351127" fontFamily="Georgia, serif" fontSize="18" fontWeight="600">
+              <tspan x="160">{centerText.replace(" nächsten Periode", "")}</tspan>
+              <tspan x="160" dy="22">nächsten Periode</tspan>
+            </text>
+          ) : centerText ? (
+            <text x="160" y="166" fill="#351127" fontFamily="Georgia, serif" fontSize="22" fontWeight="600">{centerText}</text>
+          ) : null}
           {personalCycleView.status === "no_data" && (
             <>
               <rect x="66" y="178" width="188" height="40" rx="14" fill="#f8e4e9" />
