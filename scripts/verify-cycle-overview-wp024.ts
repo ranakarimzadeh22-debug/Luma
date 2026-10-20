@@ -25,6 +25,7 @@ const panel = readFileSync(path.join(root, "src/components/CycleOverviewPanel.ts
 assert(partnerView.includes("status = 'active' AND cycle_ring_shared = TRUE"), "Partnerdaten werden vor dem Laden durch Verbindung und Freigabe geschützt");
 assert(route.includes("requestHasAllowedOrigin") && route.includes('typeof shared !== "boolean"'), "Setter prüft Ursprung und Boolean");
 assert(panel.includes("ca.") && panel.includes("Kann abweichen"), "alle Prognosedaten sind sichtbar unsicher gekennzeichnet");
-assert(panel.includes("sm:grid-cols-2"), "mobil gestapelt, breit Ring und Karte nebeneinander");
+assert(panel.includes("sm:grid-cols-2"), "mobil gestapelt, breit Ring und Textbereich nebeneinander");
+assert(panel.includes("data-cycle-status-texts") && !panel.includes('data-cycle-status-texts className="space-y-2 rounded'), "rechte Spalte ist ein schlichter Textbereich ohne zusätzliche Kartenfläche");
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);
 process.exit(failures === 0 ? 0 : 1);

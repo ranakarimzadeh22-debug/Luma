@@ -27,6 +27,7 @@ Der Owner-Auftrag WP-024 bestätigt, dass die erste Zyklusaussage schneller vers
 - Ring-/Marker-, Kalender-, Popover-, Tagesfenster-, Partner- und Mobilnavigationsregressionen in den nicht durch WP-024 ersetzten Bereichen bestanden.
 - TypeScript und Produktions-Build bestanden.
 - Browser-Sichtprüfung mit verbundenem Owner-/Partner-Testkonto bei 360, 390 und 1280 Pixeln bestanden: mobil gestapelt, breit zweispaltig, keine horizontale Überbreite; Testkonten anschließend gelöscht.
+- Owner-Korrektur vor Abnahme: Der rechte Statusbereich wurde von einer eigenständigen Kartenfläche zu einer schlichten Textspalte geändert. Ring links/Text rechts auf breiten Ansichten und die mobile Stapelung wurden erneut gezielt geprüft.
 
 ## Offene Punkte
 

@@ -148,6 +148,12 @@ technical_brief: complete
 - offene Punkte: Owner-Sichtprüfung steht aus.
 - Commit: ausstehend.
 
+### Korrektur vor Owner-Abnahme – 2026-10-20
+
+- Owner-Präzisierung: Auf breiten Ansichten steht der Zyklus-Kreis links und der vorhandene erklärende/statusbezogene Textbereich rechts daneben. Der Textbereich ist keine zusätzliche Karte und erhält keine eigene Kartenfläche, Umrandung oder Schatten.
+- Mobil bleiben Ring und Textbereich untereinander und ohne horizontalen Überlauf.
+- Die reduzierte Mittel-Aussage, Inhalte, gemeinsame Owner-/Partner-Darstellung und das serverseitige Partner-Gate bleiben unverändert.
+
 ## Soll-Ist-Prüfung – von Codex
 
 - Ergebnis: ausstehend.

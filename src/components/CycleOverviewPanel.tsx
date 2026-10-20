@@ -25,7 +25,7 @@ export default function CycleOverviewPanel({ personalCycleView, prediction, toda
         <div className="sm:hidden"><CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} centerText={presentation.centerText} compact /></div>
         <div className="hidden sm:block"><CyclePersonalRing personalCycleView={personalCycleView} today={today} manualPmsOverride={manualPmsOverride} centerText={presentation.centerText} /></div>
       </div>
-      <div className="space-y-2 rounded-2xl border border-[#efd5dc] bg-white/90 p-4 text-sm text-[#382631] shadow-sm">
+      <div data-cycle-status-texts className="min-w-0 space-y-2 px-2 py-1 text-sm leading-6 text-[#382631] sm:px-4">
         {presentation.phaseText && <p><span className="font-semibold">Aktuelle Phase:</span> {presentation.phaseText}</p>}
         {presentation.nextPeriodDate && <p><span className="font-semibold">Nächste Periode:</span> ca. {formatDate(presentation.nextPeriodDate)} · Kann abweichen</p>}
         {presentation.expectedEndDate && <p><span className="font-semibold">Voraussichtliches Ende:</span> ca. {formatDate(presentation.expectedEndDate)} · Kann abweichen</p>}
