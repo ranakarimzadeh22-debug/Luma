@@ -54,7 +54,9 @@ console.log("\n== WP-022 Korrektur V2: der Ringmarker wird weiterhin identisch i
 {
   const partnerRingPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "NewPartnerCycleRing.tsx");
   const partnerRingSource = readFileSync(partnerRingPath, "utf8");
-  assert(partnerRingSource.includes("CyclePersonalRing"), "NewPartnerCycleRing.tsx verwendet weiterhin dieselbe gemeinsame Ring-Komponente");
+  const overviewPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "components", "CycleOverviewPanel.tsx");
+  const overviewSource = readFileSync(overviewPath, "utf8");
+  assert(partnerRingSource.includes("CycleOverviewPanel") && overviewSource.includes("CyclePersonalRing"), "die Partneransicht verwendet über die gemeinsame Zyklusübersicht weiterhin dieselbe Ring-Komponente");
   assert(!partnerRingSource.includes("dayOfMonth"), "die Partneransicht hat keine eigene Kalendertag-Logik für den Ring");
 }
 

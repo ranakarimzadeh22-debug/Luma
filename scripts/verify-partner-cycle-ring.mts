@@ -29,9 +29,8 @@ await client.connect();
 // src/lib/personal-cycle-view.ts (computePersonalCycleView) gegen die
 // echte Datenbank, da diese Module "server-only" importieren und daher
 // nicht direkt per tsx ausführbar sind — dasselbe Muster wie die übrigen
-// scripts/verify-partner-*.mts. WP-004 Version 11: die aktive Verbindung
-// allein ist jetzt die alleinige Voraussetzung, cycle_ring_shared hat
-// keine Wirkung mehr.
+// scripts/verify-partner-*.mts. WP-024: aktive Verbindung und die vorhandene
+// cycle_ring_shared-Freigabe werden gemeinsam serverseitig geprüft.
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -81,7 +80,7 @@ async function endConnection(ownerUserId: string): Promise<void> {
 
 async function resolveActiveConnectionOwner(partnerUserId: string): Promise<string | null> {
   const result = await client.query<{ owner_user_id: string }>(
-    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1`,
+    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' AND cycle_ring_shared = TRUE LIMIT 1`,
     [partnerUserId],
   );
   return result.rows[0]?.owner_user_id ?? null;
@@ -182,7 +181,7 @@ try {
   await connect(ownerA, partnerA);
   await connect(ownerB, partnerB);
 
-  console.log("\n== WP-004 V11: aktive Verbindung allein genügt sofort, ohne alte Kreisfreigabe ==");
+  console.log("\n== WP-024: aktive Verbindung allein liefert ohne Ringfreigabe keine Daten ==");
   {
     const cycleLength = 28;
     let start = addDays(today, -(cycleLength * 4));
@@ -194,8 +193,11 @@ try {
     const expectedEnd = addDays(today, 3);
     await insertPeriod(ownerA, { startDate: today, endDate: null, expectedEndDate: expectedEnd });
 
+    const blocked = await getPartnerCycleView(partnerA, today);
+    assertEqual(blocked, null, "ohne Freigabe liefert die Partneransicht keine Ring-/Kartendaten");
+    await client.query("UPDATE new_partner_connections SET cycle_ring_shared = TRUE WHERE owner_user_id = $1", [ownerA]);
     const view = await getPartnerCycleView(partnerA, today);
-    assert(view !== null, "allein durch die aktive Verbindung liefert die Partneransicht einen Kreis");
+    assert(view !== null, "mit aktiver Verbindung und Freigabe liefert die Partneransicht den Kreis");
     if (view) {
       assertEqual(view.status, "personal", "Status ist 'personal' bei vier echten Perioden");
       assertEqual(view.isRunning, true, "laufende Periode wird erkannt");
@@ -204,15 +206,15 @@ try {
     }
   }
 
-  console.log("\n== WP-004 V11: alte cycle_ring_shared-Spalte hat keine Wirkung mehr, egal ob an oder aus ==");
+  console.log("\n== WP-024: Ringfreigabe sperrt und erlaubt den View unmittelbar ==");
   {
     await client.query("UPDATE new_partner_connections SET cycle_ring_shared = FALSE WHERE owner_user_id = $1", [ownerA]);
     const viewFalse = await getPartnerCycleView(partnerA, today);
-    assert(viewFalse !== null, "cycle_ring_shared = FALSE (altes Modell) blockiert die Kreisansicht nicht mehr");
+    assertEqual(viewFalse, null, "cycle_ring_shared = FALSE blockiert Ring und Infokarte");
 
     await client.query("UPDATE new_partner_connections SET cycle_ring_shared = TRUE WHERE owner_user_id = $1", [ownerA]);
     const viewTrue = await getPartnerCycleView(partnerA, today);
-    assert(viewTrue !== null, "cycle_ring_shared = TRUE (altes Modell) liefert weiterhin dasselbe Ergebnis");
+    assert(viewTrue !== null, "cycle_ring_shared = TRUE gibt Ring und Infokarte frei");
 
     const activeRow = await client.query("SELECT 1 FROM new_partner_connections WHERE owner_user_id = $1 AND status = 'active'", [ownerA]);
     assert((activeRow.rowCount ?? 0) > 0, "die Partnerverbindung selbst bleibt bestehen");
@@ -220,6 +222,7 @@ try {
 
   console.log("\n== Kontotrennung: ein Paar sieht nie die Daten eines anderen Paares ==");
   {
+    await client.query("UPDATE new_partner_connections SET cycle_ring_shared = TRUE WHERE owner_user_id = $1", [ownerB]);
     const viewB = await getPartnerCycleView(partnerB, today);
     assert(viewB !== null, "Paar B hat durch die eigene aktive Verbindung bereits ein Ergebnis-Objekt");
     assertEqual(viewB?.status, "no_data", "Paar B hat noch keine eigenen Perioden -> ehrlich no_data, keine Daten von Paar A");
@@ -237,8 +240,9 @@ try {
     const freshPartner = await createUser(`wp004-v11-fresh-partner-${suffix}@example.com`);
     try {
       await connect(freshOwner, freshPartner);
+      await client.query("UPDATE new_partner_connections SET cycle_ring_shared = TRUE WHERE owner_user_id = $1", [freshOwner]);
       const view = await getPartnerCycleView(freshPartner, today);
-      assert(view !== null, "allein durch die Verbindung liefert die Funktion ein Ergebnis-Objekt");
+      assert(view !== null, "mit Verbindung und Freigabe liefert die Funktion ein Ergebnis-Objekt");
       if (view) {
         assertEqual(view.status, "no_data", "ohne jede Periode ist der Status ehrlich no_data");
         assertEqual(view.todayPhase, null, "keine erfundene Phase ohne Daten");

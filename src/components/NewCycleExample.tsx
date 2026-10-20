@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { getCalendarMonthGrid, shiftCalendarMonth } from "@/lib/calendar-month";
 import { type NewPeriodEntry, type NewPeriodEntryOpen } from "@/lib/new-period-validation";
 import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePrediction } from "@/lib/new-cycle-prediction";
-import { deriveTodayCardText, type PersonalCycleView } from "@/lib/personal-cycle-view";
-import { daysUntilNextPeriod } from "@/lib/next-period-countdown";
+import { type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
 import { calendarBandBorderClassName, calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
@@ -16,7 +15,7 @@ import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { deriveManualPmsSection, applyManualPmsOverride, manualPmsSymptomsForDate, isWithinManualPmsSection } from "@/lib/manual-pms";
 import type { PmsSymptomDay } from "@/lib/new-pms-symptoms";
 import { PMS_SYMPTOMS, type PmsSymptom } from "@/lib/new-pms-symptom-validation";
-import CyclePersonalRing from "@/components/CyclePersonalRing";
+import CycleOverviewPanel from "@/components/CycleOverviewPanel";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
 
 export const PMS_SYMPTOM_LABELS: Record<PmsSymptom, string> = {
@@ -940,31 +939,6 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth, onOpenMyPeriods }: P
  * self-contradictory, which the Soll's "bei fehlenden Daten" exclusion rules
  * out.
  */
-function TodayCard({
-  personalCycleView,
-  nextPeriodStart,
-  today,
-}: {
-  personalCycleView: PersonalCycleView;
-  nextPeriodStart: string | null;
-  today: string;
-}) {
-  const { headline, showsEstimateNotice } = deriveTodayCardText(personalCycleView);
-  const daysRemaining =
-    personalCycleView.status === "no_data" ? null : daysUntilNextPeriod(today, nextPeriodStart);
-  return (
-    <div className="mx-auto w-full max-w-sm rounded-2xl border border-[#efd5dc] bg-white/90 px-3 py-2.5 text-center shadow-sm sm:px-5 sm:py-4">
-      <p className="text-sm font-semibold text-[#28101f] sm:text-base">{headline}</p>
-      {daysRemaining !== null && (
-        <p className="mt-0.5 text-xs text-[#28101f] sm:mt-1 sm:text-sm">
-          Nächste Periode voraussichtlich in {daysRemaining === 1 ? "1 Tag" : `${daysRemaining} Tagen`}.
-        </p>
-      )}
-      {showsEstimateNotice && <p className="mt-0.5 text-xs text-[#a52b5d] sm:mt-1 sm:text-sm">Kann abweichen</p>}
-    </div>
-  );
-}
-
 export default function NewCycleExample({ initialPeriods, initialPeriodPlans, prediction, personalCycleView, cycleProfile, initialPmsSymptomDays }: NewCycleExampleProps) {
   const router = useRouter();
   const [todayKey] = useState(() => todayBerlinDateOnly());
@@ -1002,7 +976,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const isExampleMonth =
     displayedMonth.year === exampleMonth.year && displayedMonth.month === exampleMonth.month;
   const isCurrentMonth = displayedMonth.year === todayYear && displayedMonth.month === todayMonthIndex - 1;
-  const hasPersonalCircle = personalCycleView.status !== "no_data";
 
   function changeMonth(offset: number) {
     setDisplayedMonth((current) => shiftCalendarMonth(current.year, current.month, offset));
@@ -1187,6 +1160,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
     : personalCycleView;
   const manualPmsRingOverride =
     isManualPmsToday && manualPmsSection ? { startDate: manualPmsSection.startDate, endDate: manualPmsSection.endDate } : null;
+  const runningPeriodExpectedEndDate = periods.find((entry) => entry.endDate === null && entry.startDate <= todayKey)?.expectedEndDate ?? null;
 
   return (
     <>
@@ -1194,43 +1168,13 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
       className="space-y-5 sm:space-y-8"
       inert={selectedDayDetail || pendingDeleteEdge || isPeriodHistoryOpen ? true : undefined}
     >
-      <div
-        data-owner-home-overview
-        className="grid grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] items-center gap-2 rounded-[2rem] border border-[#f0d9df] bg-white/65 p-2.5 shadow-[0_18px_50px_rgba(120,54,79,0.09)] backdrop-blur-[2px] sm:gap-6 sm:p-6"
-      >
-        <div className="col-start-2 row-start-1 min-w-0">
-          <TodayCard personalCycleView={displayedPersonalCycleView} nextPeriodStart={prediction?.nextPeriodStart ?? null} today={todayKey} />
-        </div>
-
-        <section
-          aria-label={hasPersonalCircle ? "Deine Zyklusübersicht" : "Zyklusübersicht ohne ausreichende Daten"}
-          className="col-start-1 row-start-1 min-w-0 space-y-2 sm:space-y-3"
-        >
-          <p className="text-center text-sm text-[#28101f] sm:text-lg">Dein Zyklus</p>
-
-          <div className="sm:hidden">
-            <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} compact />
+      <div data-owner-home-overview className="rounded-[2rem] border border-[#f0d9df] bg-white/65 p-3 shadow-[0_18px_50px_rgba(120,54,79,0.09)] backdrop-blur-[2px] sm:p-6">
+        <CycleOverviewPanel personalCycleView={displayedPersonalCycleView} prediction={prediction} today={todayKey} runningPeriodExpectedEndDate={runningPeriodExpectedEndDate} manualPmsOverride={manualPmsRingOverride} />
+        {personalCycleView.status === "no_data" && periods.length > 0 && (
+          <div className="mt-3 flex justify-center">
+            <button type="button" onClick={() => setIsAddCycleLengthModalOpen(true)} className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm">Zykluslänge ergänzen</button>
           </div>
-          <div className="hidden sm:block">
-            <CyclePersonalRing personalCycleView={displayedPersonalCycleView} today={todayKey} manualPmsOverride={manualPmsRingOverride} />
-          </div>
-          {isManualPmsToday && (
-            <p className="text-center text-xs font-medium text-[#6d153f]">
-              Von dir eingetragen: {manualPmsSymptomsForDate(manualPmsSection, todayKey, periods, todayKey).map((symptom) => PMS_SYMPTOM_LABELS[symptom]).join(", ")}
-            </p>
-          )}
-          {personalCycleView.status === "no_data" && periods.length > 0 && (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => setIsAddCycleLengthModalOpen(true)}
-                className="flex min-h-10 items-center justify-center rounded-full border border-[#d8afbd] bg-white/75 px-4 py-2 text-xs font-semibold text-[#6d153f] shadow-sm hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850] sm:text-sm"
-              >
-                Zykluslänge ergänzen
-              </button>
-            </div>
-          )}
-        </section>
+        )}
       </div>
 
       {periods.length === 0 && (

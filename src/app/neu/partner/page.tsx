@@ -5,7 +5,7 @@ import { getPartnerCalendarView } from "@/lib/new-partner-calendar";
 import { getPartnerCycleView } from "@/lib/new-partner-cycle-view";
 import { getPartnerNotificationPreference } from "@/lib/new-partner-notification-preference";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
-import { manualPmsSymptomsForDate, isWithinManualPmsSection } from "@/lib/manual-pms";
+import { isWithinManualPmsSection } from "@/lib/manual-pms";
 import NewPartnerRedeemForm from "@/components/NewPartnerRedeemForm";
 import NewPartnerCalendar from "@/components/NewPartnerCalendar";
 import NewPartnerCycleRing from "@/components/NewPartnerCycleRing";
@@ -58,17 +58,13 @@ export default async function NewPartnerPage() {
   if (status.connected) {
     return (
       <main className="min-h-screen bg-neutral-50 px-3 py-10 sm:px-6">
-        <section className="mx-auto flex w-full max-w-sm flex-col gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm sm:gap-6 sm:p-8">
+        <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm sm:gap-6 sm:p-8">
           {cycleView && (
             <NewPartnerCycleRing
               personalCycleView={cycleView.personalCycleView}
+              prediction={cycleView.prediction}
               runningPeriodExpectedEndDate={cycleView.runningPeriodExpectedEndDate}
               today={todayBerlinDateOnly()}
-              manualPmsSymptoms={
-                calendarView
-                  ? manualPmsSymptomsForDate(calendarView.manualPmsSection, calendarView.today, calendarView.periods, calendarView.today)
-                  : []
-              }
               manualPmsOverride={
                 calendarView && isWithinManualPmsSection(calendarView.manualPmsSection, calendarView.today, calendarView.periods, calendarView.today)
                   ? { startDate: calendarView.manualPmsSection!.startDate, endDate: calendarView.manualPmsSection!.endDate }

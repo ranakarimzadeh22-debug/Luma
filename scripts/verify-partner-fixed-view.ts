@@ -25,24 +25,23 @@ console.log("\n== WP-004 V11: der Partner-Kalender-View liefert keine alte Freig
   assert(source.includes("predictCycle("), "die bestehende, zentrale WP-007-Vorhersagelogik wird wiederverwendet (keine zweite Berechnung)");
 }
 
-console.log("\n== WP-004 V11: der Partner-Zyklus-Kreis-View liefert keine alte Freigabe-Spalte als Gate mehr ==");
+console.log("\n== WP-024: der Partner-Zyklus-Kreis-View reaktiviert ausschließlich das Ring-Gate ==");
 {
   const source = read("src/lib/new-partner-cycle-view.ts");
-  assert(!sqlSelectsColumn(source, "cycle_ring_shared"), "new-partner-cycle-view.ts liest cycle_ring_shared nicht mehr per SQL als Datenbankspalte");
-  assert(source.includes("status = 'active'"), "die aktive Verbindung bleibt die serverseitig geprüfte Voraussetzung");
+  assert(source.includes("status = 'active' AND cycle_ring_shared = TRUE"), "aktive Verbindung und Ringfreigabe werden gemeinsam serverseitig geprüft");
   assert(source.includes("computePersonalCycleView("), "die bestehende, zentrale Zyklus-Kreis-Logik wird wiederverwendet (keine zweite Berechnung)");
 }
 
-console.log("\n== WP-004 V11: new-partner.ts enthält keine Setter-Funktionen für die alten Einzel-Schalter mehr ==");
+console.log("\n== WP-024: nur die Ringfreigabe wird reaktiviert, Kalenderfreigabe bleibt entfernt ==");
 {
   const source = read("src/lib/new-partner.ts");
-  assert(!source.includes("export async function setPartnerCycleRingShared"), "setPartnerCycleRingShared wurde entfernt");
+  assert(source.includes("export async function setPartnerCycleRingShared"), "setPartnerCycleRingShared ist eng für WP-024 reaktiviert");
   assert(!source.includes("export async function setPartnerCalendarShared"), "setPartnerCalendarShared wurde entfernt");
-  assert(!source.includes("cycleRingShared: row.cycle_ring_shared"), "getPartnerConnectionStatusForOwner liefert cycleRingShared nicht mehr");
+  assert(source.includes("cycleRingShared: row.cycle_ring_shared"), "Owner-Status liefert den gespeicherten Ringfreigabewert");
   assert(!source.includes("calendarShared: row.calendar_shared"), "getPartnerConnectionStatusForOwner liefert calendarShared nicht mehr");
 }
 
-console.log("\n== WP-004 V11: die alten Freigabe-Routen existieren nicht mehr ==");
+console.log("\n== WP-024: nur die Ringfreigabe-Route ist vorhanden ==");
 {
   const routeExists = (relativePath: string) => {
     try {
@@ -52,19 +51,19 @@ console.log("\n== WP-004 V11: die alten Freigabe-Routen existieren nicht mehr ==
       return false;
     }
   };
-  assert(!routeExists("src/app/api/neu/partner/cycle-ring-sharing/route.ts"), "die Route cycle-ring-sharing wurde entfernt");
+  assert(routeExists("src/app/api/neu/partner/cycle-ring-sharing/route.ts"), "die Route cycle-ring-sharing ist reaktiviert");
   assert(!routeExists("src/app/api/neu/partner/calendar-sharing/route.ts"), "die Route calendar-sharing wurde entfernt");
 }
 
-console.log("\n== WP-004 V11: die Owner-Einstellungen zeigen keine Einzel-Schalter mehr ==");
+console.log("\n== WP-024: Einstellungen zeigen nur den Ringfreigabe-Schalter ==");
 {
   const source = read("src/app/neu/einstellungen/page.tsx");
-  assert(!source.includes("NewPartnerCycleRingSharingToggle"), "der Zyklus-Kreis-Einzel-Schalter ist aus den Einstellungen entfernt");
+  assert(source.includes("NewPartnerCycleRingSharingToggle"), "der Zyklus-Kreis-Schalter ist bei aktiver Verbindung eingebunden");
   assert(!source.includes("NewPartnerCalendarSharingToggle"), "der Kalender-Einzel-Schalter ist aus den Einstellungen entfernt");
   assert(source.includes("NewPartnerCodeCard"), "der Verbindungscode-Bereich bleibt erhalten");
 }
 
-console.log("\n== WP-004 V11: die Toggle-Komponenten existieren nicht mehr ==");
+console.log("\n== WP-024: nur die Ring-Toggle-Komponente existiert ==");
 {
   const componentExists = (relativePath: string) => {
     try {
@@ -74,7 +73,7 @@ console.log("\n== WP-004 V11: die Toggle-Komponenten existieren nicht mehr ==");
       return false;
     }
   };
-  assert(!componentExists("src/components/NewPartnerCycleRingSharingToggle.tsx"), "NewPartnerCycleRingSharingToggle.tsx wurde entfernt");
+  assert(componentExists("src/components/NewPartnerCycleRingSharingToggle.tsx"), "NewPartnerCycleRingSharingToggle.tsx ist reaktiviert");
   assert(!componentExists("src/components/NewPartnerCalendarSharingToggle.tsx"), "NewPartnerCalendarSharingToggle.tsx wurde entfernt");
 }
 

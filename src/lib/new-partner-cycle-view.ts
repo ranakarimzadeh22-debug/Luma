@@ -4,7 +4,7 @@ import { getLumaCorePool } from "@/lib/new-auth-db";
 import { getNewPeriodEntries } from "@/lib/new-periods";
 import { getNewCycleProfile } from "@/lib/new-cycle-profile";
 import { computePersonalCycleView, type PersonalCycleView } from "@/lib/personal-cycle-view";
-import { predictCycle } from "@/lib/new-cycle-prediction";
+import { predictCycle, type CyclePrediction } from "@/lib/new-cycle-prediction";
 import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { getPmsSymptomDays } from "@/lib/new-pms-symptoms";
 import { deriveManualPmsSection, isWithinManualPmsSection } from "@/lib/manual-pms";
@@ -12,6 +12,7 @@ import { deriveManualPmsSection, isWithinManualPmsSection } from "@/lib/manual-p
 export interface PartnerCycleView {
   personalCycleView: PersonalCycleView;
   runningPeriodExpectedEndDate: string | null;
+  prediction: CyclePrediction | null;
 }
 
 /**
@@ -49,12 +50,13 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
   return {
     personalCycleView,
     runningPeriodExpectedEndDate: runningEntry?.expectedEndDate ?? null,
+    prediction,
   };
 }
 
 async function resolveActiveConnectionOwner(partnerUserId: string): Promise<string | null> {
   const result = await getLumaCorePool().query<{ owner_user_id: string }>(
-    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1`,
+    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' AND cycle_ring_shared = TRUE LIMIT 1`,
     [partnerUserId],
   );
   return result.rows[0]?.owner_user_id ?? null;

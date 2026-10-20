@@ -2,13 +2,6 @@ import { useId } from "react";
 import type { PersonalCycleView } from "@/lib/personal-cycle-view";
 import { buildPersonalRingGeometry, ringPointAt, type ManualPmsRingOverride } from "@/lib/cycle-ring-geometry";
 
-const personalPhaseLabel: Record<Exclude<PersonalCycleView["todayPhase"], null>, string> = {
-  period: "Periode",
-  ovulation: "Mögliche Eisprungphase",
-  fertile: "Mögliches fruchtbares Zeitfenster",
-  pms: "Mögliche PMS-Phase",
-};
-
 interface CyclePersonalRingProps {
   personalCycleView: PersonalCycleView;
   today: string;
@@ -31,6 +24,7 @@ interface CyclePersonalRingProps {
    * buildPersonalRingGeometry's segments, angles, or marker position.
    */
   compact?: boolean;
+  centerText?: string | null;
 }
 
 /**
@@ -48,10 +42,6 @@ function svgCoord(value: number): number {
  * ovulation/fertile-window estimate, per the Soll text — a PMS or neutral
  * day keeps its normal cycle-length text even when isUncertain is true.
  */
-function isUncertainOvulationOrFertile(view: PersonalCycleView): boolean {
-  return view.isUncertain && (view.todayPhase === "ovulation" || view.todayPhase === "fertile");
-}
-
 /**
  * Pure, read-only rendering of the personal cycle ring: the same SVG,
  * geometry, and phase/status text used on /neu (src/components/NewCycleExample.tsx)
@@ -63,6 +53,7 @@ export default function CyclePersonalRing({
   today,
   manualPmsOverride = null,
   compact = false,
+  centerText = null,
 }: CyclePersonalRingProps) {
   const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, manualPmsOverride);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
@@ -163,42 +154,7 @@ export default function CyclePersonalRing({
         )}
 
         <g textAnchor="middle">
-          <path d="M160 110 C151 122 153 132 160 135 C167 132 169 122 160 110Z" fill="#df6b9a" />
-          <text x="160" y="164" fill="#351127" fontFamily="Georgia, serif" fontSize="25" fontWeight="600">Zyklusansicht</text>
-          {personalCycleView.status === "personal" && (
-            <>
-              <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
-              <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
-                {personalCycleView.isRunning
-                  ? "Heute: Laufend"
-                  : personalCycleView.todayPhase
-                    ? `Heute: ${personalPhaseLabel[personalCycleView.todayPhase]}`
-                    : "Heute: neutrale Phase"}
-              </text>
-              {isUncertainOvulationOrFertile(personalCycleView) ? (
-                <text x="160" y="226" fill="#a52b5d" fontFamily="Georgia, serif" fontSize="12" fontWeight="600">
-                  Vorhersage unsicher - Kann abweichen
-                </text>
-              ) : (
-                <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">
-                  Zyklus: {personalCycleView.cycleLengthDays} Tage
-                </text>
-              )}
-            </>
-          )}
-          {personalCycleView.status === "profile_estimate" && (
-            <>
-              <rect x="86" y="178" width="148" height="25" rx="12" fill="#f8e4e9" />
-              <text x="160" y="195" fill="#a52b5d" fontSize="12" fontWeight="600">
-                {personalCycleView.isRunning
-                  ? "Heute: Laufend"
-                  : personalCycleView.todayPhase
-                    ? `Heute vielleicht: ${personalPhaseLabel[personalCycleView.todayPhase]}`
-                    : "Erste Orientierung"}
-              </text>
-              <text x="160" y="226" fill="#351127" fontFamily="Georgia, serif" fontSize="13">Kann abweichen</text>
-            </>
-          )}
+          {centerText && <text x="160" y="166" fill="#351127" fontFamily="Georgia, serif" fontSize={centerText.length > 24 ? "15" : "22"} fontWeight="600">{centerText}</text>}
           {personalCycleView.status === "no_data" && (
             <>
               <rect x="66" y="178" width="188" height="40" rx="14" fill="#f8e4e9" />

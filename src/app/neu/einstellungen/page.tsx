@@ -5,6 +5,7 @@ import { getPartnerConnectionStatusForOwner } from "@/lib/new-partner";
 import NewPartnerCodeCard from "@/components/NewPartnerCodeCard";
 import NewLogoutButton from "@/components/NewLogoutButton";
 import NewOwnerMobileNav from "@/components/NewOwnerMobileNav";
+import NewPartnerCycleRingSharingToggle from "@/components/NewPartnerCycleRingSharingToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ export default async function NewSettingsPage() {
         <div className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Partnerverbindung</h2>
           <NewPartnerCodeCard isConnected={status.connected} />
+          {status.connected && status.role === "owner" && <NewPartnerCycleRingSharingToggle initialShared={status.cycleRingShared} />}
         </div>
 
         <div className="space-y-3">
