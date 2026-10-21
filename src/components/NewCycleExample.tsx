@@ -96,7 +96,7 @@ const calendarLegendRows: { label: string; swatchClassName: string; isEstimateHe
   { label: "Geschätzt", swatchClassName: "", isEstimateHeading: true },
   { label: "Fruchtbare Tage", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]" },
   { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]" },
-  { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#fff7f9]" },
+  { label: "Nächste Periode", swatchClassName: "bg-[#f3edff]" },
 ];
 
 interface CalendarLegendPopoverProps {
@@ -1259,13 +1259,18 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   : plannedPeriod
                     ? "planned"
                     : phase
-                      ? isManualPmsDay && phase === "pms"
+                      ? phase === "period"
+                        ? null
+                        : isManualPmsDay && phase === "pms"
                         ? "pms-manual"
                         : phase
                       : isFertileDay
                         ? "fertile"
                         : null;
-            return { day, date, phase, estimatedPhase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey };
+            const isEstimatedPeriod = Boolean(
+              phase === "period" && !storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod,
+            );
+            return { day, date, phase, estimatedPhase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey, isEstimatedPeriod };
           });
           const bandKeys = dayCellData.map((entry) => entry.bandKey);
 
@@ -1273,7 +1278,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
           {weekdayLabels.map((label) => <div key={label} className="pb-0.5 text-xs font-medium text-[#4b3a44] sm:pb-1 sm:text-sm">{label}</div>)}
           {cells.map((day, index) => {
-            const { date, phase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey } = dayCellData[index];
+            const { date, phase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey, isEstimatedPeriod } = dayCellData[index];
             const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const dayInfo = date
               ? getCalendarDayInfo({
@@ -1298,7 +1303,9 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm sm:text-base ${
               bandKey
                 ? `border-transparent ${dayBandTextStyles[bandKey]}`
-                : !dayInfo?.isFuture
+                : isEstimatedPeriod
+                  ? "border-transparent text-[#5420a5]"
+                  : !dayInfo?.isFuture
                   ? "border-transparent text-[#281c24]"
                   : "border-transparent text-[#281c24] opacity-70"
             }`;
@@ -1324,6 +1331,12 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const dayChildren = (
               <>
                 <span className="relative z-10">
+                  {isEstimatedPeriod && !isToday && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f3edff]"
+                    />
+                  )}
                   {isToday && (
                     <span
                       aria-hidden="true"

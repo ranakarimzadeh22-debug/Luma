@@ -151,7 +151,7 @@ function PartnerCalendarLegendPopover({
           <>
             <li className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</li>
             <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full border-2 border-[#eeaabf] bg-[#fff7f9]" aria-hidden="true" />
+              <span className="size-2.5 shrink-0 rounded-full bg-[#f3edff]" aria-hidden="true" />
               Nächste Periode geschätzt
             </li>
             <li className="flex items-center gap-2">
@@ -323,7 +323,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
           const date = day ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day) : null;
           const status = date ? primaryStatusFor(date) : "none";
           const bandKey: PartnerBandKey | null =
-            status !== "none" ? status : date && isFertileFor(date, status) ? "fertile" : null;
+            status === "period" ? null : status !== "none" ? status : date && isFertileFor(date, status) ? "fertile" : null;
           return { day, date, status, bandKey };
         });
         const bandKeys = dayStatuses.map((entry) => entry.bandKey);
@@ -376,10 +376,20 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   aria-label={ariaLabel}
                   onClick={() => setSelectedDay({ date: date as string, status, isFertile })}
                   className={`relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs sm:text-sm ${
-                    bandKey ? `border-transparent ${primaryStatusBandTextStyle[bandKey]}` : "border-transparent text-neutral-700"
+                    bandKey
+                      ? `border-transparent ${primaryStatusBandTextStyle[bandKey]}`
+                      : status === "period"
+                        ? "border-transparent text-[#5420a5]"
+                        : "border-transparent text-neutral-700"
                   }`}
                 >
                   <span className="relative">
+                    {status === "period" && !isToday && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f3edff]"
+                      />
+                    )}
                     {isToday && (
                       <span
                         aria-hidden="true"
