@@ -33,5 +33,6 @@ assert(panel.includes("<span className=\"font-semibold\">Zyklus:</span>"), "Text
 assert(readFileSync(path.join(root, "src/lib/cycle-overview-presentation.ts"), "utf8").includes("Du bist gerade in der PMS-Phase."), "konkreter bestehender Phasenstatus wird als klare Aussage gezeigt");
 const ringSource = readFileSync(path.join(root, "src/components/CyclePersonalRing.tsx"), "utf8");
 assert(ringSource.includes('<tspan x="160">') && ringSource.includes("nächsten Periode</tspan>"), "lange Countdown-Aussage bricht innerhalb des kompakten Rings lesbar um");
+assert(ringSource.includes("Math.floor(80 / label.length)") && ringSource.includes("labelRotation"), "Phasenbeschriftungen werden nach Wortlänge verkleinert und entlang ihres Ringsegments ausgerichtet");
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);
 process.exit(failures === 0 ? 0 : 1);

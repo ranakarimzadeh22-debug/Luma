@@ -58,7 +58,6 @@ export default function CyclePersonalRing({
   const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, manualPmsOverride);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
   const ringStrokeWidth = compact ? "30" : "38";
-  const labelFontSize = compact ? "20" : "14";
   // WP-024 visual correction: only the segment of the current phase carries a
   // label (the legend in the text column names all three). Purely derived from
   // the already computed view / manual PMS override — no new phase logic.
@@ -131,6 +130,12 @@ export default function CyclePersonalRing({
               const point = ringPointAt(segment.labelAngle);
               const label =
                 segment.key === "period" ? "Periode" : segment.key === "fertile" ? "Eisprung" : "PMS";
+              // Keep every phase name inside its colored arc: longer words
+              // get a smaller font, and the text follows the local tangent
+              // of the ring instead of extending horizontally across it.
+              const labelFontSize = Math.max(9, Math.min(compact ? 12 : 13, Math.floor(80 / label.length)));
+              const tangentAngle = ((segment.labelAngle + 90) % 360 + 360) % 360;
+              const labelRotation = tangentAngle > 90 && tangentAngle < 270 ? tangentAngle + 180 : tangentAngle;
               return (
                 <text
                   key={segment.key}
@@ -140,6 +145,7 @@ export default function CyclePersonalRing({
                   fill="white"
                   fontSize={labelFontSize}
                   fontWeight="700"
+                  transform={`rotate(${svgCoord(labelRotation)} ${svgCoord(point.x)} ${svgCoord(point.y)})`}
                   stroke="rgba(40,16,31,0.35)"
                   strokeWidth="2.5"
                   paintOrder="stroke"
