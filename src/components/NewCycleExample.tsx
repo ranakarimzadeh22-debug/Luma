@@ -34,8 +34,6 @@ function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
   return null;
 }
 
-const phaseLetters = { period: "P", pms: "M", ovulation: "E" };
-const phaseLabels = { period: "Periode", pms: "PMS", ovulation: "Eisprung" };
 
 /**
  * WP-022 Korrektur Version 2: the day tile itself stays neutral; only a
@@ -83,25 +81,39 @@ const dayBandTextStyles: Record<DayBandKey, string> = {
 };
 
 /**
- * WP-018 Korrektur Version 2: kurze Farbzeilen für das Popover am Info-Button,
- * ersetzt die frühere lange Legende und die P/M/E-Detailerklärungen. Nutzt
- * ausschließlich bereits bestehende Farbwerte (aus phaseStyles und dem
- * früheren Inline-Panel), keine neue Phasen-, Vorhersage- oder
- * Markerberechnung — rein eine kürzere Textdarstellung derselben,
- * anderswo unverändert berechneten Bedeutungen.
+ * WP-025: the ⓘ popover is the only visible calendar explanation (day cells
+ * show just the number, the band and the red today dot). Rows are grouped into
+ * actually entered data and estimates; every estimate names "Kann abweichen".
+ * Colors are the existing band colors — no new status or calculation.
  */
-const calendarLegendRows: { label: string; swatchClassName: string; isEstimateHeading?: boolean }[] = [
-  { label: "Periode", swatchClassName: "bg-[#fac9d6]" },
-  { label: "PMS", swatchClassName: "bg-[#fddbe6]" },
-  { label: "Geschätzt", swatchClassName: "", isEstimateHeading: true },
-  { label: "Fruchtbare Tage", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]" },
-  { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]" },
-  { label: "Nächste Periode", swatchClassName: "bg-[#f3edff]" },
+const calendarLegendGroups: {
+  heading: string;
+  rows: { label: string; swatchClassName: string; estimate?: boolean }[];
+}[] = [
+  {
+    heading: "Eingetragen",
+    rows: [
+      { label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" },
+      { label: "PMS von dir eingetragen", swatchClassName: "bg-[#fddbe6]" },
+      { label: "Gespeicherte Planung", swatchClassName: "border-2 border-dashed border-[#e7a3bb]" },
+    ],
+  },
+  {
+    heading: "Geschätzt",
+    rows: [
+      { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#f3edff]", estimate: true },
+      { label: "Voraussichtliches Ende", swatchClassName: "border-2 border-[#eeaabf] bg-[#fff7f9]", estimate: true },
+      { label: "PMS-Phase", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", estimate: true },
+      { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]", estimate: true },
+      { label: "Mögliches fruchtbares Zeitfenster", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]", estimate: true },
+    ],
+  },
 ];
 
 interface CalendarLegendPopoverProps {
   isOpen: boolean;
   onClose: () => void;
+  isUncertain: boolean;
 }
 
 /**
@@ -110,7 +122,7 @@ interface CalendarLegendPopoverProps {
  * Escape and on an outside click/tap. No inner scroll area, no long text —
  * six short rows only, per the Soll.
  */
-function CalendarLegendPopover({ isOpen, onClose }: CalendarLegendPopoverProps) {
+function CalendarLegendPopover({ isOpen, onClose, isUncertain }: CalendarLegendPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -139,22 +151,27 @@ function CalendarLegendPopover({ isOpen, onClose }: CalendarLegendPopoverProps) 
       id="calendar-legend-panel"
       role="dialog"
       aria-label="Kalender-Erklärung"
-      className="absolute right-0 top-full z-10 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#efd5dc] bg-white/95 p-3 text-left shadow-[0_8px_24px_rgba(91,31,62,0.16)]"
+      className="absolute right-0 top-full z-30 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-[#efd5dc] bg-white p-3 text-left shadow-[0_8px_24px_rgba(91,31,62,0.16)]"
     >
-      <ul className="space-y-1.5 text-xs text-[#382631]">
-        {calendarLegendRows.map((row) =>
-          row.isEstimateHeading ? (
-            <li key={row.label} className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#a52b5d]">
-              {row.label}
-            </li>
-          ) : (
-            <li key={row.label} className="flex items-center gap-2">
-              <span className={`size-2.5 shrink-0 rounded-full ${row.swatchClassName}`} aria-hidden="true" />
-              {row.label}
-            </li>
-          ),
-        )}
-      </ul>
+      <div className="space-y-2 text-xs text-[#382631]">
+        {calendarLegendGroups.map((group) => (
+          <section key={group.heading} aria-label={group.heading}>
+            <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-[#a52b5d]">{group.heading}</h3>
+            <ul className="space-y-1.5">
+              {group.rows.map((row) => (
+                <li key={row.label} className="flex items-start gap-2">
+                  <span className={`mt-0.5 size-3 shrink-0 rounded-full ${row.swatchClassName}`} aria-hidden="true" />
+                  <span>
+                    {row.label}
+                    {row.estimate && <span className="block text-[11px] text-[#7a5a6b]">Kann abweichen</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+        {isUncertain && <p className="text-[11px] font-semibold text-[#a52b5d]">Vorhersage unsicher – Kann abweichen</p>}
+      </div>
     </div>
   );
 }
@@ -1212,7 +1229,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               >
                 <span aria-hidden="true">ⓘ</span>
               </button>
-              <CalendarLegendPopover isOpen={isCalendarLegendOpen} onClose={() => setIsCalendarLegendOpen(false)} />
+              <CalendarLegendPopover isOpen={isCalendarLegendOpen} onClose={() => setIsCalendarLegendOpen(false)} isUncertain={Boolean(prediction?.isUncertain)} />
             </div>
           </div>
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
@@ -1326,7 +1343,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                     ? "rounded-r-full rounded-l-none"
                     : "rounded-none";
             const dayAriaLabel = date
-              ? `${formatPeriodDate(date)}${isToday ? ", heute" : ""}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isManualPmsDay ? ", PMS von dir eingetragen" : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
+              ? `${formatPeriodDate(date)}${isToday ? ", heute" : ""}${storedPeriod ? ", bestätigte Periode" : ""}${runningPeriod ? ", laufende Periode" : ""}${expectedPeriod ? ", voraussichtliches Ende, kann abweichen" : ""}${plannedPeriod ? ", gespeicherte Planung" : ""}${isManualPmsDay ? ", PMS von dir eingetragen" : ""}${!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && !isManualPmsDay && phase ? (phase === "period" ? ", geschätzte nächste Periode, kann abweichen" : phase === "pms" ? ", PMS-Phase geschätzt, kann abweichen" : ", Eisprung geschätzt, kann abweichen") : ""}${isFertileDay ? ", mögliches fruchtbares Zeitfenster, kann abweichen" : ""}`
               : "";
             const dayChildren = (
               <>
@@ -1345,30 +1362,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   )}
                   <span className={isToday ? "relative text-white" : "relative"}>{day}</span>
                 </span>
-                {storedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">P</span>}
-                {runningPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Läuft</span>}
-                {!storedPeriod && !runningPeriod && expectedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Ca.</span>}
-                {!storedPeriod && !runningPeriod && !expectedPeriod && plannedPeriod && <span className="absolute right-1 top-0.5 text-[9px] font-bold">Plan</span>}
-                {!storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod && phase && (
-                  <span
-                    className="absolute right-1 top-0.5 text-[9px] font-bold"
-                    aria-label={
-                      isManualPmsDay
-                        ? "PMS von dir eingetragen"
-                        : phase === "period"
-                          ? "Geschätzte nächste Periode, kann abweichen"
-                          : phaseLabels[phase]
-                    }
-                  >
-                    {isManualPmsDay ? "M·Du" : phase === "period" ? "Gsch." : phaseLetters[phase]}
-                  </span>
-                )}
-                {isFertileDay && (
-                  <span
-                    aria-label="Mögliches fruchtbares Zeitfenster, kann abweichen"
-                    className="absolute bottom-1 left-1 size-2.5 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]"
-                  />
-                )}
               </>
             );
             const isDayActionAvailable = Boolean(date && !dayInfo?.isFuture);
@@ -1410,12 +1403,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         </div>
           );
         })()}
-
-        {prediction?.isUncertain && (
-          <p className="text-center text-xs font-semibold text-[#a52b5d]">
-            Vorhersage unsicher - Kann abweichen
-          </p>
-        )}
 
         {!prediction && (
           <div className="flex justify-center pb-1">

@@ -55,32 +55,20 @@ console.log("\n== WP-018 Korrektur V2: das Popover schließt bei Escape und bei 
   assert(popoverBody.includes("useEffect"), "die Listener werden über useEffect registriert/entfernt, keine neue Abhängigkeit");
 }
 
-console.log("\n== WP-018 Korrektur V2: genau die sechs vereinbarten kurzen Begriffe, inklusive 'Geschätzt' als Kennzeichnung ==");
+console.log("\n== WP-025: das Popover erklärt alle sichtbaren Farben, getrennt in 'Eingetragen' und 'Geschätzt' ==");
 {
-  const rowsStart = source.indexOf("const calendarLegendRows");
-  const rowsArrayStart = source.indexOf(" = [", rowsStart);
-  const rowsEnd = source.indexOf("];", rowsStart);
-  const rowsBody = rowsStart !== -1 && rowsArrayStart !== -1 && rowsEnd !== -1 ? source.slice(rowsArrayStart, rowsEnd) : "";
-  assert(rowsBody.includes('"Periode"'), "'Periode' ist eine der sechs Zeilen");
-  assert(rowsBody.includes('"PMS"'), "'PMS' ist eine der sechs Zeilen");
-  assert(rowsBody.includes('"Geschätzt"') && rowsBody.includes("isEstimateHeading"), "'Geschätzt' ist als eigene Kennzeichnung vorhanden");
-  assert(rowsBody.includes('"Fruchtbare Tage"'), "'Fruchtbare Tage' ist eine der sechs Zeilen");
-  assert(rowsBody.includes('"Eisprung"'), "'Eisprung' ist eine der sechs Zeilen");
-  assert(rowsBody.includes('"Nächste Periode"'), "'Nächste Periode' ist eine der sechs Zeilen");
-  const rowCount = (rowsBody.match(/\{ label:/g) ?? []).length;
-  assert(rowCount === 6, `genau sechs Zeilen sind definiert (gefunden: ${rowCount})`);
-}
-
-console.log("\n== WP-018 Korrektur V2: die 'Geschätzt'-Kennzeichnung steht vor den drei Vorhersagezeilen (Fruchtbare Tage, Eisprung, Nächste Periode) ==");
-{
-  const estimateIndex = source.indexOf('{ label: "Geschätzt"');
-  const fruchtbarIndex = source.indexOf('{ label: "Fruchtbare Tage"');
-  const eisprungIndex = source.indexOf('{ label: "Eisprung"');
-  const naechstePeriodeIndex = source.indexOf('{ label: "Nächste Periode"');
-  assert(
-    estimateIndex !== -1 && estimateIndex < fruchtbarIndex && estimateIndex < eisprungIndex && estimateIndex < naechstePeriodeIndex,
-    "'Geschätzt' steht im Quelltext vor allen drei Vorhersagezeilen, damit sie sichtbar darunter erscheinen",
-  );
+  const groupsStart = source.indexOf("const calendarLegendGroups");
+  const groupsEnd = source.indexOf("interface CalendarLegendPopoverProps", groupsStart);
+  const groupsBody = groupsStart !== -1 && groupsEnd !== -1 ? source.slice(groupsStart, groupsEnd) : "";
+  assert(groupsBody.includes('heading: "Eingetragen"') && groupsBody.includes('heading: "Geschätzt"'), "zwei klar getrennte Gruppen 'Eingetragen' und 'Geschätzt'");
+  assert(groupsBody.indexOf('heading: "Eingetragen"') < groupsBody.indexOf('heading: "Geschätzt"'), "'Eingetragen' steht vor 'Geschätzt'");
+  for (const label of ["Periode (tatsächlich)", "PMS von dir eingetragen", "Gespeicherte Planung"]) {
+    assert(groupsBody.includes(`"${label}"`), `'${label}' steht unter Eingetragen`);
+  }
+  for (const label of ["Nächste Periode", "Voraussichtliches Ende", "PMS-Phase", "Eisprung", "Mögliches fruchtbares Zeitfenster"]) {
+    assert(groupsBody.includes(`label: "${label}"`) && groupsBody.split(`label: "${label}"`)[1].split("}")[0].includes("estimate: true"), `'${label}' ist als Schätzung markiert`);
+  }
+  assert(source.includes('{row.estimate && <span className="block text-[11px] text-[#7a5a6b]">Kann abweichen</span>}'), "jede geschätzte Zeile nennt sichtbar 'Kann abweichen'");
 }
 
 console.log("\n== WP-018 Korrektur V2: der alte lange Panel-Inhalt und die P/M/E-Detailinteraktion sind vollständig entfernt ==");
@@ -94,13 +82,15 @@ console.log("\n== WP-018 Korrektur V2: der alte lange Panel-Inhalt und die P/M/E
   assert(!source.includes("PMS von dir eingetragen (M·Du) – deine eigene Angabe"), "der alte lange Legendentext zu M·Du ist aus der Owner-Home-Legende entfernt");
 }
 
-console.log("\n== WP-007 V2: 'Vorhersage unsicher' steht außerhalb des Popovers und bleibt unabhängig von dessen Zustand sichtbar ==");
+console.log("\n== WP-025: 'Vorhersage unsicher' steht nur noch im Popover, nicht mehr dauerhaft unter dem Kalender ==");
 {
-  const uncertainIndex = source.lastIndexOf("Vorhersage unsicher - Kann abweichen");
-  const popoverCallIndex = source.indexOf("<CalendarLegendPopover");
-  assert(uncertainIndex !== -1 && popoverCallIndex !== -1 && popoverCallIndex < uncertainIndex, "der Unsicherheitshinweis steht im Quelltext nach der Popover-Einbindung, aber als eigener, unbedingt gerenderter Absatz");
-  assert(source.includes("prediction?.isUncertain &&"), "der Unsicherheitshinweis bleibt an prediction.isUncertain gebunden, nicht an isCalendarLegendOpen");
-  assert(!source.includes("isCalendarLegendOpen &&") || source.indexOf("isCalendarLegendOpen &&") === -1, "isCalendarLegendOpen steuert nirgends mehr den Unsicherheitshinweis (nur noch das Popover selbst über isOpen)");
+  const popoverStart = source.indexOf("function CalendarLegendPopover(");
+  const popoverEnd = source.indexOf("\ninterface NewCycleExampleProps", popoverStart);
+  const popoverBody = source.slice(popoverStart, popoverEnd);
+  assert(popoverBody.includes("{isUncertain && <p") && popoverBody.includes("Vorhersage unsicher – Kann abweichen"), "der Unsicherheitshinweis steht im Popover und hängt an isUncertain");
+  assert(source.includes("isUncertain={Boolean(prediction?.isUncertain)}"), "isUncertain kommt weiterhin aus prediction.isUncertain");
+  assert(!source.includes("Vorhersage unsicher - Kann abweichen"), "kein dauerhafter Unsicherheitsabsatz mehr unter dem Kalender");
+  assert(!source.includes("isCalendarLegendOpen &&"), "isCalendarLegendOpen steuert nirgends den Unsicherheitshinweis");
 }
 
 console.log("\n== WP-007 V2: keine Marker-, Berechnungs- oder Datenlogik wurde verändert ==");

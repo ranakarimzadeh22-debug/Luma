@@ -1,7 +1,7 @@
 ---
 id: WP-025
 title: "Ruhiger Kalender mit vollständiger Erklärung im Info-Popover"
-status: approved
+status: review
 created: 2026-10-21
 updated: 2026-10-21
 owner_approved: yes
@@ -106,12 +106,23 @@ technical_brief: complete
 
 ## Ist – von Claude
 
-- umgesetzt: ausstehend.
-- nicht umgesetzt: ausstehend.
-- Tests: ausstehend.
-- Abweichungen: ausstehend.
-- offene Punkte: ausstehend.
-- Commit: ausstehend.
+- umgesetzt:
+  - `src/components/NewCycleExample.tsx` (Ownerkalender): Tageszellen zeigen nur noch Tageszahl, Farbband und den roten Heute-Punkt. Entfernt: die Kürzel `P`, `Läuft`, `Ca.`, `Plan`, `Gsch.`, `M`, `M·Du`, `E` samt der ungenutzten Konstanten `phaseLetters`/`phaseLabels` sowie der zusätzliche Fruchtbarkeits-Punkt. Die dauerhafte Zeile „Vorhersage unsicher - Kann abweichen“ unter dem Kalender ist entfernt.
+  - `src/components/NewPartnerCalendar.tsx` (Partnerkalender, rein lesend): Kürzel `B`, `Gsch.`, `M`, `M·Sie`, `E` (`primaryStatusLetter`), der Fruchtbarkeits-Punkt und die dauerhafte Unsicherheitszeile entfernt.
+  - Info-Popover (beide): einzige sichtbare Kalendererklärung, gruppiert in „Eingetragen“ und „Geschätzt“. Owner: Periode (tatsächlich), PMS von dir eingetragen, Gespeicherte Planung; geschätzt: Nächste Periode, Voraussichtliches Ende, PMS-Phase, Eisprung, Mögliches fruchtbares Zeitfenster, jeweils mit sichtbarem „Kann abweichen“. Partner: Periode bestätigt, PMS eingetragen (nur bei vorhandenem manuellem PMS); geschätzt (nur bei vorhandener Vorhersage): Nächste Periode, PMS vor Periode, Eisprung, Mögliches fruchtbares Zeitfenster (nur bei vorhandenem Fenster), jeweils mit „Kann abweichen“. Der Unsicherheitshinweis „Vorhersage unsicher – Kann abweichen“ steht jetzt im Popover und nur bei `prediction.isUncertain`. Zugänglichkeit (`aria-expanded`, `aria-controls`, dynamischer Button-Name, `role=dialog`, Escape, Außenklick) unverändert.
+  - Popover-Layout: Breite `w-64` (statt `w-56`), deckender Hintergrund und `z-30` (statt `bg-white/95`/`z-10`), weil die höheren Tageskacheln (`z-10`) bei der längeren Erklärung sonst durch das Popover schienen. Das Popover hat weiterhin keine innere Scrollfläche.
+  - Zugänglichkeit: Im Ownerkalender stand die Bedeutung geschätzter Phasen nur im `aria-label` der entfernten Kürzel-Spans. Damit keine Information verloren geht (Stoppbedingung), wurde das Tages-`aria-label` um „geschätzte nächste Periode, kann abweichen“, „PMS-Phase geschätzt, kann abweichen“ und „Eisprung geschätzt, kann abweichen“ ergänzt (nur wenn kein anderer Status greift). Der Partnerkalender nutzt weiter `primaryStatusLabel` im Tages-`aria-label`.
+  - Unverändert: Bänder, Bandfarben, Prioritäten, `getCalendarDayInfo`, `primaryCalendarPhase`, `showsFertileMarker`, `calendarBandPosition`, Tagesfenster, Monatsnavigation, Daten, API, Partnerrechte, Zyklus-Kreis. Der lila Hintergrundkreis hinter der Zahl bei geschätzter Periode (`#f3edff`, aus einem früheren Codex-Commit) bleibt als Farbfläche bestehen, weil er Teil der Bandfarbe „geschätzte Periode“ ist und in der Legende erklärt wird.
+- nicht umgesetzt: nichts offen.
+- Tests:
+  - Neues Skript `scripts/verify-calendar-quiet-wp025.ts` (alle Prüfungen bestanden): keine Kürzel und keine Zusatzpunkte in Tageszellen, Zahl/Band/Heute-Punkt bleiben, keine dauerhafte Unsicherheitszeile, vollständige Tages-ARIA-Labels, Popover-Gruppen und „Kann abweichen“, Partner nur lesend.
+  - Angepasste, fachlich überholte Assertions (neue Popover-Struktur und fehlende Dauerzeile): `verify-calendar-legend-collapsible.ts`, `verify-partner-calendar-legend-collapsible.ts`, `verify-calendar-tile-band.ts` (zusätzlich eine bereits vor WP-025 veraltete Partner-Kachelrand-Assertion an den aktuellen Code angepasst), `verify-period-history-overview.ts` (Anker für den Bereich unter dem Kalendergrid). Alle angepassten Skripte bestehen bis auf die unten genannten vorbestehenden Fehler.
+  - Vorbestehend, per `git stash` belegt und nicht verändert: Fehlschläge in `verify-home-screen-layout`, `verify-owner-home-warm-redesign`, `verify-today-card`, `verify-mobile-home-compact`, `verify-mobile-partner-compact`, `verify-home-actions-consistent`, `verify-period-history-layout`, `verify-period-history-overview` (3 Prüfungen zu PeriodHistoryModal), `verify-historical-entry`, `verify-personal-cycle-view` sowie eine TodayCard-Prüfung in `verify-partner-calendar-legend-collapsible` (Ursache: frühere Umbauten WP-023/WP-024). Vorbestehende ESLint-Meldungen in `NewCycleExample.tsx` (1 Fehler `set-state-in-effect`, 2 Warnungen unbenutzte Imports) unverändert.
+  - `npx tsc --noEmit` und `npm run build` bestehen.
+  - Sichtprüfung (lokale Testkonten, Dev-Modus; Owner und Partner bei 360, 390 und 1280 px; bestätigte Periode, manuelles PMS, Schätzungen, gespeicherte Planung): in allen Tageszellen nur Zahlen, 0 Fruchtbarkeitspunkte, kein „Vorhersage unsicher“ außerhalb des Popovers, kein horizontaler Überlauf, Popover beim Start geschlossen, öffnet über ⓘ, liegt vollständig im Viewport, schließt mit Escape. Playwright wieder entfernt, `package.json`/`package-lock.json` ohne Diff.
+- Abweichungen: Zusätzlich zum Brief wurde das Tages-`aria-label` ergänzt und das Popover (Breite, Deckkraft, z-Index) angepasst, jeweils zwingend, um die Stoppbedingung bzw. die Lesbarkeit einzuhalten. Keine Änderung an Logik, Daten oder Rechten.
+- offene Punkte: Vorbestehende Testfehler (siehe oben) sollten separat an den WP-023/024-Aufbau angepasst werden. Kein Deployment ausgelöst.
+- Commit: siehe Git-Verlauf (`feat(wp-025)`).
 
 ## Soll-Ist-Prüfung – von Codex
 

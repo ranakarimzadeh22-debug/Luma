@@ -77,16 +77,16 @@ console.log("\n== WP-018 Korrektur V3: die sechs vereinbarten kurzen Partner-Tex
   const popoverEnd = source.indexOf("\ninterface DayDetailModalProps", popoverStart);
   const popoverBody = popoverStart !== -1 && popoverEnd !== -1 ? source.slice(popoverStart, popoverEnd) : "";
   assert(popoverBody.includes("Periode bestätigt"), "'Periode bestätigt' ist vorhanden");
-  assert(popoverBody.includes("Nächste Periode geschätzt"), "'Nächste Periode geschätzt' ist vorhanden");
-  assert(popoverBody.includes("Eisprung geschätzt"), "'Eisprung geschätzt' ist vorhanden");
-  assert(popoverBody.includes("Fruchtbare Tage geschätzt"), "'Fruchtbare Tage geschätzt' ist vorhanden");
+  assert(popoverBody.includes('label: "Nächste Periode"'), "'Nächste Periode' ist unter Geschätzt vorhanden");
+  assert(popoverBody.includes('label: "Eisprung"'), "'Eisprung' ist unter Geschätzt vorhanden");
+  assert(popoverBody.includes('label: "Mögliches fruchtbares Zeitfenster"'), "'Mögliches fruchtbares Zeitfenster' ist unter Geschätzt vorhanden");
   assert(popoverBody.includes("PMS vor Periode"), "'PMS vor Periode' ist vorhanden");
   assert(popoverBody.includes("PMS eingetragen"), "'PMS eingetragen' ist vorhanden");
   assert(popoverBody.includes(">Geschätzt<"), "eine 'Geschätzt'-Kennzeichnung steht sichtbar vor den Vorhersagezeilen");
 
   // Bedingte Sichtbarkeit: dieselben, bereits vorhandenen Flags, keine neue Ableitung.
   assert(popoverBody.includes("{hasAnyPrediction && ("), "die Vorhersagezeilen (Nächste Periode/Eisprung/PMS vor Periode) hängen weiterhin an hasAnyPrediction");
-  assert(popoverBody.includes("{hasFertileWindowSomewhere && ("), "'Fruchtbare Tage geschätzt' hängt weiterhin an hasFertileWindowSomewhere");
+  assert(popoverBody.includes("visible: hasFertileWindowSomewhere"), "'Mögliches fruchtbares Zeitfenster' hängt weiterhin an hasFertileWindowSomewhere");
   assert(popoverBody.includes("{hasManualPmsSection && ("), "'PMS eingetragen' hängt weiterhin am bereits vorhandenen manuellen PMS-Abschnitt (als Prop durchgereicht)");
   assert(
     source.includes("hasManualPmsSection={Boolean(manualPmsSection)}"),
@@ -105,12 +105,14 @@ console.log("\n== WP-018 Korrektur V3: der alte lange Inline-Panel-Inhalt (nicht
   assert(source.includes("primaryStatusLabel"), "primaryStatusLabel (Tagesfeld-ARIA-Labels, Tagesfenster) bleibt unverändert bestehen");
 }
 
-console.log("\n== WP-004 V12: 'Vorhersage unsicher' bleibt außerhalb des Popovers und unabhängig von dessen Zustand sichtbar ==");
+console.log("\n== WP-025: 'Vorhersage unsicher' steht nur noch im Partner-Popover, nicht mehr dauerhaft unter dem Kalender ==");
 {
-  const uncertainIndex = source.lastIndexOf("Vorhersage unsicher - Kann abweichen");
-  const popoverCallIndex = source.indexOf("<PartnerCalendarLegendPopover");
-  assert(uncertainIndex !== -1 && popoverCallIndex !== -1 && popoverCallIndex < uncertainIndex, "der Unsicherheitshinweis steht im Quelltext nach der Popover-Einbindung, als eigener, unbedingt gerenderter Absatz");
-  assert(source.includes("prediction?.isUncertain &&"), "der Unsicherheitshinweis bleibt an prediction.isUncertain gebunden, nicht an isCalendarLegendOpen");
+  const popoverStart = source.indexOf("function PartnerCalendarLegendPopover(");
+  const popoverEnd = source.indexOf("interface DayDetailModalProps", popoverStart);
+  const popoverBody = source.slice(popoverStart, popoverEnd);
+  assert(popoverBody.includes("{isUncertain && <p") && popoverBody.includes("Vorhersage unsicher – Kann abweichen"), "der Unsicherheitshinweis steht im Popover und hängt an isUncertain");
+  assert(source.includes("isUncertain={Boolean(prediction?.isUncertain)}"), "isUncertain kommt weiterhin aus prediction.isUncertain");
+  assert(!source.slice(source.indexOf("export default function")).includes("text-center text-xs font-semibold text-pink-700"), "kein dauerhafter Unsicherheitsabsatz mehr unter dem Kalender");
 }
 
 console.log("\n== WP-004 V12: keine Marker-, Berechnungs-, Freigabe- oder Datenlogik wurde verändert ==");

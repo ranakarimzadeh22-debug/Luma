@@ -81,19 +81,13 @@ const primaryStatusBandTextStyle: Record<PartnerBandKey, string> = {
   fertile: "text-[#5420a5]",
 };
 
-const primaryStatusLetter: Record<Exclude<PrimaryDayStatus, "confirmed" | "none">, string> = {
-  period: "Gsch.",
-  pms: "M",
-  "pms-manual": "M·Sie",
-  ovulation: "E",
-};
-
 interface CalendarLegendPopoverProps {
   isOpen: boolean;
   onClose: () => void;
   hasAnyPrediction: boolean;
   hasManualPmsSection: boolean;
   hasFertileWindowSomewhere: boolean;
+  isUncertain: boolean;
 }
 
 /**
@@ -111,6 +105,7 @@ function PartnerCalendarLegendPopover({
   hasAnyPrediction,
   hasManualPmsSection,
   hasFertileWindowSomewhere,
+  isUncertain,
 }: CalendarLegendPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -140,43 +135,52 @@ function PartnerCalendarLegendPopover({
       id="partner-calendar-legend-panel"
       role="dialog"
       aria-label="Kalender-Erklärung"
-      className="absolute right-0 top-full z-10 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-neutral-200 bg-white/95 p-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.16)]"
+      className="absolute right-0 top-full z-30 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-neutral-200 bg-white p-3 text-left shadow-[0_8px_24px_rgba(0,0,0,0.16)]"
     >
-      <ul className="space-y-1.5 text-xs text-neutral-700">
-        <li className="flex items-center gap-2">
-          <span className="size-2.5 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden="true" />
-          Periode bestätigt
-        </li>
-        {hasAnyPrediction && (
-          <>
-            <li className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</li>
-            <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full bg-[#f3edff]" aria-hidden="true" />
-              Nächste Periode geschätzt
+      {/* WP-025: the only visible calendar explanation. Day cells show just
+          the number, the band and the red today dot. Entered data and estimates
+          are separate groups; every estimate says "Kann abweichen". */}
+      <div className="space-y-2 text-xs text-neutral-700">
+        <section aria-label="Eingetragen">
+          <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Eingetragen</h3>
+          <ul className="space-y-1.5">
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5 size-3 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden="true" />
+              Periode bestätigt
             </li>
-            <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full border-2 border-[#c4b0ee] bg-[#faf7ff]" aria-hidden="true" />
-              Eisprung geschätzt
-            </li>
-            {hasFertileWindowSomewhere && (
-              <li className="flex items-center gap-2">
-                <span className="size-2.5 shrink-0 rounded-full border-2 border-[#dccff5] bg-[#faf7ff]" aria-hidden="true" />
-                Fruchtbare Tage geschätzt
+            {hasManualPmsSection && (
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 size-3 shrink-0 rounded-full bg-[#fddbe6]" aria-hidden="true" />
+                PMS eingetragen
               </li>
             )}
-            <li className="flex items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full border-2 border-[#f4bfd0] bg-[#fff7f9]" aria-hidden="true" />
-              PMS vor Periode
-            </li>
-          </>
+          </ul>
+        </section>
+        {hasAnyPrediction && (
+          <section aria-label="Geschätzt">
+            <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</h3>
+            <ul className="space-y-1.5">
+              {[
+                { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#f3edff]", visible: true },
+                { label: "PMS vor Periode", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", visible: true },
+                { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]", visible: true },
+                { label: "Mögliches fruchtbares Zeitfenster", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]", visible: hasFertileWindowSomewhere },
+              ]
+                .filter((row) => row.visible)
+                .map((row) => (
+                  <li key={row.label} className="flex items-start gap-2">
+                    <span className={`mt-0.5 size-3 shrink-0 rounded-full ${row.swatchClassName}`} aria-hidden="true" />
+                    <span>
+                      {row.label}
+                      <span className="block text-[11px] text-neutral-500">Kann abweichen</span>
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          </section>
         )}
-        {hasManualPmsSection && (
-          <li className="flex items-center gap-2">
-            <span className="size-2.5 shrink-0 rounded-full bg-[#fddbe6]" aria-hidden="true" />
-            PMS eingetragen
-          </li>
-        )}
-      </ul>
+        {isUncertain && <p className="text-[11px] font-semibold text-pink-700">Vorhersage unsicher – Kann abweichen</p>}
+      </div>
     </div>
   );
 }
@@ -305,6 +309,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
               hasAnyPrediction={hasAnyPrediction}
               hasManualPmsSection={Boolean(manualPmsSection)}
               hasFertileWindowSomewhere={hasFertileWindowSomewhere}
+              isUncertain={Boolean(prediction?.isUncertain)}
             />
           </div>
         </div>
@@ -398,16 +403,6 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                     )}
                     <span className={isToday ? "relative text-white" : "relative"}>{day}</span>
                   </span>
-                  {status === "confirmed" && <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">B</span>}
-                  {status !== "confirmed" && status !== "none" && (
-                    <span className="absolute right-0.5 top-0.5 text-[8px] font-bold">{primaryStatusLetter[status]}</span>
-                  )}
-                  {isFertile && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute bottom-1 left-1 size-2.5 rounded-full border border-white bg-[#a988da] shadow-[0_0_0_1px_rgba(84,32,165,0.35)]"
-                    />
-                  )}
                 </button>
               )}
             </div>
@@ -417,9 +412,6 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
         );
       })()}
 
-      {prediction?.isUncertain && (
-        <p className="text-center text-xs font-semibold text-pink-700">Vorhersage unsicher - Kann abweichen</p>
-      )}
     </div>
     {selectedDay && (
       <DayDetailModal

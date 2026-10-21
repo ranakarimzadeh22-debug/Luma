@@ -70,7 +70,7 @@ console.log("\n== WP-022 Korrektur V2: Monatswechsel, Legenden-Popover, Unsicher
 {
   assert(ownerSource.includes("changeMonth(-1)") && ownerSource.includes("changeMonth(1)"), "Owner-Monatswechsel bleibt unverändert");
   assert(ownerSource.includes("CalendarLegendPopover") && ownerSource.includes("isCalendarLegendOpen"), "das Legenden-Popover bleibt unverändert eingebunden");
-  assert(ownerSource.includes("Vorhersage unsicher - Kann abweichen"), "der Unsicherheitshinweis bleibt unverändert");
+  assert(ownerSource.includes("Vorhersage unsicher – Kann abweichen") && !ownerSource.includes("Vorhersage unsicher - Kann abweichen"), "der Unsicherheitshinweis steht seit WP-025 nur noch im Popover");
   assert(ownerSource.includes("setSelectedDayDetail") && ownerSource.includes("getPeriodDayActions"), "die bestehende Tagesfenster-Interaktion (DayDetailModal, Periodenaktionen) bleibt unverändert eingebunden");
 
   assert(partnerSource.includes("changeMonth(-1)") && partnerSource.includes("changeMonth(1)"), "Partner-Monatswechsel bleibt unverändert");
@@ -108,7 +108,7 @@ console.log("\n== WP-022 Korrektur V5: Tage mit einem sichtbaren Phasenband erha
   const partnerButtonClassNameMatch = partnerSource.match(/className=\{`relative z-10 grid[\s\S]*?`\}/);
   const partnerButtonClassNameBlock = partnerButtonClassNameMatch ? partnerButtonClassNameMatch[0] : "";
   assert(partnerButtonClassNameBlock.length > 0, "Partner: der className-Ausdruck der Tageskachel wurde im Quelltext gefunden");
-  assert(partnerButtonClassNameBlock.includes("bandKey ? `border-transparent ${primaryStatusBandTextStyle[bandKey]}` : \"border-transparent text-neutral-700\""), "Partner: Bandtage und neutrale Tage haben keinen sichtbaren Kachelrand (V8)");
+  assert(!/border-neutral-200|border-dashed|shadow-/.test(partnerButtonClassNameBlock) && (partnerButtonClassNameBlock.match(/border-transparent/g) ?? []).length >= 3, "Partner: Bandtage, Schätzungstage und neutrale Tage haben keinen sichtbaren Kachelrand (V8)");
 }
 
 console.log("\n== WP-022 Korrektur V5: die breite Pillenform, Rundungen, Tageszahlen, Heute-Kreis und Zyklus-Kreis bleiben unverändert ==");
@@ -152,8 +152,8 @@ console.log("\n== WP-022 Korrektur V8: ruhige Pastellbänder (gefüllt / hohl / 
   assert(ownerSource.includes("filledBandKeys.includes(bandKey) ? \"\" : calendarBandBorderClassName(bandPosition)") && partnerSource.includes("filledBandKeys.includes(bandKey) ? \"\" : calendarBandBorderClassName(bandPosition)"), "nur hohle Bänder erhalten Umrandung, ihre Seitenkanten laufen über die Bandposition (nahtlos)");
   assert(!ownerSource.includes("shadow-[0_3px_8px_rgba(91,31,62,0.18)]"), "neutrale Owner-Tage haben keinen Kachelschatten mehr");
   assert(!partnerSource.includes('"border-neutral-200'), "neutrale Partner-Tage haben keinen Kachelrahmen mehr");
-  assert(ownerSource.includes('{ label: "Periode", swatchClassName: "bg-[#fac9d6]" }') && ownerSource.includes("border-2 border-[#c4b0ee] bg-[#faf7ff]"), "Owner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
-  assert(partnerSource.includes('rounded-full bg-[#fac9d6]" aria-hidden') && partnerSource.includes("border-2 border-[#eeaabf] bg-[#fff7f9]"), "Partner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
+  assert(ownerSource.includes('{ label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" }') && ownerSource.includes("border-2 border-[#c4b0ee] bg-[#faf7ff]"), "Owner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
+  assert(partnerSource.includes('mt-0.5 size-3 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden') && partnerSource.includes("border-2 border-[#c4b0ee] bg-[#faf7ff]"), "Partner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

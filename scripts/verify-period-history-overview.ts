@@ -15,10 +15,10 @@ const source = readFileSync(componentPath, "utf8");
 console.log("\n== WP-019: kein großer 'Meine Periode aktualisieren'-Button mehr unter dem Home-Kalender ==");
 {
   const calendarGridStart = source.indexOf("grid-cols-7 gap-1.5");
-  const uncertainHintIndex = source.indexOf("Vorhersage unsicher - Kann abweichen", calendarGridStart);
+  const uncertainHintIndex = source.indexOf("{!prediction && (", calendarGridStart);
   const betweenCalendarAndHint = calendarGridStart !== -1 && uncertainHintIndex !== -1 ? source.slice(calendarGridStart, uncertainHintIndex) : "";
-  assert(calendarGridStart !== -1 && uncertainHintIndex !== -1, "Kalendergrid und Unsicherheitshinweis wurden im Quelltext gefunden");
-  assert(!betweenCalendarAndHint.includes("Meine Periode aktualisieren"), "zwischen Kalendergrid und Unsicherheitshinweis steht kein 'Meine Periode aktualisieren'-Button mehr");
+  assert(calendarGridStart !== -1 && uncertainHintIndex !== -1, "Kalendergrid und der Bereich darunter (WP-025: ohne dauerhaften Unsicherheitshinweis) wurden im Quelltext gefunden");
+  assert(!betweenCalendarAndHint.includes("Meine Periode aktualisieren"), "zwischen Kalendergrid und Beispiel-Hinweis steht kein 'Meine Periode aktualisieren'-Button mehr");
   assert(!betweenCalendarAndHint.includes("openMyPeriods"), "openMyPeriods wird in diesem Bereich nicht mehr direkt aufgerufen");
 }
 
