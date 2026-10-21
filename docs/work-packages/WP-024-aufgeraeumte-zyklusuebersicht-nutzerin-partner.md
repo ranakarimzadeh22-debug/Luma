@@ -1,9 +1,9 @@
 ---
 id: WP-024
 title: "Aufgeräumte Zyklusübersicht für Nutzerin und Partner"
-status: review
+status: completed
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 owner_approved: yes
 executor: anthropic-claude
 product_area: "Neue Luma – Zyklusübersicht für Nutzerin und Partner"
@@ -169,9 +169,9 @@ technical_brief: complete
 
 ## Soll-Ist-Prüfung – von Codex
 
-- Ergebnis: ausstehend.
-- Nachschärfung: ausstehend.
-- Product-Map aktualisiert: nein.
+- Ergebnis: erfüllt. Die gemeinsame Ring-/Textdarstellung verwendet dieselben bestehenden abgeleiteten Zykluswerte für Owner und nur bei aktiver serverseitiger Freigabe für den Partner. Die Owner-Abnahme liegt vor.
+- Nachschärfung: Die aktuelle Phasenbeschriftung wurde weiter beruhigt: nur die aktuelle Phase wird am Ring benannt; die drei Phasen stehen zusätzlich als kleine Farblegende in der rechten Textspalte. Die abschließende Korrektur hält alle drei möglichen Ringbeschriftungen innerhalb ihres jeweiligen farbigen Segments.
+- Product-Map aktualisiert: ausstehend, weil dort bereits unabhängige uncommittete Änderungen vorliegen; diese wurden nicht überschrieben.
 
 ## Ist Korrektur Ring-Beschriftung und Farb-Legende – von Claude
 
