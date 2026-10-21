@@ -172,3 +172,14 @@ technical_brief: complete
 - Ergebnis: ausstehend.
 - Nachschärfung: ausstehend.
 - Product-Map aktualisiert: nein.
+
+## Ist Korrektur Ring-Beschriftung und Farb-Legende – von Claude
+
+- Auftrag (Owner): Die Beschriftungen „PMS“, „Periode“ und „Eisprung“ sollen nicht mehr verteilt auf dem Ring stehen; nur die aktuelle Phase wird klar lesbar hervorgehoben, die drei Phasen erscheinen als kleine Farb-Legende in der rechten Textspalte (dunkelrot Periode, rosa PMS, lila Eisprung). Nur Darstellung.
+- umgesetzt:
+  - `src/components/CyclePersonalRing.tsx`: Es wird nur noch das Label des Segments der aktuellen Phase gezeichnet (laufende Periode bzw. Phase Periode → Periode; manuelles PMS oder Phase PMS → PMS; Eisprung- oder fruchtbare Phase → Eisprung-Segment). Die Zuordnung leitet sich nur aus bereits berechneten Werten (`isRunning`, `todayPhase`, `manualPmsOverride`) ab. Ohne aktuelle Phase steht keine Beschriftung am Ring. Die Schrift der kompakten Darstellung ist von 16 auf 20 vergrößert, damit das einzelne Label auch mobil gut lesbar ist. Segmente, Farben, Geometrie, Heute-Marker, Ringmitte und IDs sind unverändert.
+  - `src/components/CycleOverviewPanel.tsx`: kleine Legende (`data-cycle-phase-legend`) unter den Texten der rechten Spalte mit drei Farbpunkten in den Ringfarben (`#7d1245`, `#f395b3`, `#b69bdf`) für Periode, PMS, Eisprung. Sie erscheint nur, wenn der Ring persönliche Segmente zeigt (nicht bei `no_data`). Das Panel wird in Owner- und Partneransicht verwendet; die Legende erscheint damit auch für den freigegebenen Partner, enthält aber keine Daten.
+  - Keine Änderung an Zyklusberechnung, Daten, Partnerfreigabe, Datenschutz, Routen, Schalter oder Migration.
+- Tests: neues Skript `scripts/verify-cycle-ring-phase-legend.ts` (12 Prüfungen: pro Phase nur das passende Ring-Label, kein Label ohne Phase, gleiche Segmentzahl, Legende mit den drei Farben in der Reihenfolge Periode/PMS/Eisprung, keine Legende bei `no_data`) bestanden. `verify-cycle-overview-wp024.ts`, `verify-cycle-ring-svg-ids.ts`, `verify-cycle-ring-marker-reverted.ts`, `verify-manual-pms-ring-marker.ts`, `verify-partner-fixed-view.ts` bestehen. `npx tsc --noEmit` und `npm run build` bestehen. `verify-mobile-home-compact.ts` (14 Fehlschläge) und `verify-calendar-tile-band.ts` (2 Fehlschläge) schlagen bereits auf dem Stand vor dieser Korrektur fehl (per `git stash` belegt, Ursache: frühere WP-024-Umbauten) und wurden nicht verändert.
+- Sichtprüfung (lokale Testkonten, Dev-Modus; Partnerfreigabe aktiv, einmal ohne aktuelle Phase, einmal mit manuellem PMS heute): Owner und Partner bei 390 und 1280 px: ohne aktuelle Phase kein Ring-Label, mit PMS genau ein Label „PMS“ am rosa Segment, Legende mit drei Einträgen in der Textspalte, kein horizontaler Überlauf, Partneransicht rein lesend. Testkonten nur in der lokalen DB, Playwright wieder entfernt, `package.json`/`package-lock.json` ohne Diff.
+- Abweichungen: keine. Offene Punkte: keine. Kein Deployment.

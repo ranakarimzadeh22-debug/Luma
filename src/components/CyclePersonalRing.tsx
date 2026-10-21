@@ -58,7 +58,18 @@ export default function CyclePersonalRing({
   const personalRingGeometry = buildPersonalRingGeometry(personalCycleView, today, manualPmsOverride);
   const hasPersonalCircle = personalCycleView.status !== "no_data";
   const ringStrokeWidth = compact ? "30" : "38";
-  const labelFontSize = compact ? "16" : "14";
+  const labelFontSize = compact ? "20" : "14";
+  // WP-024 visual correction: only the segment of the current phase carries a
+  // label (the legend in the text column names all three). Purely derived from
+  // the already computed view / manual PMS override — no new phase logic.
+  const currentSegmentKey: "period" | "fertile" | "pms" | null =
+    personalCycleView.isRunning || personalCycleView.todayPhase === "period"
+      ? "period"
+      : manualPmsOverride || personalCycleView.todayPhase === "pms"
+        ? "pms"
+        : personalCycleView.todayPhase === "ovulation" || personalCycleView.todayPhase === "fertile"
+          ? "fertile"
+          : null;
   // WP-022 Korrektur V7: the mobile (sm:hidden) and wide (hidden sm:block)
   // ring instances are both in the DOM, so every id must be unique per
   // instance; useId() is SSR-stable. Non-word characters are stripped so the
@@ -116,7 +127,7 @@ export default function CyclePersonalRing({
                 />
               ))}
             </g>
-            {personalRingGeometry.segments.map((segment) => {
+            {personalRingGeometry.segments.filter((segment) => segment.key === currentSegmentKey).map((segment) => {
               const point = ringPointAt(segment.labelAngle);
               const label =
                 segment.key === "period" ? "Periode" : segment.key === "fertile" ? "Eisprung" : "PMS";
