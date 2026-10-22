@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "../src/lib/calendar-phase-colors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -108,7 +109,7 @@ console.log("\n== WP-022 Korrektur V5: Tage mit einem sichtbaren Phasenband erha
   const partnerButtonClassNameMatch = partnerSource.match(/className=\{`relative z-10 grid[\s\S]*?`\}/);
   const partnerButtonClassNameBlock = partnerButtonClassNameMatch ? partnerButtonClassNameMatch[0] : "";
   assert(partnerButtonClassNameBlock.length > 0, "Partner: der className-Ausdruck der Tageskachel wurde im Quelltext gefunden");
-  assert(!/border-neutral-200|border-dashed|shadow-/.test(partnerButtonClassNameBlock) && (partnerButtonClassNameBlock.match(/border-transparent/g) ?? []).length >= 3, "Partner: Bandtage, Schätzungstage und neutrale Tage haben keinen sichtbaren Kachelrand (V8)");
+  assert(!/border-neutral-200|border-dashed|shadow-/.test(partnerButtonClassNameBlock) && (partnerButtonClassNameBlock.match(/border-transparent/g) ?? []).length >= 2, "Partner: Bandtage, Schätzungstage und neutrale Tage haben keinen sichtbaren Kachelrand (V8)");
 }
 
 console.log("\n== WP-022 Korrektur V5: die breite Pillenform, Rundungen, Tageszahlen, Heute-Kreis und Zyklus-Kreis bleiben unverändert ==");
@@ -131,29 +132,58 @@ console.log("\n== WP-022 Korrektur V6: Tageszahl und Kurzmarker bleiben auf den 
   assert(!ownerSource.includes("bg-transparent text-sm text-[#281c24]"),"Owner: keine feste dunkle Schriftfarbe mehr auf Bandtagen");
 }
 
-console.log("\n== WP-022 Korrektur V8: ruhige Pastellbänder (gefüllt / hohl / gestrichelt), keine Bordeaux-Bänder, keine Kachelschatten ==");
+console.log("\n== WP-026: klare Farbsemantik, Legende exakt passend, kein Fruchtbarkeitsband ==");
 {
-  const ownerStyles = ownerSource.match(/const dayBandStyles: Record<DayBandKey, string> = \{[\s\S]*?\};/)?.[0] ?? "";
-  const partnerStyles = partnerSource.match(/const primaryStatusBandStyle: Record<PartnerBandKey, string> = \{[\s\S]*?\};/)?.[0] ?? "";
-  const lineFor = (block: string, key: string) => block.split("\n").find((line) => line.trim().startsWith(key)) ?? "";
-  assert(ownerStyles.length > 0 && partnerStyles.length > 0, "Owner und Partner haben die Band-Stiltabellen");
-  for (const key of ["confirmed:", '"pms-manual":']) {
-    assert(!lineFor(ownerStyles, key).includes("border-") && !lineFor(partnerStyles, key).includes("border-"), `${key} ist in beiden Kalendern ein gefülltes Pastellband ohne Umriss`);
+  const hexOf = (classes: string, prefix: string) => classes.match(new RegExp(`${prefix}-\\[(#[0-9a-fA-F]{6})\\]`))?.[1] ?? "";
+  const lum = (hex: string) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const c = calendarPhaseColors;
+
+  assert(!c.confirmed.fill.includes("border-") && !c.pmsManual.fill.includes("border-"), "tatsächliche Periode und eigenes PMS sind gefüllt (ohne Umrandung)");
+  for (const [name, outline] of [["geschätzte Periode", c.periodEstimate.outline], ["geschätztes PMS", c.pmsEstimate.outline], ["Eisprung", c.ovulation.outline]] as const) {
+    assert(outline.includes("border-[#") && outline.includes("bg-[#"), `${name} ist ein umrandetes, hell gefülltes Band`);
   }
-  for (const key of ["expected:", "period:", "pms:", "ovulation:", "fertile:"]) {
-    assert(lineFor(ownerStyles, key).includes("border-[#") , `Owner ${key} ist ein hohles Umrissband`);
+  const confirmedFill = hexOf(c.confirmed.fill, "bg");
+  const manualFill = hexOf(c.pmsManual.fill, "bg");
+  assert(lum(manualFill) < lum(confirmedFill) && ratio(manualFill, confirmedFill) >= 1.4, `eigenes PMS ist deutlich kräftiger als die Periodenfüllung (Kontrast ${ratio(manualFill, confirmedFill).toFixed(2)})`);
+  const pmsEstBorder = hexOf(c.pmsEstimate.outline, "border");
+  const pmsEstBg = hexOf(c.pmsEstimate.outline, "bg");
+  assert(lum(pmsEstBorder) > 0.55 && lum(pmsEstBg) > 0.9, "geschätztes PMS ist sehr hellrosa (heller Rand, fast weißer Innenraum)");
+  assert(ratio(manualFill, pmsEstBg) > 2.2, `eigenes PMS und geschätztes PMS sind klar unterscheidbar (Kontrast ${ratio(manualFill, pmsEstBg).toFixed(2)})`);
+  const periodBorder = hexOf(c.periodEstimate.outline, "border");
+  assert(lum(periodBorder) < lum(pmsEstBorder), "die Periodenumrandung ist kräftiger als die PMS-Prognose-Umrandung");
+  const ovulationBorder = hexOf(c.ovulation.outline, "border");
+  const [or, , ob] = [1, 3, 5].map((i) => parseInt(ovulationBorder.slice(i, i + 2), 16));
+  assert(ob > or && ob > 200, "Eisprung-Umrandung ist violett");
+  for (const [name, bg, text] of [
+    ["tatsächliche Periode", confirmedFill, hexOf(c.confirmed.text, "text")],
+    ["eigenes PMS", manualFill, hexOf(c.pmsManual.text, "text")],
+    ["geschätzte Periode", hexOf(c.periodEstimate.outline, "bg"), hexOf(c.periodEstimate.text, "text")],
+    ["geschätztes PMS", pmsEstBg, hexOf(c.pmsEstimate.text, "text")],
+    ["Eisprung", hexOf(c.ovulation.outline, "bg"), hexOf(c.ovulation.text, "text")],
+  ] as const) {
+    assert(ratio(bg, text) >= 4.5, `Tageszahl auf ${name} ist lesbar (Kontrast ${ratio(bg, text).toFixed(2)})`);
   }
-  for (const key of ["period:", "pms:", "ovulation:", "fertile:"]) {
-    assert(lineFor(partnerStyles, key).includes("border-[#"), `Partner ${key} ist ein hohles Umrissband`);
-  }
-  assert(lineFor(ownerStyles, "planned:").includes("border-dashed") && lineFor(ownerStyles, "planned:").includes("border-[#e7a3bb]"), "Owner: gespeicherte Planung ist ein rosa gestrichelter Umriss");
-  assert(!/#6d153f|#4a0738|neutral-900/.test(ownerStyles + partnerStyles), "keine dunklen Bordeaux-/Schwarz-Bänder mehr im Kalender");
-  assert(!/text-white/.test((ownerSource.match(/const dayBandTextStyles[\s\S]*?\};/)?.[0] ?? "") + (partnerSource.match(/const primaryStatusBandTextStyle[\s\S]*?\};/)?.[0] ?? "")), "Zahlen und Kurzmarker nutzen auf den hellen Bändern dunkle Schrift");
-  assert(ownerSource.includes("filledBandKeys.includes(bandKey) ? \"\" : calendarBandBorderClassName(bandPosition)") && partnerSource.includes("filledBandKeys.includes(bandKey) ? \"\" : calendarBandBorderClassName(bandPosition)"), "nur hohle Bänder erhalten Umrandung, ihre Seitenkanten laufen über die Bandposition (nahtlos)");
-  assert(!ownerSource.includes("shadow-[0_3px_8px_rgba(91,31,62,0.18)]"), "neutrale Owner-Tage haben keinen Kachelschatten mehr");
-  assert(!partnerSource.includes('"border-neutral-200'), "neutrale Partner-Tage haben keinen Kachelrahmen mehr");
-  assert(ownerSource.includes('{ label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" }') && ownerSource.includes("border-2 border-[#f4bfd0] bg-[#fff7f9]"), "Owner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
-  assert(partnerSource.includes('mt-0.5 size-3 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden') && partnerSource.includes("border-2 border-[#f4bfd0] bg-[#fff7f9]"), "Partner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
+
+  assert(ownerSource.includes("calendarPhaseColors") && partnerSource.includes("calendarPhaseColors"), "Owner- und Partnerkalender lesen dieselbe Farbquelle");
+  assert(!/fertile/.test(ownerSource.match(/type DayBandKey[^\n]*/)?.[0] ?? "") && !/"fertile"/.test(partnerSource.match(/type PartnerBandKey[^\n]*/)?.[0] ?? ""), "kein eigener Band-Schlüssel für das Fruchtbarkeitsfenster mehr");
+  assert(!ownerSource.includes('? "fertile"') && !partnerSource.includes('"fertile"'), "kein Fruchtbarkeitsband im Raster (Owner und Partner)");
+  assert(ownerSource.includes("isFertileDay") && ownerSource.includes("mögliches fruchtbares Zeitfenster, kann abweichen") && partnerSource.includes("isFertile") && partnerSource.includes("mögliches fruchtbares Zeitfenster, kann abweichen"), "Fruchtbarkeits-Berechnung und Tages-ARIA bleiben erhalten");
+  assert(!ownerSource.includes("isEstimatedPeriod") && !partnerSource.includes('status === "period" && !isToday'), "geschätzte Periode nutzt nur noch die rosa Umrandung (kein lila Zahlenhintergrund)");
+  assert(ownerSource.includes("period: calendarPhaseColors.periodEstimate.outline") && partnerSource.includes("period: calendarPhaseColors.periodEstimate.outline"), "geschätzte nächste Periode hat in beiden Kalendern wieder ihr rosa Umrissband");
+
+  const band = (src: string, key: string) => src.match(new RegExp(`${key}: calendarPhaseColors\\.(\\w+)\\.`))?.[1] ?? "";
+  assert(band(ownerSource, '"pms-manual"') === "pmsManual" && band(partnerSource, '"pms-manual"') === "pmsManual", "Band und Legende für eigenes PMS nutzen dieselbe Farbe 'pmsManual'");
+  assert(band(ownerSource, "pms") === "pmsEstimate" && band(partnerSource, "pms") === "pmsEstimate", "Band für geschätztes PMS nutzt 'pmsEstimate'");
+  assert(ownerSource.includes("filledSwatchClassName(calendarPhaseColors.confirmed.fill)") && ownerSource.includes("filledSwatchClassName(calendarPhaseColors.pmsManual.fill)") && ownerSource.includes("outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline)") && ownerSource.includes("outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline)"), "Owner-Popover: alle vier Farbpunkte stammen aus derselben Farbquelle wie die Bänder");
+  assert(partnerSource.includes("filledSwatchClassName(calendarPhaseColors.confirmed.fill)") && partnerSource.includes("filledSwatchClassName(calendarPhaseColors.pmsManual.fill)") && partnerSource.includes("outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline)") && partnerSource.includes("outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline)"), "Partner-Popover: alle vier Farbpunkte stammen aus derselben Farbquelle wie die Bänder");
+  assert(filledSwatchClassName(c.confirmed.fill) === c.confirmed.fill && outlineSwatchClassName(c.ovulation.outline) === `border-2 ${c.ovulation.outline}`, "Swatch-Helfer geben Füllung bzw. Umriss unverändert (gleiche Randbreite wie das Band) weiter");
+  assert(ownerSource.includes("filledBandKeys.includes(bandKey)") && partnerSource.includes("filledBandKeys.includes(bandKey)"), "nur hohle Bänder erhalten die Umrandung (nahtlos über calendarBandBorderClassName)");
+  assert(!/#6d153f|#4a0738|neutral-900|text-white/.test(c.confirmed.fill + c.pmsManual.fill), "keine dunklen Bordeaux-/Schwarz-Füllungen");
+  assert(!ownerSource.includes("shadow-[0_3px_8px_rgba(91,31,62,0.18)]") && !partnerSource.includes('"border-neutral-200'), "neutrale Tage bleiben ohne Kachelschatten und -rahmen");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

@@ -7,6 +7,7 @@ import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePred
 import { isWithinManualPmsSection, manualPmsSymptomsForDate, type ManualPmsSection } from "@/lib/manual-pms";
 import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
+import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
 import { calendarBandBorderClassName, calendarBandPosition } from "@/lib/calendar-band-position";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -51,34 +52,31 @@ const primaryStatusLabel: Record<PrimaryDayStatus, string> = {
 };
 
 /**
- * WP-022 Korrektur V8: calm pastel bands, same look as the owner calendar
- * (dayBandStyles in NewCycleExample.tsx). Confirmed period and manual PMS are
- * soft filled pills; automatic estimates (estimated period, PMS, ovulation,
- * fertile window) are hollow outlined pills. Same PrimaryDayStatus values as
- * before; `fertile` is the existing fertile-window marker day without another
- * band.
+ * WP-026: same color semantics as the owner calendar (calendar-phase-colors.ts).
+ * Filled = confirmed period and the partner's view of manual PMS (clearly
+ * stronger pink); outlined = estimate (next period pink, estimated PMS very
+ * light pink, ovulation violet). The fertile window has no band of its own.
+ * Same PrimaryDayStatus values as before.
  */
-type PartnerBandKey = Exclude<PrimaryDayStatus, "none"> | "fertile";
+type PartnerBandKey = Exclude<PrimaryDayStatus, "none">;
 
 const primaryStatusBandStyle: Record<PartnerBandKey, string> = {
-  confirmed: "bg-[#fac9d6]",
-  "pms-manual": "bg-[#fddbe6]",
-  period: "bg-[#fff7f9] border-[#eeaabf]",
-  pms: "bg-[#fff7f9] border-[#f4bfd0]",
-  ovulation: "bg-[#faf7ff] border-[#c4b0ee]",
-  fertile: "bg-[#faf7ff] border-[#dccff5]",
+  confirmed: calendarPhaseColors.confirmed.fill,
+  "pms-manual": calendarPhaseColors.pmsManual.fill,
+  period: calendarPhaseColors.periodEstimate.outline,
+  pms: calendarPhaseColors.pmsEstimate.outline,
+  ovulation: calendarPhaseColors.ovulation.outline,
 };
 
 const filledBandKeys: ReadonlyArray<PartnerBandKey> = ["confirmed", "pms-manual"];
 
-/** WP-022 Korrektur V6/V8: readable text color per (light) band. */
+/** Readable day-number color per band. */
 const primaryStatusBandTextStyle: Record<PartnerBandKey, string> = {
-  confirmed: "text-[#7a0f3c]",
-  "pms-manual": "text-[#7a0f3c]",
-  period: "text-[#9f164f]",
-  pms: "text-[#9f164f]",
-  ovulation: "text-[#5420a5]",
-  fertile: "text-[#5420a5]",
+  confirmed: calendarPhaseColors.confirmed.text,
+  "pms-manual": calendarPhaseColors.pmsManual.text,
+  period: calendarPhaseColors.periodEstimate.text,
+  pms: calendarPhaseColors.pmsEstimate.text,
+  ovulation: calendarPhaseColors.ovulation.text,
 };
 
 interface CalendarLegendPopoverProps {
@@ -143,12 +141,12 @@ function PartnerCalendarLegendPopover({
           <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Eingetragen</h3>
           <ul className="space-y-1.5">
             <li className="flex items-start gap-2">
-              <span className="mt-0.5 size-3 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden="true" />
+              <span className={`mt-0.5 size-3 shrink-0 rounded-full ${filledSwatchClassName(calendarPhaseColors.confirmed.fill)}`} aria-hidden="true" />
               Periode bestätigt
             </li>
             {hasManualPmsSection && (
               <li className="flex items-start gap-2">
-                <span className="mt-0.5 size-3 shrink-0 rounded-full bg-[#fddbe6]" aria-hidden="true" />
+                <span className={`mt-0.5 size-3 shrink-0 rounded-full ${filledSwatchClassName(calendarPhaseColors.pmsManual.fill)}`} aria-hidden="true" />
                 PMS eingetragen
               </li>
             )}
@@ -159,8 +157,8 @@ function PartnerCalendarLegendPopover({
             <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</h3>
             <ul className="space-y-1.5">
               {[
-                { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#f3edff]", visible: true },
-                { label: "PMS-Phase", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", visible: true },
+                { label: "Nächste Periode", swatchClassName: outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline), visible: true },
+                { label: "PMS-Phase", swatchClassName: outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline), visible: true },
               ]
                 .filter((row) => row.visible)
                 .map((row) => (
@@ -316,8 +314,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
         const dayStatuses = cells.map((day) => {
           const date = day ? dateForCalendarDay(displayedMonth.year, displayedMonth.month, day) : null;
           const status = date ? primaryStatusFor(date) : "none";
-          const bandKey: PartnerBandKey | null =
-            status === "period" ? null : status !== "none" ? status : date && isFertileFor(date, status) ? "fertile" : null;
+          const bandKey: PartnerBandKey | null = status !== "none" ? status : null;
           return { day, date, status, bandKey };
         });
         const bandKeys = dayStatuses.map((entry) => entry.bandKey);
@@ -372,18 +369,10 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
                   className={`relative z-10 grid h-full w-full place-items-center rounded-xl border bg-transparent text-xs sm:text-sm ${
                     bandKey
                       ? `border-transparent ${primaryStatusBandTextStyle[bandKey]}`
-                      : status === "period"
-                        ? "border-transparent text-[#5420a5]"
-                        : "border-transparent text-neutral-700"
+                      : "border-transparent text-neutral-700"
                   }`}
                 >
                   <span className="relative">
-                    {status === "period" && !isToday && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f3edff]"
-                      />
-                    )}
                     {isToday && (
                       <span
                         aria-hidden="true"

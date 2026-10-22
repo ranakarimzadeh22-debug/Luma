@@ -8,6 +8,7 @@ import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePred
 import { type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
+import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
 import { calendarBandBorderClassName, calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
@@ -42,42 +43,37 @@ function examplePhase(day: number): "period" | "pms" | "ovulation" | null {
  * the tile used before (confirmed/running > expected > planned > phase) —
  * no new status, just a narrower color definition for the same value.
  */
-type DayBandKey = "confirmed" | "expected" | "planned" | "period" | "pms" | "pms-manual" | "ovulation" | "fertile";
+type DayBandKey = "confirmed" | "expected" | "planned" | "period" | "pms" | "pms-manual" | "ovulation";
 
 /**
- * WP-022 Korrektur V8: calm pastel bands. Confirmed/running period and manual
- * PMS are soft filled pills; automatic estimates (expected/estimated period,
- * PMS, ovulation, fertile window) are hollow outlined pills; a saved plan is a
- * dashed rose outline. Same keys and priority as before — only the look
- * changed. `fertile` is the existing fertile-window marker day (no other
- * band) shown as a band instead of only a dot.
+ * WP-026: clear color semantics (see calendar-phase-colors.ts). Filled =
+ * entered/actual (confirmed period, own manual PMS — clearly stronger pink);
+ * outlined = estimate (next period pink, estimated PMS very light pink,
+ * ovulation violet); a saved plan is a dashed rose outline. The fertile window
+ * has no band of its own anymore (its calculation and day ARIA stay). Same
+ * keys and priority as before — only the look changed.
  */
 const dayBandStyles: Record<DayBandKey, string> = {
-  confirmed: "bg-[#fac9d6]",
-  "pms-manual": "bg-[#fddbe6]",
-  expected: "bg-[#fff7f9] border-[#eeaabf]",
-  period: "bg-[#fff7f9] border-[#eeaabf]",
-  pms: "bg-[#fff7f9] border-[#f4bfd0]",
-  planned: "border-dashed border-[#e7a3bb]",
-  ovulation: "bg-[#faf7ff] border-[#c4b0ee]",
-  fertile: "bg-[#faf7ff] border-[#dccff5]",
+  confirmed: calendarPhaseColors.confirmed.fill,
+  "pms-manual": calendarPhaseColors.pmsManual.fill,
+  expected: calendarPhaseColors.periodEstimate.outline,
+  period: calendarPhaseColors.periodEstimate.outline,
+  pms: calendarPhaseColors.pmsEstimate.outline,
+  planned: calendarPhaseColors.planned.outline,
+  ovulation: calendarPhaseColors.ovulation.outline,
 };
 
 const filledBandKeys: ReadonlyArray<DayBandKey> = ["confirmed", "pms-manual"];
 
-/**
- * WP-022 Korrektur V6/V8: readable text color per band; all bands are light
- * pastel now, so day numbers and P/M/E markers use a deep rose or violet.
- */
+/** Readable day-number color per band (light and strong pink, violet). */
 const dayBandTextStyles: Record<DayBandKey, string> = {
-  confirmed: "text-[#7a0f3c]",
-  expected: "text-[#9f164f]",
-  planned: "text-[#9f164f]",
-  period: "text-[#9f164f]",
-  pms: "text-[#9f164f]",
-  "pms-manual": "text-[#7a0f3c]",
-  ovulation: "text-[#5420a5]",
-  fertile: "text-[#5420a5]",
+  confirmed: calendarPhaseColors.confirmed.text,
+  expected: calendarPhaseColors.periodEstimate.text,
+  planned: calendarPhaseColors.planned.text,
+  period: calendarPhaseColors.periodEstimate.text,
+  pms: calendarPhaseColors.pmsEstimate.text,
+  "pms-manual": calendarPhaseColors.pmsManual.text,
+  ovulation: calendarPhaseColors.ovulation.text,
 };
 
 /**
@@ -93,15 +89,15 @@ const calendarLegendGroups: {
   {
     heading: "Eingetragen",
     rows: [
-      { label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" },
-      { label: "PMS von dir eingetragen", swatchClassName: "bg-[#fddbe6]" },
+      { label: "Periode (tatsächlich)", swatchClassName: filledSwatchClassName(calendarPhaseColors.confirmed.fill) },
+      { label: "PMS von dir eingetragen", swatchClassName: filledSwatchClassName(calendarPhaseColors.pmsManual.fill) },
     ],
   },
   {
     heading: "Geschätzt",
     rows: [
-      { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#f3edff]", estimate: true },
-      { label: "PMS-Phase", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", estimate: true },
+      { label: "Nächste Periode", swatchClassName: outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline), estimate: true },
+      { label: "PMS-Phase", swatchClassName: outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline), estimate: true },
     ],
   },
 ];
@@ -1272,18 +1268,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   : plannedPeriod
                     ? "planned"
                     : phase
-                      ? phase === "period"
-                        ? null
-                        : isManualPmsDay && phase === "pms"
+                      ? isManualPmsDay && phase === "pms"
                         ? "pms-manual"
                         : phase
-                      : isFertileDay
-                        ? "fertile"
-                        : null;
-            const isEstimatedPeriod = Boolean(
-              phase === "period" && !storedPeriod && !runningPeriod && !expectedPeriod && !plannedPeriod,
-            );
-            return { day, date, phase, estimatedPhase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey, isEstimatedPeriod };
+                      : null;
+            return { day, date, phase, estimatedPhase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey };
           });
           const bandKeys = dayCellData.map((entry) => entry.bandKey);
 
@@ -1291,7 +1280,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
         <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
           {weekdayLabels.map((label) => <div key={label} className="pb-0.5 text-xs font-medium text-[#4b3a44] sm:pb-1 sm:text-sm">{label}</div>)}
           {cells.map((day, index) => {
-            const { date, phase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey, isEstimatedPeriod } = dayCellData[index];
+            const { date, phase, isManualPmsDay, isFertileDay, storedPeriod, runningPeriod, expectedPeriod, plannedPeriod, bandKey } = dayCellData[index];
             const isToday = Boolean(day && isCurrentMonth && day === todayDay);
             const dayInfo = date
               ? getCalendarDayInfo({
@@ -1316,9 +1305,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const dayClassName = `relative z-10 grid h-full w-full place-items-center rounded-2xl border bg-transparent text-sm sm:text-base ${
               bandKey
                 ? `border-transparent ${dayBandTextStyles[bandKey]}`
-                : isEstimatedPeriod
-                  ? "border-transparent text-[#5420a5]"
-                  : !dayInfo?.isFuture
+                : !dayInfo?.isFuture
                   ? "border-transparent text-[#281c24]"
                   : "border-transparent text-[#281c24] opacity-70"
             }`;
@@ -1344,12 +1331,6 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
             const dayChildren = (
               <>
                 <span className="relative z-10">
-                  {isEstimatedPeriod && !isToday && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f3edff]"
-                    />
-                  )}
                   {isToday && (
                     <span
                       aria-hidden="true"
