@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "revision": 195,
+  "revision": 196,
   "reviewedRevision": 134,
-  "updatedAt": "2026-10-21",
+  "updatedAt": "2026-10-22",
   "changedPackages": [
     "WP-017",
     "WP-018",

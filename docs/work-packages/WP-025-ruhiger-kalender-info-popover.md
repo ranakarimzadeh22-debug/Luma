@@ -129,3 +129,45 @@ technical_brief: complete
 - Ergebnis: ausstehend.
 - Nachschärfung: ausstehend.
 - Product-Map aktualisiert: nein.
+
+## Korrekturauftrag Version 2 – von Codex
+
+### Owner-Entscheidung
+
+Die Ownerin möchte das `ⓘ`-Popover weiter vereinfachen. Es bleiben nur die für den täglichen Überblick notwendigen Zeilen sichtbar:
+
+- **Eingetragen:** `Periode (tatsächlich)` und `PMS von dir eingetragen`.
+- **Geschätzt:** `Nächste Periode` und `PMS-Phase`, jeweils mit `Kann abweichen`.
+- Der einzelne Hinweis `Vorhersage unsicher – Kann abweichen` bleibt nur, wenn die Vorhersage tatsächlich unsicher ist.
+
+Entferne als derzeit überflüssige Informationen aus dem Owner- und Partner-Popover vollständig: `Gespeicherte Planung`, `Voraussichtliches Ende`, `Eisprung` und `Mögliches fruchtbares Zeitfenster`. Die Zeilen dürfen weder sichtbar noch als leere Überschrift/Platzhalter erscheinen.
+
+### Bindender Umfang
+
+- Ändere ausschließlich die sichtbaren Zeilen der beiden bestehenden Info-Popover auf `/neu` und `/neu/partner`.
+- Tageszellen bleiben unverändert ruhig: nur Tageszahl, bestehendes Band und roter Heute-Punkt.
+- Keine Änderung an Berechnung, Bandfarben, Fruchtbarkeitsdaten, Tages-ARIA-Labels, Tagesfenstern, Partnerrechten, APIs, Datenbank oder Zyklus-Kreis.
+- Partneransicht bleibt vollständig read-only; fehlen dort Daten für eine verbleibende Zeile, bleibt die bestehende bedingte Anzeige zulässig.
+
+### Pflichtprüfung für Version 2
+
+- Beide Popover enthalten nur die verbleibenden vier fachlichen Zeilentypen plus den bedingten Unsicherheitshinweis.
+- Die vier entfernten Begriffe kommen in keinem sichtbaren Popover-Zeilentext mehr vor.
+- `ⓘ`, Escape, Außenklick, Kalender-Tageszellen, Monatsnavigation und Partner-Read-only funktionieren unverändert.
+- Gezielte Prüfung, `npx tsc --noEmit`, `npm run build` und Sichtprüfung Owner/Partner mobil sowie breit.
+
+## Ist Version 2 – von Claude
+
+- umgesetzt:
+  - `src/components/NewCycleExample.tsx` (Owner-Popover): Es bleiben genau vier Zeilen. Eingetragen: „Periode (tatsächlich)“, „PMS von dir eingetragen“. Geschätzt: „Nächste Periode“ und „PMS-Phase“, jeweils mit sichtbarem „Kann abweichen“. Entfernt: „Gespeicherte Planung“, „Voraussichtliches Ende“, „Eisprung“, „Mögliches fruchtbares Zeitfenster“ (Zeilen vollständig aus der Gruppentabelle gelöscht, keine leere Überschrift oder Platzhalter).
+  - `src/components/NewPartnerCalendar.tsx` (Partner-Popover): „Eisprung“ und „Mögliches fruchtbares Zeitfenster“ entfernt. Die Zeile „PMS vor Periode“ heißt jetzt „PMS-Phase“ (einheitlich mit dem Owner-Popover). Die bestehenden Bedingungen bleiben (Gruppe „Geschätzt“ nur bei vorhandener Vorhersage, „PMS eingetragen“ nur bei manuellem PMS). Die Variable `hasFertileWindowSomewhere` samt Prop diente ausschließlich der entfernten Zeile und wurde mit ihr entfernt (sonst unbenutzter Code); sie hatte keine andere Verwendung.
+  - Der bedingte Unsicherheitshinweis „Vorhersage unsicher – Kann abweichen“ im Popover bleibt unverändert.
+  - Unverändert: Tageszellen (nur Zahl, Band, roter Heute-Punkt), Tages-ARIA-Labels, Bänder und Bandfarben, Berechnung, Fruchtbarkeitsdaten, Tagesfenster, Monatsnavigation, ⓘ-Button, Escape/Außenklick, Partnerrechte (rein lesend), Zyklus-Kreis, API, Datenbank.
+- nicht umgesetzt: nichts offen.
+- Tests:
+  - `scripts/verify-calendar-quiet-wp025.ts` und `scripts/verify-calendar-legend-collapsible.ts` und `scripts/verify-partner-calendar-legend-collapsible.ts` und `scripts/verify-calendar-tile-band.ts` an die vier verbleibenden Zeilentypen angepasst und um Prüfungen ergänzt: die vier entfernten Begriffe (und „PMS vor Periode“) kommen in keinem Popover mehr vor, genau vier Owner-Zeilen, genau zwei Gruppenüberschriften im Partner-Popover, keine Fruchtbarkeits-Bedingung mehr. Alle bestehen bis auf die bereits vor WP-025 vorhandene, unabhängige TodayCard-Prüfung in `verify-partner-calendar-legend-collapsible.ts`.
+  - `npx tsc --noEmit`, ESLint für `NewPartnerCalendar.tsx` (ohne Meldung) und `npm run build` bestehen.
+  - Sichtprüfung (lokale Testkonten, Dev-Modus; Owner und Partner bei 360, 390 und 1280 px): Owner-Popover „Eingetragen | Periode (tatsächlich) | PMS von dir eingetragen | Geschätzt | Nächste Periode | Kann abweichen | PMS-Phase | Kann abweichen“, Partner-Popover entsprechend mit „Periode bestätigt“, „PMS eingetragen“. Tageszellen zeigen nur Zahlen, kein Überlauf, Popover beim Start geschlossen, öffnet über ⓘ, liegt im Viewport, schließt mit Escape. Playwright wieder entfernt, `package.json`/`package-lock.json` ohne Diff.
+- Abweichungen: keine. Die Partner-Zeilen „Periode bestätigt“ und „PMS eingetragen“ behalten ihre Partner-Formulierung (nicht „von dir“), weil der Partner die Angaben der Nutzerin sieht.
+- offene Punkte: keine neuen. Vorbestehende Prüfskript-Fehler aus WP-023/WP-024 bleiben wie unter „Ist“ genannt. Kein Deployment ausgelöst.
+- Commit: siehe Git-Verlauf (`fix(wp-025)` Version 2).

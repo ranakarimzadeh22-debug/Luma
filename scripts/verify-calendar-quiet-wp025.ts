@@ -60,10 +60,14 @@ console.log("\n== WP-025: Popover erklärt alles, Eingetragen und Geschätzt get
   assert(partnerPopover.includes('aria-label="Eingetragen"') && partnerPopover.includes('aria-label="Geschätzt"'), "Partner: Gruppen Eingetragen und Geschätzt");
   assert(ownerPopover.includes("Kann abweichen") && partnerPopover.includes("Kann abweichen"), "beide Popover nennen 'Kann abweichen' pro Schätzung");
   assert(ownerPopover.includes("{isUncertain && <p") && partnerPopover.includes("{isUncertain && <p"), "beide Popover zeigen den Unsicherheitshinweis nur bei isUncertain");
-  for (const label of ["Periode bestätigt", "PMS eingetragen", "Nächste Periode", "PMS vor Periode", "Eisprung", "Mögliches fruchtbares Zeitfenster"]) {
+  for (const label of ["Periode bestätigt", "PMS eingetragen", "Nächste Periode", "PMS-Phase"]) {
     assert(partnerPopover.includes(label), `Partner-Popover enthält '${label}'`);
   }
-  assert(partnerPopover.includes("hasManualPmsSection &&") && partnerPopover.includes("hasAnyPrediction &&") && partnerPopover.includes("visible: hasFertileWindowSomewhere"), "Partner-Popover zeigt nur vorhandene Informationen (bestehende Bedingungen)");
+  assert(partnerPopover.includes("hasManualPmsSection &&") && partnerPopover.includes("hasAnyPrediction &&") && !partnerPopover.includes("hasFertileWindowSomewhere"), "Partner-Popover zeigt nur vorhandene Informationen (bestehende Bedingungen)");
+  for (const removed of ["Gespeicherte Planung", "Voraussichtliches Ende", "Eisprung", "Mögliches fruchtbares Zeitfenster", "PMS vor Periode"]) {
+    assert(!ownerPopover.includes(removed) && !owner.slice(owner.indexOf("const calendarLegendGroups"), owner.indexOf("interface CalendarLegendPopoverProps")).includes(removed) && !partnerPopover.includes(removed), `V2: '${removed}' kommt in keinem Popover mehr vor`);
+  }
+  assert(!partnerPopover.includes("<h3") || (partnerPopover.match(/<h3/g) ?? []).length === 2, "V2: keine leere Überschrift oder Platzhalter, genau die zwei Gruppenüberschriften");
   assert(ownerPopover.includes('role="dialog"') && partnerPopover.includes('role="dialog"') && ownerPopover.includes('event.key === "Escape"') && partnerPopover.includes('event.key === "Escape"'), "Dialog, Escape und Außenklick bleiben");
   assert(!ownerPopover.includes("overflow-y") && !partnerPopover.includes("overflow-y") && !ownerPopover.includes("max-h-"), "keine innere Scrollfläche im Popover");
 }

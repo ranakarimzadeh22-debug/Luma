@@ -152,8 +152,8 @@ console.log("\n== WP-022 Korrektur V8: ruhige Pastellbänder (gefüllt / hohl / 
   assert(ownerSource.includes("filledBandKeys.includes(bandKey) ? \"\" : calendarBandBorderClassName(bandPosition)") && partnerSource.includes("filledBandKeys.includes(bandKey) ? \"\" : calendarBandBorderClassName(bandPosition)"), "nur hohle Bänder erhalten Umrandung, ihre Seitenkanten laufen über die Bandposition (nahtlos)");
   assert(!ownerSource.includes("shadow-[0_3px_8px_rgba(91,31,62,0.18)]"), "neutrale Owner-Tage haben keinen Kachelschatten mehr");
   assert(!partnerSource.includes('"border-neutral-200'), "neutrale Partner-Tage haben keinen Kachelrahmen mehr");
-  assert(ownerSource.includes('{ label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" }') && ownerSource.includes("border-2 border-[#c4b0ee] bg-[#faf7ff]"), "Owner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
-  assert(partnerSource.includes('mt-0.5 size-3 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden') && partnerSource.includes("border-2 border-[#c4b0ee] bg-[#faf7ff]"), "Partner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
+  assert(ownerSource.includes('{ label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" }') && ownerSource.includes("border-2 border-[#f4bfd0] bg-[#fff7f9]"), "Owner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
+  assert(partnerSource.includes('mt-0.5 size-3 shrink-0 rounded-full bg-[#fac9d6]" aria-hidden') && partnerSource.includes("border-2 border-[#f4bfd0] bg-[#fff7f9]"), "Partner-Popover nutzt die neuen gefüllten/umrissenen Pastellpunkte");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

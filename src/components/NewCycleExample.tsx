@@ -95,17 +95,13 @@ const calendarLegendGroups: {
     rows: [
       { label: "Periode (tatsächlich)", swatchClassName: "bg-[#fac9d6]" },
       { label: "PMS von dir eingetragen", swatchClassName: "bg-[#fddbe6]" },
-      { label: "Gespeicherte Planung", swatchClassName: "border-2 border-dashed border-[#e7a3bb]" },
     ],
   },
   {
     heading: "Geschätzt",
     rows: [
       { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#f3edff]", estimate: true },
-      { label: "Voraussichtliches Ende", swatchClassName: "border-2 border-[#eeaabf] bg-[#fff7f9]", estimate: true },
       { label: "PMS-Phase", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", estimate: true },
-      { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]", estimate: true },
-      { label: "Mögliches fruchtbares Zeitfenster", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]", estimate: true },
     ],
   },
 ];

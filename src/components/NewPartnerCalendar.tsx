@@ -86,7 +86,6 @@ interface CalendarLegendPopoverProps {
   onClose: () => void;
   hasAnyPrediction: boolean;
   hasManualPmsSection: boolean;
-  hasFertileWindowSomewhere: boolean;
   isUncertain: boolean;
 }
 
@@ -94,7 +93,7 @@ interface CalendarLegendPopoverProps {
  * WP-018 Korrektur Version 3: compact, non-modal popover anchored to the ⓘ
  * trigger in the partner calendar's month row, mirroring the owner's
  * CalendarLegendPopover (WP-018 Korrektur Version 2). Reuses the component's
- * already-existing hasAnyPrediction/manualPmsSection/hasFertileWindowSomewhere
+ * already-existing hasAnyPrediction/manualPmsSection
  * conditions — no new status derivation, no second phase calculation. Closes
  * on Escape and on an outside click/tap, same as the owner popover. The
  * partner never gains any input affordance here.
@@ -104,7 +103,6 @@ function PartnerCalendarLegendPopover({
   onClose,
   hasAnyPrediction,
   hasManualPmsSection,
-  hasFertileWindowSomewhere,
   isUncertain,
 }: CalendarLegendPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -162,9 +160,7 @@ function PartnerCalendarLegendPopover({
             <ul className="space-y-1.5">
               {[
                 { label: "Nächste Periode", swatchClassName: "border-2 border-[#eeaabf] bg-[#f3edff]", visible: true },
-                { label: "PMS vor Periode", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", visible: true },
-                { label: "Eisprung", swatchClassName: "border-2 border-[#c4b0ee] bg-[#faf7ff]", visible: true },
-                { label: "Mögliches fruchtbares Zeitfenster", swatchClassName: "border-2 border-[#dccff5] bg-[#faf7ff]", visible: hasFertileWindowSomewhere },
+                { label: "PMS-Phase", swatchClassName: "border-2 border-[#f4bfd0] bg-[#fff7f9]", visible: true },
               ]
                 .filter((row) => row.visible)
                 .map((row) => (
@@ -269,12 +265,6 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
   }
 
   const hasAnyPrediction = Boolean(prediction);
-  const hasFertileWindowSomewhere = cells.some((day) => {
-    if (!day || !prediction) return false;
-    const date = dateForCalendarDay(displayedMonth.year, displayedMonth.month, day);
-    const status = primaryStatusFor(date);
-    return isFertileFor(date, status);
-  });
 
   return (
     <>
@@ -308,7 +298,6 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
               onClose={() => setIsCalendarLegendOpen(false)}
               hasAnyPrediction={hasAnyPrediction}
               hasManualPmsSection={Boolean(manualPmsSection)}
-              hasFertileWindowSomewhere={hasFertileWindowSomewhere}
               isUncertain={Boolean(prediction?.isUncertain)}
             />
           </div>

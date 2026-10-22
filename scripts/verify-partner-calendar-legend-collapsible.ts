@@ -78,15 +78,15 @@ console.log("\n== WP-018 Korrektur V3: die sechs vereinbarten kurzen Partner-Tex
   const popoverBody = popoverStart !== -1 && popoverEnd !== -1 ? source.slice(popoverStart, popoverEnd) : "";
   assert(popoverBody.includes("Periode bestätigt"), "'Periode bestätigt' ist vorhanden");
   assert(popoverBody.includes('label: "Nächste Periode"'), "'Nächste Periode' ist unter Geschätzt vorhanden");
-  assert(popoverBody.includes('label: "Eisprung"'), "'Eisprung' ist unter Geschätzt vorhanden");
-  assert(popoverBody.includes('label: "Mögliches fruchtbares Zeitfenster"'), "'Mögliches fruchtbares Zeitfenster' ist unter Geschätzt vorhanden");
-  assert(popoverBody.includes("PMS vor Periode"), "'PMS vor Periode' ist vorhanden");
+  assert(!popoverBody.includes("Eisprung"), "V2: 'Eisprung' kommt im Partner-Popover nicht mehr vor");
+  assert(!popoverBody.includes("fruchtbares Zeitfenster"), "V2: 'Mögliches fruchtbares Zeitfenster' kommt im Partner-Popover nicht mehr vor");
+  assert(popoverBody.includes('label: "PMS-Phase"'), "'PMS-Phase' ist unter Geschätzt vorhanden");
   assert(popoverBody.includes("PMS eingetragen"), "'PMS eingetragen' ist vorhanden");
   assert(popoverBody.includes(">Geschätzt<"), "eine 'Geschätzt'-Kennzeichnung steht sichtbar vor den Vorhersagezeilen");
 
   // Bedingte Sichtbarkeit: dieselben, bereits vorhandenen Flags, keine neue Ableitung.
-  assert(popoverBody.includes("{hasAnyPrediction && ("), "die Vorhersagezeilen (Nächste Periode/Eisprung/PMS vor Periode) hängen weiterhin an hasAnyPrediction");
-  assert(popoverBody.includes("visible: hasFertileWindowSomewhere"), "'Mögliches fruchtbares Zeitfenster' hängt weiterhin an hasFertileWindowSomewhere");
+  assert(popoverBody.includes("{hasAnyPrediction && ("), "die Vorhersagezeilen (Nächste Periode/PMS-Phase) hängen weiterhin an hasAnyPrediction");
+  assert(!popoverBody.includes("hasFertileWindowSomewhere"), "V2: die Fruchtbarkeits-Bedingung ist mit der entfernten Zeile ebenfalls entfernt");
   assert(popoverBody.includes("{hasManualPmsSection && ("), "'PMS eingetragen' hängt weiterhin am bereits vorhandenen manuellen PMS-Abschnitt (als Prop durchgereicht)");
   assert(
     source.includes("hasManualPmsSection={Boolean(manualPmsSection)}"),

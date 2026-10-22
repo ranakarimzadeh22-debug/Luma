@@ -62,12 +62,16 @@ console.log("\n== WP-025: das Popover erklärt alle sichtbaren Farben, getrennt 
   const groupsBody = groupsStart !== -1 && groupsEnd !== -1 ? source.slice(groupsStart, groupsEnd) : "";
   assert(groupsBody.includes('heading: "Eingetragen"') && groupsBody.includes('heading: "Geschätzt"'), "zwei klar getrennte Gruppen 'Eingetragen' und 'Geschätzt'");
   assert(groupsBody.indexOf('heading: "Eingetragen"') < groupsBody.indexOf('heading: "Geschätzt"'), "'Eingetragen' steht vor 'Geschätzt'");
-  for (const label of ["Periode (tatsächlich)", "PMS von dir eingetragen", "Gespeicherte Planung"]) {
+  for (const label of ["Periode (tatsächlich)", "PMS von dir eingetragen"]) {
     assert(groupsBody.includes(`"${label}"`), `'${label}' steht unter Eingetragen`);
   }
-  for (const label of ["Nächste Periode", "Voraussichtliches Ende", "PMS-Phase", "Eisprung", "Mögliches fruchtbares Zeitfenster"]) {
+  for (const label of ["Nächste Periode", "PMS-Phase"]) {
     assert(groupsBody.includes(`label: "${label}"`) && groupsBody.split(`label: "${label}"`)[1].split("}")[0].includes("estimate: true"), `'${label}' ist als Schätzung markiert`);
   }
+  for (const removed of ["Gespeicherte Planung", "Voraussichtliches Ende", "Eisprung", "Mögliches fruchtbares Zeitfenster"]) {
+    assert(!groupsBody.includes(removed), `V2: '${removed}' kommt im Owner-Popover nicht mehr vor`);
+  }
+  assert((groupsBody.match(/label: "/g) ?? []).length === 4, "V2: genau vier Zeilen im Owner-Popover");
   assert(source.includes('{row.estimate && <span className="block text-[11px] text-[#7a5a6b]">Kann abweichen</span>}'), "jede geschätzte Zeile nennt sichtbar 'Kann abweichen'");
 }
 
