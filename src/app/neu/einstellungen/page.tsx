@@ -5,7 +5,6 @@ import { getPartnerConnectionStatusForOwner } from "@/lib/new-partner";
 import NewPartnerCodeCard from "@/components/NewPartnerCodeCard";
 import NewLogoutButton from "@/components/NewLogoutButton";
 import NewOwnerMobileNav from "@/components/NewOwnerMobileNav";
-import NewPartnerCycleRingSharingToggle from "@/components/NewPartnerCycleRingSharingToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +26,13 @@ export default async function NewSettingsPage() {
         <div className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Partnerverbindung</h2>
           <NewPartnerCodeCard isConnected={status.connected} />
-          {status.connected && status.role === "owner" && <NewPartnerCycleRingSharingToggle initialShared={status.cycleRingShared} />}
+          {/* WP-027: read-only info card — the active connection alone decides what the partner sees. */}
+          {status.connected && status.role === "owner" && (
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-neutral-950">Aktive Partnerverbindung</h3>
+              <p className="mt-1 text-sm leading-6 text-neutral-600">Dein Partner sieht Kalender und Zyklus-Kreis.</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">

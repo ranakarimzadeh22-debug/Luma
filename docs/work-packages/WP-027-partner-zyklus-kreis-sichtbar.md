@@ -30,6 +30,7 @@ technical_brief: complete
 - bestätigte Wirkung: Partner sehen den bereits freigegebenen Kreis und den Kalender als eine zusammengehörige Übersicht.
 - gewählte Lösung: Eine aktive Partnerverbindung ist für die bereits bestehende Zyklus-Kreis-Ansicht der einzige Gate; die alte zusätzliche `cycle_ring_shared`-Abfrage wird nicht mehr als zweites, verstecktes Anzeige-Gate verwendet.
 - wichtige Entscheidung: Der Partner erhält ausschließlich die bereits auf `/neu/partner` vorgesehenen read-only Daten und keine Eingabeoptionen.
+- Korrekturentscheidung (Owner, 2026-10-23): Der alte Einstellungs-Schalter `Zyklus-Kreis für Partner freigeben` darf nicht weiter angezeigt werden, weil eine aktive Verbindung den Kreis unabhängig von diesem historischen Flag zeigt. Stattdessen zeigt die Einstellungsseite nur den tatsächlichen Verbindungsstatus verständlich an.
 - Quellen/Akten: Owner-Screenshot 2026-10-23, WP-004, WP-017, WP-026.
 
 ## Soll – von Codex
@@ -86,6 +87,33 @@ technical_brief: complete
 - Stoppe vor einer Änderung an API, Datenbank, Migration, Owneransicht oder Datenableitung.
 - Stoppe und melde es, falls eine aktive Verbindung nicht sicher serverseitig von einer alten/inaktiven Verbindung getrennt werden kann.
 
+## Korrekturauftrag – Partner-Einstellung verständlich machen
+
+### Soll – von Codex
+
+- Auf `/neu/einstellungen` wird der alte interaktive Schalter `Zyklus-Kreis für Partner freigeben` vollständig entfernt.
+- Bei aktiver Verbindung erscheint an derselben passenden Stelle eine nicht anklickbare, kurze Statuskarte: Titel `Aktive Partnerverbindung`; Text `Dein Partner sieht Kalender und Zyklus-Kreis.`
+- Ohne aktive Verbindung darf kein positiver Freigabe-Text erscheinen. Nutze den bereits vorhandenen Verbindungsstatus für eine passende neutrale Darstellung oder den bestehenden Nicht-verbunden-Zustand.
+- Die Darstellung erklärt ausschließlich den schon geltenden Zustand. Sie verändert weder, welche Daten Partner sehen, noch die aktive Verbindung selbst.
+
+### Technischer Auftrag für Claude
+
+- Finde die bestehende Owner-Einstellung und ihren API-/State-Weg für `cycle_ring_shared`. Entferne den sichtbaren Schalter samt ausschließlich dazugehörigem Client-Verhalten und ungenutzten UI-Code.
+- Ersetze ihn durch eine rein lesende Statusdarstellung, die ausschließlich aus dem bereits auf der Einstellungsseite verfügbaren aktiven Verbindungszustand abgeleitet wird. Keine neue Datenabfrage, keine neue API-Route und keine Berechnung.
+- Die Legacy-Datenbankspalte und bestehende API dürfen unverändert bleiben, wenn sie außerhalb des entfernten UI-Wegs noch für Kompatibilität vorhanden sind; keine Migration.
+- Partnerroute `/neu/partner`, das serverseitige aktive Verbindungs-Gate, Kalender, Zyklus-Kreis, Owner-Home und Partnerrechte bleiben unverändert.
+
+### Pflichtprüfungen
+
+- Gezielte Prüfung: Der alte sichtbare Schalter und sein auslösender Schreibweg kommen auf `/neu/einstellungen` nicht mehr vor; bei aktiver Verbindung ist der verständliche reine Status sichtbar.
+- Bestehende Einstellungen-, Partner-Gate- und read-only-Regressionen; TypeScript und Build.
+- Sichtprüfung mobil und breit: aktiver Verbindungsstatus verständlich, kein Toggle, kein horizontaler Überlauf; Partneransicht unverändert rein lesend.
+
+### Stoppbedingungen
+
+- Stoppe vor einer Änderung am aktiven Verbindungs-Gate, an Partnerdaten, Datenbank, Migration, API-Vertrag oder Zugriffsschutz.
+- Stoppe, falls der echte Verbindungsstatus auf der Einstellungsseite nicht ohne neue Abfrage verfügbar ist; dann die vorhandene Datenquelle dokumentieren und Rückfrage stellen.
+
 ### Abschluss durch Claude
 
 - `Ist` vollständig ergänzen und Abweichungen sichtbar nennen.
@@ -107,8 +135,22 @@ technical_brief: complete
   - `npx tsc --noEmit` und `npm run build` bestehen.
   - Sichtprüfung (lokale Testkonten, Dev-Modus; verbundener Partner mit Flag `cycle_ring_shared = false`, per DB belegt; 360, 390 und 1280 px): Der Kreis mit Infotext und Legende steht oberhalb des Kalenders, ohne Button, Link, Formular oder Eingabefeld im Kreisbereich, kein horizontaler Überlauf. Ein Partner-Konto ohne Verbindung sieht nur das Code-Eingabeformular, weder Kreis noch Kalender. Die lokalen Testkonten wurden entfernt, Playwright wieder entfernt, `package.json`/`package-lock.json` ohne Diff.
 - Abweichungen: keine.
-- offene Punkte: Der Schalter „Zyklus-Kreis für Partner freigeben“ auf `/neu/einstellungen` (aus WP-024) steuert das Flag weiter, hat aber jetzt keine Wirkung mehr auf die Partneransicht. Das ist laut Auftrag (keine Änderung an Owner-Seite/API) nicht verändert worden; der Schalter sollte in einem eigenen Paket entfernt oder neu entschieden werden, damit er nichts Falsches verspricht. Kein Deployment ausgelöst.
+- offene Punkte: Die Korrektur zur Entfernung des alten Einstellungs-Schalters ist umgesetzt (siehe „Ist Korrektur Partner-Einstellung“). Kein Deployment ausgelöst.
 - Commit: siehe Git-Verlauf (`fix(wp-027)`).
+
+## Ist Korrektur Partner-Einstellung – von Claude
+
+- umgesetzt:
+  - `src/app/neu/einstellungen/page.tsx`: Der Schalter `NewPartnerCycleRingSharingToggle` (samt Import und der Übergabe des Freigabewerts) ist entfernt. An derselben Stelle steht bei aktiver Verbindung (`status.connected && status.role === "owner"`) eine rein lesende, nicht anklickbare Info-Karte: Titel „Aktive Partnerverbindung“, Text „Dein Partner sieht Kalender und Zyklus-Kreis.“ Die Karte nutzt nur den schon auf der Seite vorhandenen Verbindungsstatus (`getPartnerConnectionStatusForOwner`), keine neue Abfrage, keine neue Route, keine Berechnung. Ohne aktive Verbindung erscheint die Karte nicht und es steht kein positiver Freigabe-Text auf der Seite.
+  - `src/components/NewPartnerCycleRingSharingToggle.tsx` gelöscht: Sie war der einzige UI-Schreibweg zum Flag (`fetch` auf `cycle-ring-sharing`) und ist nach der Änderung ungenutzt.
+  - Unverändert: Partnerrechte, Partnerdaten, `/neu/partner`, aktives Verbindungs-Gate, Kalender, Zyklus-Kreis, Owner-Home, Verbindungscode-Bereich (`NewPartnerCodeCard`), Datenbank, Migration. Die API-Route `src/app/api/neu/partner/cycle-ring-sharing/route.ts`, `setPartnerCycleRingShared` und das Feld `cycleRingShared` im Owner-Status blieben laut Auftrag (keine API-Änderung, Legacy-Kompatibilität) unangetastet; sie haben jetzt keinen Aufrufer mehr in der UI.
+- Tests:
+  - Neues Skript `scripts/verify-settings-partner-info-wp027.ts` (bestanden): keine Schalter-Komponente, keine Schalter-Texte, kein `cycle-ring-sharing`-Aufruf im UI-Code; Titel und Text exakt, nur hinter der Bedingung „aktive Verbindung“, Text genau einmal; Karte ohne Button/Link/Formular/Aktion; nur vorhandener Verbindungsstatus; Gate, Route und Setter unverändert.
+  - Angepasst (fachlich überholt): `verify-partner-fixed-view.ts` erwartete den Schalter und die Komponente; sie prüft jetzt das Gegenteil und die Info-Karte. Bestehende Regressionen bestehen: `verify-partner-ring-gate-wp027`, `verify-cycle-overview-wp024`, `verify-owner-mobile-nav`, `verify-settings-grouped`, `verify-partner-view-no-status-card`. `npx tsc --noEmit` und `npm run build` bestehen.
+  - Sichtprüfung (lokale Testkonten, Dev-Modus): Owner ohne Verbindung: keine Karte, kein positiver Text, kein Schalter. Owner mit aktiver Verbindung bei 360, 390 und 1280 px: Karte „Aktive Partnerverbindung“ mit dem Text sichtbar, nicht anklickbar, kein Schalter/aria-pressed-Button, kein horizontaler Überlauf. Nach „Verbindung beenden“ verschwindet die Karte. Partneransicht unverändert (Kreis oberhalb des Kalenders, keine Eingabe im Kreisbereich). Testkonten und Playwright entfernt, `package.json`/`package-lock.json` ohne Diff.
+- Abweichungen: keine.
+- offene Punkte: Route `cycle-ring-sharing` und `setPartnerCycleRingShared` sind jetzt ungenutzt, aber absichtlich nicht entfernt (Auftrag: keine API-Änderung); sie könnten in einem eigenen Aufräumpaket gelöscht werden. Kein Deployment ausgelöst.
+- Commit: siehe Git-Verlauf (`fix(wp-027)` Einstellungen).
 
 ## Soll-Ist-Prüfung – von Codex
 
