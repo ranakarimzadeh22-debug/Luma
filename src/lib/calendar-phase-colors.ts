@@ -30,3 +30,10 @@ export function filledSwatchClassName(fill: string): string {
 export function outlineSwatchClassName(outline: string): string {
   return `border-2 ${outline}`;
 }
+
+/**
+ * WP-029: shape of a ⓘ-popover sample — a short rounded horizontal mini band
+ * (like the pills in the calendar) instead of a round dot. Shape only: the
+ * fill/outline always comes from the color helpers above.
+ */
+export const legendBandSampleClassName = "h-3.5 w-9 shrink-0 rounded-full";

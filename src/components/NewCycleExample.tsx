@@ -9,7 +9,7 @@ import { type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
 import { deriveHistoricalCalendarPhases } from "@/lib/historical-calendar-phases";
-import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
+import { calendarPhaseColors, filledSwatchClassName, legendBandSampleClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
 import { calendarBandBorderClassName, calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
 import { computePeriodHistory, type PeriodHistoryRow } from "@/lib/period-history";
@@ -153,7 +153,7 @@ function CalendarLegendPopover({ isOpen, onClose, isUncertain }: CalendarLegendP
             <ul className="space-y-1.5">
               {group.rows.map((row) => (
                 <li key={row.label} className="flex items-start gap-2">
-                  <span className={`mt-0.5 size-3 shrink-0 rounded-full ${row.swatchClassName}`} aria-hidden="true" />
+                  <span className={`mt-0.5 ${legendBandSampleClassName} ${row.swatchClassName}`} aria-hidden="true" />
                   <span>
                     {row.label}
                     {row.estimate && <span className="block text-[11px] text-[#7a5a6b]">Kann abweichen</span>}

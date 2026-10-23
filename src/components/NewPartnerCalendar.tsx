@@ -8,7 +8,7 @@ import { isWithinManualPmsSection, manualPmsSymptomsForDate, type ManualPmsSecti
 import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
 import type { HistoricalCalendarPhases } from "@/lib/historical-calendar-phases";
-import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
+import { calendarPhaseColors, filledSwatchClassName, legendBandSampleClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
 import { calendarBandBorderClassName, calendarBandPosition } from "@/lib/calendar-band-position";
 
 const weekdayLabels = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -144,12 +144,12 @@ function PartnerCalendarLegendPopover({
           <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Eingetragen</h3>
           <ul className="space-y-1.5">
             <li className="flex items-start gap-2">
-              <span className={`mt-0.5 size-3 shrink-0 rounded-full ${filledSwatchClassName(calendarPhaseColors.confirmed.fill)}`} aria-hidden="true" />
+              <span className={`mt-0.5 ${legendBandSampleClassName} ${filledSwatchClassName(calendarPhaseColors.confirmed.fill)}`} aria-hidden="true" />
               Periode bestätigt
             </li>
             {hasManualPmsSection && (
               <li className="flex items-start gap-2">
-                <span className={`mt-0.5 size-3 shrink-0 rounded-full ${filledSwatchClassName(calendarPhaseColors.pmsManual.fill)}`} aria-hidden="true" />
+                <span className={`mt-0.5 ${legendBandSampleClassName} ${filledSwatchClassName(calendarPhaseColors.pmsManual.fill)}`} aria-hidden="true" />
                 PMS eingetragen
               </li>
             )}
@@ -166,7 +166,7 @@ function PartnerCalendarLegendPopover({
                 .filter((row) => row.visible)
                 .map((row) => (
                   <li key={row.label} className="flex items-start gap-2">
-                    <span className={`mt-0.5 size-3 shrink-0 rounded-full ${row.swatchClassName}`} aria-hidden="true" />
+                    <span className={`mt-0.5 ${legendBandSampleClassName} ${row.swatchClassName}`} aria-hidden="true" />
                     <span>
                       {row.label}
                       <span className="block text-[11px] text-neutral-500">Kann abweichen</span>
