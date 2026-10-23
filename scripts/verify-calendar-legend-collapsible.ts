@@ -68,10 +68,12 @@ console.log("\n== WP-025: das Popover erklärt alle sichtbaren Farben, getrennt 
   for (const label of ["Nächste Periode", "PMS-Phase"]) {
     assert(groupsBody.includes(`label: "${label}"`) && groupsBody.split(`label: "${label}"`)[1].split("}")[0].includes("estimate: true"), `'${label}' ist als Schätzung markiert`);
   }
-  for (const removed of ["Gespeicherte Planung", "Voraussichtliches Ende", "Eisprung", "Mögliches fruchtbares Zeitfenster"]) {
+  for (const removed of ["Gespeicherte Planung", "Voraussichtliches Ende", "Mögliches fruchtbares Zeitfenster"]) {
     assert(!groupsBody.includes(removed), `V2: '${removed}' kommt im Owner-Popover nicht mehr vor`);
   }
-  assert((groupsBody.match(/label: "/g) ?? []).length === 4, "V2: genau vier Zeilen im Owner-Popover");
+  assert((groupsBody.match(/label: "/g) ?? []).length === 5, "V2/WP-029: genau fünf Zeilen im Owner-Popover (vier aus V2 plus Eisprung)");
+  assert(groupsBody.includes('label: "Eisprung"') && groupsBody.includes("outlineSwatchClassName(calendarPhaseColors.ovulation.outline)") && /label: "Eisprung"[^}]*estimate: true/.test(groupsBody), "WP-029: Eisprung steht unter Geschätzt mit der violetten Umrissprobe und 'Kann abweichen'");
+  assert(source.includes("group.rows.filter((row) => !row.ovulation || hasOvulation)") && source.includes("hasOvulation={Boolean(prediction) || historicalOvulationDates.size > 0 || isExampleMonth}"), "WP-029: die Eisprung-Zeile erscheint nur, wenn im Owner-Kalender ein Eisprungband sichtbar sein kann");
   assert(source.includes('{row.estimate && <span className="block text-[11px] text-[#7a5a6b]">Kann abweichen</span>}'), "jede geschätzte Zeile nennt sichtbar 'Kann abweichen'");
 }
 

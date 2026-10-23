@@ -47,6 +47,8 @@ console.log("\n== WP-029: jede Zeile nutzt die bestehende Farbquelle ==");
   assert(partnerLegend.includes("filledSwatchClassName(calendarPhaseColors.pmsManual.fill)") && partnerLegend.includes("PMS eingetragen"), "Partner: PMS eingetragen = kräftige PMS-Füllung");
   assert(partnerLegend.includes("outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline)") && partnerLegend.includes('"Nächste Periode"'), "Partner: Nächste Periode = rosa Umriss");
   assert(partnerLegend.includes("outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline)") && partnerLegend.includes('"PMS-Phase"'), "Partner: PMS-Phase = zartrosa Umriss");
+  assert(ownerLegend.includes('label: "Eisprung", swatchClassName: outlineSwatchClassName(calendarPhaseColors.ovulation.outline)') && owner.includes("ovulation: calendarPhaseColors.ovulation.outline"), "Owner: Eisprung-Probe = violette Umrissfarbe des Eisprungbands im Kalender");
+  assert(partnerLegend.includes('label: "Eisprung", swatchClassName: outlineSwatchClassName(calendarPhaseColors.ovulation.outline)') && partner.includes("ovulation: calendarPhaseColors.ovulation.outline"), "Partner: Eisprung-Probe = violette Umrissfarbe des Eisprungbands im Kalender");
   // The band in the calendar uses exactly the same strings as the legend sample.
   assert(owner.includes("confirmed: calendarPhaseColors.confirmed.fill") && owner.includes('"pms-manual": calendarPhaseColors.pmsManual.fill') && owner.includes("period: calendarPhaseColors.periodEstimate.outline") && owner.includes("pms: calendarPhaseColors.pmsEstimate.outline"), "Owner-Kalenderbänder nutzen dieselben Farbquellen wie die Proben");
   assert(partner.includes("confirmed: calendarPhaseColors.confirmed.fill") && partner.includes('"pms-manual": calendarPhaseColors.pmsManual.fill') && partner.includes("period: calendarPhaseColors.periodEstimate.outline") && partner.includes("pms: calendarPhaseColors.pmsEstimate.outline"), "Partner-Kalenderbänder nutzen dieselben Farbquellen wie die Proben");
@@ -58,8 +60,8 @@ console.log("\n== WP-029: Farbwerte, Texte, Zeilen und Verhalten unverändert ==
   const c = calendarPhaseColors;
   assert(c.confirmed.fill === "bg-[#fac9d6]" && c.pmsManual.fill === "bg-[#ee8db1]", "gefüllte Farbwerte unverändert");
   assert(c.periodEstimate.outline === "bg-[#fff7f9] border-[#e58fae]" && c.pmsEstimate.outline === "bg-[#fffafc] border-[#f4cbd9]" && c.ovulation.outline === "bg-[#faf7ff] border-[#a98ae0]", "Umrissfarbwerte unverändert");
-  assert((ownerLegend.match(/label: "/g) ?? []).length === 4, "Owner: weiterhin genau vier Zeilen");
-  assert(partnerLegend.includes("hasManualPmsSection &&") && partnerLegend.includes("hasAnyPrediction &&") && partnerLegend.includes('aria-label="Eingetragen"') && partnerLegend.includes('aria-label="Geschätzt"'), "Partner: Gruppen und Sichtbarkeitsbedingungen unverändert");
+  assert((ownerLegend.match(/label: "/g) ?? []).length === 5, "Owner: vier Zeilen aus WP-025 V2 plus die Eisprung-Zeile (WP-029 Korrektur)");
+  assert(partnerLegend.includes("hasManualPmsSection &&") && partnerLegend.includes("hasAnyPrediction") && partnerLegend.includes('aria-label="Eingetragen"') && partnerLegend.includes('aria-label="Geschätzt"'), "Partner: Gruppen und Sichtbarkeitsbedingungen unverändert");
   assert(ownerLegend.includes('event.key === "Escape"') && partnerLegend.includes('event.key === "Escape"') && ownerLegend.includes("mousedown") && partnerLegend.includes("mousedown"), "Escape und Außenklick unverändert");
   assert(ownerLegend.includes('aria-hidden="true"') && partnerLegend.includes('aria-hidden="true"'), "Proben bleiben dekorativ (aria-hidden), die Texte tragen die Bedeutung");
   assert(!partner.includes("fetch(") && !/method:\s*"(POST|PUT|PATCH|DELETE)"/.test(partner), "Partner bleibt rein lesend");

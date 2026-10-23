@@ -63,8 +63,8 @@ console.log("\n== WP-025: Popover erklärt alles, Eingetragen und Geschätzt get
   for (const label of ["Periode bestätigt", "PMS eingetragen", "Nächste Periode", "PMS-Phase"]) {
     assert(partnerPopover.includes(label), `Partner-Popover enthält '${label}'`);
   }
-  assert(partnerPopover.includes("hasManualPmsSection &&") && partnerPopover.includes("hasAnyPrediction &&") && !partnerPopover.includes("hasFertileWindowSomewhere"), "Partner-Popover zeigt nur vorhandene Informationen (bestehende Bedingungen)");
-  for (const removed of ["Gespeicherte Planung", "Voraussichtliches Ende", "Eisprung", "Mögliches fruchtbares Zeitfenster", "PMS vor Periode"]) {
+  assert(partnerPopover.includes("hasManualPmsSection &&") && partnerPopover.includes("hasAnyPrediction ||") && !partnerPopover.includes("hasFertileWindowSomewhere"), "Partner-Popover zeigt nur vorhandene Informationen (bestehende Bedingungen)");
+  for (const removed of ["Gespeicherte Planung", "Voraussichtliches Ende", "Mögliches fruchtbares Zeitfenster", "PMS vor Periode"]) {
     assert(!ownerPopover.includes(removed) && !owner.slice(owner.indexOf("const calendarLegendGroups"), owner.indexOf("interface CalendarLegendPopoverProps")).includes(removed) && !partnerPopover.includes(removed), `V2: '${removed}' kommt in keinem Popover mehr vor`);
   }
   assert(!partnerPopover.includes("<h3") || (partnerPopover.match(/<h3/g) ?? []).length === 2, "V2: keine leere Überschrift oder Platzhalter, genau die zwei Gruppenüberschriften");

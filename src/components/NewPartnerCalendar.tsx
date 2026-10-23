@@ -87,6 +87,8 @@ interface CalendarLegendPopoverProps {
   onClose: () => void;
   hasAnyPrediction: boolean;
   hasManualPmsSection: boolean;
+  /** Past-cycle ovulation days exist (WP-028), so the ovulation band can be visible. */
+  hasHistoricalOvulation: boolean;
   isUncertain: boolean;
 }
 
@@ -104,6 +106,7 @@ function PartnerCalendarLegendPopover({
   onClose,
   hasAnyPrediction,
   hasManualPmsSection,
+  hasHistoricalOvulation,
   isUncertain,
 }: CalendarLegendPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -155,13 +158,15 @@ function PartnerCalendarLegendPopover({
             )}
           </ul>
         </section>
-        {hasAnyPrediction && (
+        {(hasAnyPrediction || hasHistoricalOvulation) && (
           <section aria-label="Geschätzt">
             <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Geschätzt</h3>
             <ul className="space-y-1.5">
               {[
-                { label: "Nächste Periode", swatchClassName: outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline), visible: true },
-                { label: "PMS-Phase", swatchClassName: outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline), visible: true },
+                { label: "Nächste Periode", swatchClassName: outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline), visible: hasAnyPrediction },
+                { label: "PMS-Phase", swatchClassName: outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline), visible: hasAnyPrediction },
+                // Inside the hasAnyPrediction group: a prediction always contains an ovulation day, so the band can be visible.
+                { label: "Eisprung", swatchClassName: outlineSwatchClassName(calendarPhaseColors.ovulation.outline), visible: hasAnyPrediction || hasHistoricalOvulation },
               ]
                 .filter((row) => row.visible)
                 .map((row) => (
@@ -304,6 +309,7 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
               onClose={() => setIsCalendarLegendOpen(false)}
               hasAnyPrediction={hasAnyPrediction}
               hasManualPmsSection={Boolean(manualPmsSection)}
+              hasHistoricalOvulation={historicalPhases.ovulationDates.length > 0}
               isUncertain={Boolean(prediction?.isUncertain)}
             />
           </div>

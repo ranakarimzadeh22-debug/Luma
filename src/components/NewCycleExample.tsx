@@ -85,7 +85,7 @@ const dayBandTextStyles: Record<DayBandKey, string> = {
  */
 const calendarLegendGroups: {
   heading: string;
-  rows: { label: string; swatchClassName: string; estimate?: boolean }[];
+  rows: { label: string; swatchClassName: string; estimate?: boolean; ovulation?: boolean }[];
 }[] = [
   {
     heading: "Eingetragen",
@@ -99,6 +99,8 @@ const calendarLegendGroups: {
     rows: [
       { label: "Nächste Periode", swatchClassName: outlineSwatchClassName(calendarPhaseColors.periodEstimate.outline), estimate: true },
       { label: "PMS-Phase", swatchClassName: outlineSwatchClassName(calendarPhaseColors.pmsEstimate.outline), estimate: true },
+      // Shown only when an ovulation band can appear in this calendar (see hasOvulation).
+      { label: "Eisprung", swatchClassName: outlineSwatchClassName(calendarPhaseColors.ovulation.outline), estimate: true, ovulation: true },
     ],
   },
 ];
@@ -107,6 +109,8 @@ interface CalendarLegendPopoverProps {
   isOpen: boolean;
   onClose: () => void;
   isUncertain: boolean;
+  /** True when an ovulation band can be visible in this calendar (prediction, past cycle or example month). */
+  hasOvulation: boolean;
 }
 
 /**
@@ -115,7 +119,7 @@ interface CalendarLegendPopoverProps {
  * Escape and on an outside click/tap. No inner scroll area, no long text —
  * six short rows only, per the Soll.
  */
-function CalendarLegendPopover({ isOpen, onClose, isUncertain }: CalendarLegendPopoverProps) {
+function CalendarLegendPopover({ isOpen, onClose, isUncertain, hasOvulation }: CalendarLegendPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,7 +155,7 @@ function CalendarLegendPopover({ isOpen, onClose, isUncertain }: CalendarLegendP
           <section key={group.heading} aria-label={group.heading}>
             <h3 className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-[#a52b5d]">{group.heading}</h3>
             <ul className="space-y-1.5">
-              {group.rows.map((row) => (
+              {group.rows.filter((row) => !row.ovulation || hasOvulation).map((row) => (
                 <li key={row.label} className="flex items-start gap-2">
                   <span className={`mt-0.5 ${legendBandSampleClassName} ${row.swatchClassName}`} aria-hidden="true" />
                   <span>
@@ -1227,7 +1231,7 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
               >
                 <span aria-hidden="true">ⓘ</span>
               </button>
-              <CalendarLegendPopover isOpen={isCalendarLegendOpen} onClose={() => setIsCalendarLegendOpen(false)} isUncertain={Boolean(prediction?.isUncertain)} />
+              <CalendarLegendPopover isOpen={isCalendarLegendOpen} onClose={() => setIsCalendarLegendOpen(false)} isUncertain={Boolean(prediction?.isUncertain)} hasOvulation={Boolean(prediction) || historicalOvulationDates.size > 0 || isExampleMonth} />
             </div>
           </div>
           <button type="button" aria-label="Nächsten Monat anzeigen" onClick={() => changeMonth(1)} className="flex h-10 w-10 items-center justify-center rounded-full text-center text-3xl font-light text-[#b85f7f] hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]">›</button>
