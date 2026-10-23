@@ -879,8 +879,9 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth, onOpenMyPeriods }: P
       aria-modal="true"
       aria-labelledby="period-history-title"
     >
-      <div className="flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl bg-white p-6 shadow-lg">
-        <h2 id="period-history-title" className="text-lg font-semibold text-[#28101f]">
+      {/* WP-030: warm, calm card design — layout/styling only, same data and callbacks. */}
+      <div className="flex max-h-[85vh] w-full max-w-sm flex-col rounded-3xl border border-[#f3dfe6] bg-[#fffaf8] p-5 shadow-[0_12px_40px_rgba(91,31,62,0.18)] sm:max-w-md sm:p-6">
+        <h2 id="period-history-title" className="text-xl font-semibold text-[#28101f]">
           Periodenübersicht
         </h2>
 
@@ -892,7 +893,7 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth, onOpenMyPeriods }: P
           Meine Periode aktualisieren
         </button>
 
-        <div className="mt-4 flex-1 space-y-3 overflow-y-auto">
+        <div className="mt-4 flex-1 space-y-3 overflow-y-auto px-0.5 pb-1">
           {sortedNewestFirst.length === 0 && (
             <p className="text-sm text-[#6b5560]">
               Noch keine Historie vorhanden. Trage deine erste Periode ein, um sie hier später zu sehen.
@@ -904,19 +905,20 @@ function PeriodHistoryModal({ rows, onClose, onSelectMonth, onOpenMyPeriods }: P
               type="button"
               onClick={() => onSelectMonth(row.startDate)}
               aria-label={`Kalender für ${formatHistoryMonth(row.startDate)} öffnen`}
-              className="w-full rounded-xl border border-[#efd5dc] bg-[#fff9f8] px-4 py-3 text-left hover:bg-[#f8e4e9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
+              className="relative block w-full overflow-hidden rounded-2xl border border-[#f1dfe5] bg-white py-3.5 pl-5 pr-4 text-left shadow-[0_1px_4px_rgba(91,31,62,0.08)] transition-colors hover:border-[#e8c4d1] hover:bg-[#fffafb] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6d2850]"
             >
+              <span aria-hidden="true" className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-[#f3b4c8]" />
               <p className="text-base font-semibold capitalize text-[#28101f]">{formatHistoryMonth(row.startDate)}</p>
               <p className="mt-1 text-sm text-[#382631]">
                 {row.endDate ? `${formatPeriodDate(row.startDate)} bis ${formatPeriodDate(row.endDate)}` : `${formatPeriodDate(row.startDate)}, läuft noch`}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6b5560]">
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-[#5a4450]">
                 {row.durationDays !== null && (
-                  <span>
+                  <span className="rounded-full bg-[#fdf1f4] px-2.5 py-1">
                     <span className="font-semibold text-[#382631]">Dauer:</span> {row.durationDays} Tage
                   </span>
                 )}
-                <span>
+                <span className="rounded-full bg-[#fdf1f4] px-2.5 py-1">
                   <span className="font-semibold text-[#382631]">Zyklus:</span>{" "}
                   {row.cycleLengthDays !== null ? `${row.cycleLengthDays} Tage` : "Noch nicht bekannt"}
                 </span>

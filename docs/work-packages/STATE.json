@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "revision": 213,
+  "revision": 217,
   "reviewedRevision": 134,
   "updatedAt": "2026-10-23",
   "changedPackages": [
@@ -17,12 +17,13 @@
     "WP-027",
     "WP-012",
     "WP-028",
-    "WP-029"
+    "WP-029",
+    "WP-030"
   ],
   "openPackages": [
     "WP-005",
     "WP-027",
-    "WP-029"
+    "WP-030"
   ],
   "openCount": 3,
   "openLimit": 3

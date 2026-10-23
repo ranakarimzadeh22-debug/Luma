@@ -25,7 +25,7 @@ console.log("\n== WP-019: kein großer 'Meine Periode aktualisieren'-Button mehr
 console.log("\n== WP-019: PeriodHistoryModal heißt sichtbar 'Periodenübersicht' und enthält den Button 'Meine Periode aktualisieren' ohne Scrollen auffindbar ==");
 {
   const modalStart = source.indexOf("function PeriodHistoryModal(");
-  const modalEnd = source.indexOf("\nfunction TodayCard(", modalStart);
+  const modalEnd = source.indexOf("\nexport default function NewCycleExample(", modalStart);
   const modalBody = modalStart !== -1 && modalEnd !== -1 ? source.slice(modalStart, modalEnd) : "";
   assert(modalBody.length > 0, "PeriodHistoryModal wurde im Quelltext gefunden");
   assert(modalBody.includes('id="period-history-title"') && modalBody.includes("Periodenübersicht"), "der sichtbare Dialogtitel lautet 'Periodenübersicht'");

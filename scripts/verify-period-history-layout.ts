@@ -19,7 +19,7 @@ const componentPath = path.resolve(
 const source = readFileSync(componentPath, "utf8");
 
 const modalStart = source.indexOf("function PeriodHistoryModal(");
-const modalEnd = source.indexOf("function TodayCard(");
+const modalEnd = source.indexOf("export default function NewCycleExample(");
 const modalBody = modalStart !== -1 && modalEnd !== -1 ? source.slice(modalStart, modalEnd) : "";
 
 console.log("\n== WP-008: PeriodHistoryModal wurde gefunden ==");
