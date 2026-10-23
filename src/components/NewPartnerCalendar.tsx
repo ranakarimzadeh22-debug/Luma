@@ -7,6 +7,7 @@ import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePred
 import { isWithinManualPmsSection, manualPmsSymptomsForDate, type ManualPmsSection } from "@/lib/manual-pms";
 import type { PmsSymptom } from "@/lib/new-pms-symptom-validation";
 import CalendarTodayLine from "@/components/CalendarTodayLine";
+import type { HistoricalCalendarPhases } from "@/lib/historical-calendar-phases";
 import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
 import { calendarBandBorderClassName, calendarBandPosition } from "@/lib/calendar-band-position";
 
@@ -26,6 +27,8 @@ interface NewPartnerCalendarProps {
   prediction: CyclePrediction | null;
   manualPmsSection: ManualPmsSection | null;
   periods: { startDate: string; endDate: string | null }[];
+  /** WP-028: past PMS days / possible past ovulation days (dates only), derived server-side. */
+  historicalPhases: HistoricalCalendarPhases;
   today: string;
 }
 
@@ -230,7 +233,7 @@ function DayDetailModal({ date, status, isFertile, isUncertain, manualSymptoms, 
   );
 }
 
-export default function NewPartnerCalendar({ confirmedDates, prediction, manualPmsSection, periods, today }: NewPartnerCalendarProps) {
+export default function NewPartnerCalendar({ confirmedDates, prediction, manualPmsSection, periods, historicalPhases, today }: NewPartnerCalendarProps) {
   const [todayKey] = useState(() => todayBerlinDateOnly());
   const [todayYear, todayMonthIndex, todayDay] = todayKey.split("-").map(Number);
   const [displayedMonth, setDisplayedMonth] = useState({ year: todayYear, month: todayMonthIndex - 1 });
@@ -238,6 +241,8 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
   const [isCalendarLegendOpen, setIsCalendarLegendOpen] = useState(false);
 
   const confirmedSet = new Set(confirmedDates);
+  const historicalPmsSet = new Set(historicalPhases.pmsDates);
+  const historicalOvulationSet = new Set(historicalPhases.ovulationDates);
   const { cells } = getCalendarMonthGrid(displayedMonth.year, displayedMonth.month);
   const monthName = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(
     new Date(displayedMonth.year, displayedMonth.month, 1),
@@ -251,9 +256,12 @@ export default function NewPartnerCalendar({ confirmedDates, prediction, manualP
   function primaryStatusFor(date: string): PrimaryDayStatus {
     if (confirmedSet.has(date)) return "confirmed";
     if (isWithinManualPmsSection(manualPmsSection, date, periods, today)) return "pms-manual";
-    if (!prediction) return "none";
-    const phase = primaryCalendarPhase(date, prediction);
-    return phase ?? "none";
+    // WP-028: same priority as the owner calendar — real period > manual PMS
+    // (current, then past) > estimates; a past ovulation only where nothing else applies.
+    if (historicalPmsSet.has(date)) return "pms-manual";
+    const phase = prediction ? primaryCalendarPhase(date, prediction) : null;
+    if (phase) return phase;
+    return historicalOvulationSet.has(date) ? "ovulation" : "none";
   }
 
   function isFertileFor(date: string, status: PrimaryDayStatus): boolean {

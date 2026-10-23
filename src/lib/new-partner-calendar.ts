@@ -7,6 +7,7 @@ import { todayBerlinDateOnly } from "@/lib/berlin-date";
 import { getLumaCorePool } from "@/lib/new-auth-db";
 import { getPmsSymptomDays } from "@/lib/new-pms-symptoms";
 import { deriveManualPmsSection, type ManualPmsSection } from "@/lib/manual-pms";
+import { deriveHistoricalCalendarPhases, type HistoricalCalendarPhases } from "@/lib/historical-calendar-phases";
 
 export interface PartnerCalendarView {
   confirmedDates: string[];
@@ -32,6 +33,13 @@ export interface PartnerCalendarView {
    * the owner's own view uses — never a second, divergent period source.
    */
   periods: { startDate: string; endDate: string | null }[];
+  /**
+   * WP-028: past self-entered PMS days and possible past ovulation days —
+   * plain date lists derived server-side with the same
+   * deriveHistoricalCalendarPhases() as the owner's calendar. No symptoms,
+   * no IDs, no raw entries; the partner can never write them.
+   */
+  historicalPhases: HistoricalCalendarPhases;
   /** The same today the prediction/manual section were derived against. */
   today: string;
 }
@@ -101,6 +109,7 @@ export async function getPartnerCalendarView(partnerUserId: string): Promise<Par
     prediction,
     manualPmsSection,
     periods: entries.map((entry) => ({ startDate: entry.startDate, endDate: entry.endDate })),
+    historicalPhases: deriveHistoricalCalendarPhases(entries, pmsSymptomDays, today),
     today,
   };
 }

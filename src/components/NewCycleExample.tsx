@@ -8,6 +8,7 @@ import { phasesForDate, primaryCalendarPhase, showsFertileMarker, type CyclePred
 import { type PersonalCycleView } from "@/lib/personal-cycle-view";
 import { getCalendarDayInfo, periodDayNumber, actualPeriodDurationDays } from "@/lib/calendar-day-info";
 import { getPeriodDayActions, shiftDateByOneDay, type PeriodDayActions } from "@/lib/period-day-actions";
+import { deriveHistoricalCalendarPhases } from "@/lib/historical-calendar-phases";
 import { calendarPhaseColors, filledSwatchClassName, outlineSwatchClassName } from "@/lib/calendar-phase-colors";
 import { calendarBandBorderClassName, calendarBandPosition, type CalendarBandPosition } from "@/lib/calendar-band-position";
 import type { NewCycleProfileInput } from "@/lib/new-cycle-profile-validation";
@@ -959,6 +960,11 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
   const [periodPlans] = useState(initialPeriodPlans);
   const [pmsSymptomDays, setPmsSymptomDays] = useState(initialPmsSymptomDays);
   const manualPmsSection = deriveManualPmsSection(periods, pmsSymptomDays, todayKey, prediction?.nextPeriodStart ?? null);
+  // WP-028: past cycles (between two real periods) from real data only — own saved
+  // PMS days and, relative to the following real period, the possible ovulation.
+  const historicalPhases = deriveHistoricalCalendarPhases(periods, pmsSymptomDays, todayKey);
+  const historicalPmsDates = new Set(historicalPhases.pmsDates);
+  const historicalOvulationDates = new Set(historicalPhases.ovulationDates);
   const [isMyPeriodsModalOpen, setIsMyPeriodsModalOpen] = useState(false);
   const [periodFormMode, setPeriodFormMode] = useState<"closed" | "new" | NewPeriodEntryOpen>("closed");
   const [isAddCycleLengthModalOpen, setIsAddCycleLengthModalOpen] = useState(false);
@@ -1239,8 +1245,18 @@ export default function NewCycleExample({ initialPeriods, initialPeriodPlans, pr
                   ? examplePhase(day)
                   : null
               : null;
-            const phase = date ? applyManualPmsOverride(estimatedPhase, manualPmsSection, date, periods, todayKey) : estimatedPhase;
-            const isManualPmsDay = Boolean(date && isWithinManualPmsSection(manualPmsSection, date, periods, todayKey));
+            const currentOrEstimatedPhase = date ? applyManualPmsOverride(estimatedPhase, manualPmsSection, date, periods, todayKey) : estimatedPhase;
+            // WP-028 priority: real period (handled by the band key) > manual PMS
+            // (current section, then past PMS) > estimates, with a past
+            // ovulation only where nothing else claims the day. Today and the
+            // future are never touched (the historical sets only hold past days).
+            const isHistoricalPmsDay = Boolean(date && !currentOrEstimatedPhase && historicalPmsDates.has(date));
+            const phase = isHistoricalPmsDay
+              ? "pms"
+              : !currentOrEstimatedPhase && date && historicalOvulationDates.has(date)
+                ? "ovulation"
+                : currentOrEstimatedPhase;
+            const isManualPmsDay = Boolean(date && (isWithinManualPmsSection(manualPmsSection, date, periods, todayKey) || isHistoricalPmsDay));
             const storedPeriod = date
               ? periods.find((entry) => entry.endDate !== null && entry.startDate <= date && entry.endDate >= date)
               : null;

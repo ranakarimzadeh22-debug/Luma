@@ -78,6 +78,7 @@ export default async function NewPartnerPage() {
               prediction={calendarView.prediction}
               manualPmsSection={calendarView.manualPmsSection}
               periods={calendarView.periods}
+              historicalPhases={calendarView.historicalPhases}
               today={calendarView.today}
             />
           ) : (
