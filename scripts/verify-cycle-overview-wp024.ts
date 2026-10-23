@@ -22,7 +22,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const partnerView = readFileSync(path.join(root, "src/lib/new-partner-cycle-view.ts"), "utf8");
 const route = readFileSync(path.join(root, "src/app/api/neu/partner/cycle-ring-sharing/route.ts"), "utf8");
 const panel = readFileSync(path.join(root, "src/components/CycleOverviewPanel.tsx"), "utf8");
-assert(partnerView.includes("status = 'active' AND cycle_ring_shared = TRUE"), "Partnerdaten werden vor dem Laden durch Verbindung und Freigabe geschützt");
+assert(partnerView.includes("partner_user_id = $1 AND status = 'active' LIMIT 1") && !/AND\s+cycle_ring_shared/.test(partnerView.replace(/\/\*[\s\S]*?\*\//g, "")), "WP-027: Partnerdaten werden vor dem Laden allein durch die aktive Verbindung geschützt (kein cycle_ring_shared-Gate mehr)");
 assert(route.includes("requestHasAllowedOrigin") && route.includes('typeof shared !== "boolean"'), "Setter prüft Ursprung und Boolean");
 assert(panel.includes("ca.") && panel.includes("Kann abweichen"), "alle Prognosedaten sind sichtbar unsicher gekennzeichnet");
 assert(panel.includes("sm:grid-cols-[17rem_minmax(0,1fr)]"), "breit nutzt der Ring eine feste kompakte Spalte statt der halben Breite");

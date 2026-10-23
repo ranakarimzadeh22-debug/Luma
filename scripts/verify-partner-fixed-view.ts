@@ -25,10 +25,10 @@ console.log("\n== WP-004 V11: der Partner-Kalender-View liefert keine alte Freig
   assert(source.includes("predictCycle("), "die bestehende, zentrale WP-007-Vorhersagelogik wird wiederverwendet (keine zweite Berechnung)");
 }
 
-console.log("\n== WP-024: der Partner-Zyklus-Kreis-View reaktiviert ausschließlich das Ring-Gate ==");
+console.log("\n== WP-027: der Partner-Zyklus-Kreis-View nutzt nur noch die aktive Verbindung als Gate ==");
 {
   const source = read("src/lib/new-partner-cycle-view.ts");
-  assert(source.includes("status = 'active' AND cycle_ring_shared = TRUE"), "aktive Verbindung und Ringfreigabe werden gemeinsam serverseitig geprüft");
+  assert(source.includes("partner_user_id = $1 AND status = 'active' LIMIT 1") && !/AND\s+cycle_ring_shared/.test(source.replace(/\/\*[\s\S]*?\*\//g, "")), "WP-027: die aktive Verbindung ist der alleinige serverseitige Gate, cycle_ring_shared wird nicht mehr in der Abfrage geprüft");
   assert(source.includes("computePersonalCycleView("), "die bestehende, zentrale Zyklus-Kreis-Logik wird wiederverwendet (keine zweite Berechnung)");
 }
 

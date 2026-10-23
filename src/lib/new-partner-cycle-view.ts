@@ -27,6 +27,8 @@ export interface PartnerCycleView {
  * WP-004 Version 11: the active connection alone is now the sole gate —
  * the old cycle_ring_shared column is no longer read here. It is retired,
  * unused legacy structure (left in place, not migrated away).
+ * WP-027 restores exactly that: the WP-024 cycle_ring_shared condition was removed
+ * again, so the active connection is the only server-side gate.
  */
 export async function getPartnerCycleView(partnerUserId: string): Promise<PartnerCycleView | null> {
   const ownerUserId = await resolveActiveConnectionOwner(partnerUserId);
@@ -56,7 +58,7 @@ export async function getPartnerCycleView(partnerUserId: string): Promise<Partne
 
 async function resolveActiveConnectionOwner(partnerUserId: string): Promise<string | null> {
   const result = await getLumaCorePool().query<{ owner_user_id: string }>(
-    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' AND cycle_ring_shared = TRUE LIMIT 1`,
+    `SELECT owner_user_id FROM new_partner_connections WHERE partner_user_id = $1 AND status = 'active' LIMIT 1`,
     [partnerUserId],
   );
   return result.rows[0]?.owner_user_id ?? null;
