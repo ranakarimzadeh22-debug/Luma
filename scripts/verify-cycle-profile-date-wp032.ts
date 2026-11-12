@@ -32,7 +32,7 @@ console.log("\n== WP-032: übrige Bedienung unverändert ==");
   assert(source.includes("draft.lastPeriodUnknown || Boolean(draft.lastPeriodStart)"), "Weiter-Bedingung für Frage 1 unverändert");
   assert(source.includes("Bitte beantworte die Frage oder wähle „Ich weiß es nicht“."), "Hinweis bei fehlender Eingabe unverändert");
   assert(source.includes('lastPeriodStart: draft.lastPeriodUnknown ? null : draft.lastPeriodStart || null'), "Speicher-Payload unverändert");
-  assert((source.match(/disabled=\{draft\./g) ?? []).length === 2, "die beiden Zahlenfelder (Blutungsdauer, Zykluslänge) bleiben unverändert");
+  assert((source.match(/disabled=\{draft\./g) ?? []).length === 1, "das Zahlenfeld der Zykluslänge (Frage 3) bleibt unverändert (Frage 2: siehe V2-Skript)");
 }
 
 console.log(`\n${failures === 0 ? "ALLE PRÜFUNGEN BESTANDEN" : `${failures} PRÜFUNG(EN) FEHLGESCHLAGEN`}`);

@@ -14,7 +14,7 @@ commits: pending
 
 ## Was wurde gemacht?
 
-In der ersten Frage des Zyklusprofils lässt sich das Datumsfeld wieder anklicken, antippen und ausfüllen. Vorher war das Feld gesperrt, sobald „Ich weiß es nicht“ gewählt war oder das gespeicherte Profil kein Datum hatte. Jetzt ist es immer offen. Wer ein Datum wählt, hebt „Ich weiß es nicht“ damit auf. Der Button „Ich weiß es nicht“ ist jetzt ein Umschalter: Er zeigt einen Haken und einen Hinweis, leert ein vorhandenes oder halb getipptes Datum und erlaubt „Weiter“ ohne Datum. Ein neu gewähltes Datum hebt „unbekannt“ wieder auf. Alles andere im Zyklusprofil ist gleich geblieben.
+In der ersten Frage des Zyklusprofils lässt sich das Datumsfeld wieder anklicken, antippen und ausfüllen. Vorher war das Feld gesperrt, sobald „Ich weiß es nicht“ gewählt war oder das gespeicherte Profil kein Datum hatte. Jetzt ist es immer offen. Wer ein Datum wählt, hebt „Ich weiß es nicht“ damit auf. Der Button „Ich weiß es nicht“ ist jetzt ein Umschalter: Er zeigt einen Haken und einen Hinweis, leert ein vorhandenes oder halb getipptes Datum und erlaubt „Weiter“ ohne Datum. Ein neu gewähltes Datum hebt „unbekannt“ wieder auf. In Frage 2 lässt sich das Feld „Anzahl der Tage“ ebenfalls wieder ausfüllen (Korrektur Version 2); es war nach „Ich weiß es nicht“ gesperrt. Alles andere im Zyklusprofil ist gleich geblieben.
 
 ## Warum?
 
@@ -26,7 +26,7 @@ Neues Prüfskript, TypeScript und Build bestehen. Browserprüfung mit Testkonto 
 
 ## Offene Punkte
 
-- Keine.
+- Das Feld „Übliche Zykluslänge“ in Frage 3 hat noch dieselbe Sperre bei „unbekannt“ und wurde bewusst nicht angefasst (nicht im Auftrag).
 
 ## Nächster Schritt
 
@@ -34,7 +34,7 @@ Owner prüft `/neu/zyklusprofil` lokal.
 
 ## Technische Nachweise
 
-- Betroffene Dateien: `src/components/NewCycleProfileWizard.tsx`, `scripts/verify-cycle-profile-date-wp032.ts` (neu)
+- Betroffene Dateien: `src/components/NewCycleProfileWizard.tsx`, `scripts/verify-cycle-profile-date-wp032.ts` (neu), `scripts/verify-cycle-profile-duration-wp032-v2.ts` (neu)
 - Ursache: `disabled={draft.lastPeriodUnknown}` am Datumsfeld
 - Tests: siehe oben
 - Commit oder Referenz: pending
