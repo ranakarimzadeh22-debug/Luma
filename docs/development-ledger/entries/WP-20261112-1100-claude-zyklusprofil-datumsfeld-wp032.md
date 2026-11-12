@@ -14,7 +14,7 @@ commits: pending
 
 ## Was wurde gemacht?
 
-In der ersten Frage des Zyklusprofils lässt sich das Datumsfeld wieder anklicken, antippen und ausfüllen. Vorher war das Feld gesperrt, sobald „Ich weiß es nicht“ gewählt war oder das gespeicherte Profil kein Datum hatte. Jetzt ist es immer offen. Wer ein Datum wählt, hebt „Ich weiß es nicht“ damit auf. Alles andere im Zyklusprofil ist gleich geblieben.
+In der ersten Frage des Zyklusprofils lässt sich das Datumsfeld wieder anklicken, antippen und ausfüllen. Vorher war das Feld gesperrt, sobald „Ich weiß es nicht“ gewählt war oder das gespeicherte Profil kein Datum hatte. Jetzt ist es immer offen. Wer ein Datum wählt, hebt „Ich weiß es nicht“ damit auf. Der Button „Ich weiß es nicht“ ist jetzt ein Umschalter: Er zeigt einen Haken und einen Hinweis, leert ein vorhandenes oder halb getipptes Datum und erlaubt „Weiter“ ohne Datum. Ein neu gewähltes Datum hebt „unbekannt“ wieder auf. Alles andere im Zyklusprofil ist gleich geblieben.
 
 ## Warum?
 
@@ -22,11 +22,11 @@ Beim Owner-Test am 12.11.2026 ließ sich das Feld nicht bedienen. Das steht im f
 
 ## Prüfung und Stand
 
-Neues Prüfskript, TypeScript und Build bestehen. Kein Browserlauf auf Desktop und Mobil. Nicht deployed.
+Neues Prüfskript, TypeScript und Build bestehen. Browserprüfung mit Testkonto auf Desktop (1280 px) und Mobil (390 px): Datum eingeben, „Ich weiß es nicht“ setzen, Weiter ohne Datum, danach wieder Datum eingeben, kein Überlauf. Testkonten gelöscht. Nicht deployed.
 
 ## Offene Punkte
 
-- Das Verhalten im Browser prüft die Owner-Abnahme.
+- Keine.
 
 ## Nächster Schritt
 

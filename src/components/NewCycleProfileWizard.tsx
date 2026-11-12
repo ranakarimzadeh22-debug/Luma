@@ -48,6 +48,7 @@ export default function NewCycleProfileWizard({
   const [draft, setDraft] = useState(() => initialDraft(initialProfile));
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [dateResetKey, setDateResetKey] = useState(0);
   const today = new Date().toISOString().slice(0, 10);
 
   function canContinue(): boolean {
@@ -114,17 +115,30 @@ export default function NewCycleProfileWizard({
             <div className="flex flex-col gap-3">
               <label className="text-sm font-medium text-neutral-700">
                 Datum
+                {/* key remounts the native input so a half-typed date is cleared when "unknown" is chosen */}
                 <input
+                  key={dateResetKey}
                   type="date"
                   max={today}
                   value={draft.lastPeriodStart}
                   onChange={(event) => setDraft({ ...draft, lastPeriodStart: event.target.value, lastPeriodUnknown: false })}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3"
+                  className={`mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 ${draft.lastPeriodUnknown ? "bg-neutral-100 text-neutral-400" : ""}`}
                 />
               </label>
-              <button type="button" onClick={() => setDraft({ ...draft, lastPeriodStart: "", lastPeriodUnknown: true })} className={`rounded-xl border px-4 py-3 text-sm ${draft.lastPeriodUnknown ? "border-neutral-900 bg-neutral-100" : "border-neutral-300"}`}>
-                Ich weiß es nicht
+              <button
+                type="button"
+                aria-pressed={draft.lastPeriodUnknown}
+                onClick={() => {
+                  setDateResetKey((current) => current + 1);
+                  setDraft({ ...draft, lastPeriodStart: "", lastPeriodUnknown: !draft.lastPeriodUnknown });
+                }}
+                className={`rounded-xl border px-4 py-3 text-sm ${draft.lastPeriodUnknown ? "border-neutral-900 bg-neutral-100 font-semibold" : "border-neutral-300"}`}
+              >
+                {draft.lastPeriodUnknown ? "✓ Ich weiß es nicht" : "Ich weiß es nicht"}
               </button>
+              {draft.lastPeriodUnknown && (
+                <p role="status" className="text-sm text-neutral-600">Gewählt: Das Datum ist unbekannt. Du kannst direkt mit „Weiter“ fortfahren oder ein Datum eintragen.</p>
+              )}
             </div>
           )}
 

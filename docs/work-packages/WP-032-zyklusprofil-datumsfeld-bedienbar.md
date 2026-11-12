@@ -52,7 +52,9 @@ Führe eine gezielte automatisierte Prüfung, Typecheck und Build aus. Nicht dep
 
 **Dateien:** `src/components/NewCycleProfileWizard.tsx`, `scripts/verify-cycle-profile-date-wp032.ts` (neu).
 
-**Prüfungen:** gezieltes Prüfskript, `tsc --noEmit` und `npm run build` bestehen. **Abweichung:** Kein Browserlauf auf Desktop/Mobil (nur Quellcode-Prüfung); die Owner-Abnahme prüft das Verhalten im Browser. Nicht deployed.
+**Prüfungen:** gezieltes Prüfskript, `tsc --noEmit` und `npm run build` bestehen. **Korrektur (Owner-Rückmeldung, „Ich weiß es nicht“ wirkte nicht):** Der Klick war nicht sichtbar und ließ eine halb getippte Eingabe im nativen Datumsfeld stehen. Jetzt ist der Button ein Umschalter mit `aria-pressed`, Haken „✓ Ich weiß es nicht“, ausgegrautem Datumsfeld und Statushinweis („Du kannst direkt mit „Weiter“ fortfahren“). Der Klick leert das Datum neutral und setzt das native Feld über einen Reset-Schlüssel zurück. „Weiter“ geht ohne Datum; eine Datumseingabe hebt „unbekannt“ wieder auf. Das Feld bleibt nie deaktiviert.
+
+**Browserprüfung (Edge, lokal, Testkonten danach gelöscht), Desktop 1280 px und Mobil 390 px:** Feld fokussierbar, Datum eingebbar, Klick auf „Ich weiß es nicht“ setzt den Status sichtbar und leert das Datum, „Weiter“ ohne Datum führt zu Frage 2, Datumseingabe danach funktioniert und hebt „unbekannt“ auf, „Weiter“ mit Datum führt zu Frage 2, kein horizontaler Überlauf. Prüfskript, `tsc --noEmit` und `npm run build` bestehen. Nicht deployed.
 
 ## Soll-Ist-Prüfung – von Codex
 

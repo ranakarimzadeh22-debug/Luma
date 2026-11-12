@@ -25,7 +25,10 @@ console.log("\n== WP-032: das Datumsfeld ist immer bedienbar ==");
 
 console.log("\n== WP-032: übrige Bedienung unverändert ==");
 {
-  assert(block.includes('setDraft({ ...draft, lastPeriodStart: "", lastPeriodUnknown: true })') && block.includes("Ich weiß es nicht"), "'Ich weiß es nicht' leert das Datum und setzt unbekannt");
+  assert(block.includes("aria-pressed={draft.lastPeriodUnknown}") && block.includes("✓ Ich weiß es nicht"), "Unbekannt-Status ist sichtbar (gedrückter Zustand, Haken, Hinweis)");
+  assert(block.includes("lastPeriodStart: \"\", lastPeriodUnknown: !draft.lastPeriodUnknown"), "Klick leert das Datum neutral und schaltet den Unbekannt-Status um");
+  assert(block.includes("key={dateResetKey}") && block.includes("setDateResetKey((current) => current + 1)"), "Klick setzt das native Feld zurück (auch halb getippte Eingaben)");
+  assert(block.includes("Du kannst direkt mit „Weiter“ fortfahren"), "Hinweis: Weiter ohne Datum möglich");
   assert(source.includes("draft.lastPeriodUnknown || Boolean(draft.lastPeriodStart)"), "Weiter-Bedingung für Frage 1 unverändert");
   assert(source.includes("Bitte beantworte die Frage oder wähle „Ich weiß es nicht“."), "Hinweis bei fehlender Eingabe unverändert");
   assert(source.includes('lastPeriodStart: draft.lastPeriodUnknown ? null : draft.lastPeriodStart || null'), "Speicher-Payload unverändert");
