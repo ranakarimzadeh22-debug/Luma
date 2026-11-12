@@ -117,10 +117,9 @@ export default function NewCycleProfileWizard({
                 <input
                   type="date"
                   max={today}
-                  disabled={draft.lastPeriodUnknown}
                   value={draft.lastPeriodStart}
                   onChange={(event) => setDraft({ ...draft, lastPeriodStart: event.target.value, lastPeriodUnknown: false })}
-                  className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 disabled:bg-neutral-100"
+                  className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3"
                 />
               </label>
               <button type="button" onClick={() => setDraft({ ...draft, lastPeriodStart: "", lastPeriodUnknown: true })} className={`rounded-xl border px-4 py-3 text-sm ${draft.lastPeriodUnknown ? "border-neutral-900 bg-neutral-100" : "border-neutral-300"}`}>
