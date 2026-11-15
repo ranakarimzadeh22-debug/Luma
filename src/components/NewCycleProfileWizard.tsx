@@ -158,7 +158,7 @@ export default function NewCycleProfileWizard({
             <div className="flex flex-col gap-3">
               <label className="text-sm font-medium text-neutral-700">
                 Anzahl der Tage
-                <input type="number" min="1" max="730" inputMode="numeric" disabled={draft.cycleLengthUnknown} value={draft.cycleLengthDays} onChange={(event) => setDraft({ ...draft, cycleLengthDays: event.target.value, cycleLengthUnknown: false })} className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 disabled:bg-neutral-100" />
+                <input type="number" min="1" max="730" inputMode="numeric" value={draft.cycleLengthDays} onChange={(event) => setDraft({ ...draft, cycleLengthDays: event.target.value, cycleLengthUnknown: false })} className={`mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 ${draft.cycleLengthUnknown ? "bg-neutral-100" : ""}`} />
               </label>
               <button type="button" onClick={() => setDraft({ ...draft, cycleLengthDays: "", cycleLengthUnknown: true })} className={`rounded-xl border px-4 py-3 text-sm ${draft.cycleLengthUnknown ? "border-neutral-900 bg-neutral-100" : "border-neutral-300"}`}>
                 Ich weiß es nicht
